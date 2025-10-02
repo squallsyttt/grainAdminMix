@@ -108,24 +108,7 @@ class Common extends Api
 		];
 		$this->success('返回成功', $list);
 	}
-	
-	/**
-	 * APP热更新 1.0.3升级
-	 *
-	 * @ApiSummary  (WanlShop APP热更新)
-	 * @ApiMethod   (GET)
-	 *
-	 */
-	public function update()
-	{
-		//设置过滤方法
-		$this->request->filter(['strip_tags']);
-		$row = model('app\api\model\wanlshop\Version')
-			->order('versionCode desc')
-			->find();
-		$this->success('返回成功', $row);	
-	}
-	
+
 	/**
 	 * 获取后端地址 1.1.7升级
 	 *

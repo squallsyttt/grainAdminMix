@@ -357,13 +357,7 @@ class Client extends Backend
 			$pageList[] = ['id' => $vo['id'], 'item' => json_encode($itemList)];
 		}
 		$page = $pageModel->isUpdate()->saveAll($pageList);
-		
-		// 清空版本管理
-		$version = 0;
-		foreach (model('app\admin\model\wanlshop\Version')->select() as $k => $v) {
-		    $version += $v->delete();
-		}
-		
+
 		// 修复商品全部字段
 		$goodsAll = [];
 		$goodsModel = model('app\admin\model\wanlshop\Goods');
@@ -396,7 +390,7 @@ class Client extends Backend
 			set_addon_config('wanlshop', $config, true);
 		}
 		// 修复完成
-		$this->success('成功修复'.count($find).'个发现数据，成功修复'.count($page).'个自定义页，清空'.$version.'个版本表');
+		$this->success('成功修复'.count($find).'个发现数据，成功修复'.count($page).'个自定义页');
 	}
 	
 	
@@ -492,13 +486,8 @@ class Client extends Backend
 		// 获取配置
 		$config = get_addon_config('wanlshop');
 		// 热更新生成版本名和版本号
-		$version = model('app\admin\model\wanlshop\Version')
-			->order('versionCode desc')
-			->find();
-		if(!$version){
-			$version['versionName'] = $this->addon['version'];
-			$version['versionCode'] = $this->addon['versionCode'];
-		}	
+		$version['versionName'] = $this->addon['version'];
+		$version['versionCode'] = $this->addon['versionCode'];
 		// 插件工程目录
 		$dest_path = ADDON_PATH. 'wanlshop/library/AutoProject/temp/project/';
 		$temp_path = ADDON_PATH. 'wanlshop/library/AutoProject/template/'. $file;
