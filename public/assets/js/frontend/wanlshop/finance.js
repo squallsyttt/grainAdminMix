@@ -27,7 +27,7 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'vue'], function ($, 
 		                {field: 'money', title: __('Money'), operate:'BETWEEN'},
                         {field: 'before', title: __('Before'), operate:'BETWEEN'},
                         {field: 'after', title: __('After'), operate:'BETWEEN'},
-                        {field: 'type', title: __('Type'), searchList: {"pay":__('Type pay'),"groups":__('Type groups'),"recharge":__('Type recharge'),"withdraw":__('Type withdraw'),"refund":__('Type refund'),"sys":__('Type sys')}, formatter: Table.api.formatter.normal},
+                        {field: 'type', title: __('Type'), searchList: {"pay":__('Type pay'),"recharge":__('Type recharge'),"withdraw":__('Type withdraw'),"refund":__('Type refund'),"sys":__('Type sys')}, formatter: Table.api.formatter.normal},
                         {field: 'service_ids', title: __('Service_ids'), operate: 'LIKE'},
                         {field: 'createtime', title: __('Createtime'), operate:'RANGE', addclass:'datetimerange', autocomplete:false, formatter: Table.api.formatter.datetime},
                         {field: 'operate', title: __('Operate'), table: table, events: Table.api.events.operate,buttons: [

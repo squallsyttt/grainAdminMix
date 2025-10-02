@@ -20,7 +20,6 @@ return [
     'After'         => '变更后余额',
     'Type'          => '业务类型',
     'Type pay'      => '商品',
-    'Type groups'   => '拼团',
     'Type recharge' => '充值',
     'Type withdraw' => '提现',
     'Type refund'   => '退款',
