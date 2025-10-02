@@ -33,20 +33,17 @@ class Pay extends Api
 			$id = $this->request->post('order_id');
 			$id ? $id : ($this->error(__('非法请求')));
 			$order_type = $this->request->post('order_type');
-			// 1.0.8升级 拼团
-			if($order_type == 'groups'){
-				$model_order = model('app\api\model\wanlshop\groups\Order');
-			}else{
-				$model_order = model('app\api\model\wanlshop\Order');
-			}
+
+			$model_order = model('app\api\model\wanlshop\Order');
+
 			// 判断权限
 			$orderState = $model_order
 				->where(['id' => $id, 'user_id' => $this->auth->id])
 				->find();
 			$orderState['state'] != 1 ? ($this->error(__('订单异常'))):'';
-			// 获取支付信息 1.1.2升级
+			// 获取支付信息
 			$pay = model('app\api\model\wanlshop\Pay')
-				->where(['order_id' => $id, 'type' => $order_type == 'groups' ? 'groups' : 'goods'])
+				->where(['order_id' => $id, 'type' => 'goods'])
 				->field('id,order_id,order_no,pay_no,price')
 				->find();
 			$pay['order_type'] = $order_type ? $order_type : 'goods';
@@ -88,20 +85,12 @@ class Pay extends Api
 			}
 			$user_id = $this->auth->id;
 			$type ? $type : ($this->error(__('未选择支付类型')));
-			
-			// 1.0.8升级 拼团
-			if($order_type == 'groups'){
-				$model_order = model('app\api\model\wanlshop\groups\Order');
-				$model_order_goods = model('app\api\model\wanlshop\groups\OrderGoods');
-				$model_goods = model('app\api\model\wanlshop\groups\Goods');
-				$model_goods_sku = model('app\api\model\wanlshop\groups\GoodsSku');
-			}else{
-				$model_order = model('app\api\model\wanlshop\Order');
-				$model_order_goods = model('app\api\model\wanlshop\OrderGoods');
-				$model_goods = model('app\api\model\wanlshop\Goods');
-				$model_goods_sku = model('app\api\model\wanlshop\GoodsSku');
-			}
-			
+
+			$model_order = model('app\api\model\wanlshop\Order');
+			$model_order_goods = model('app\api\model\wanlshop\OrderGoods');
+			$model_goods = model('app\api\model\wanlshop\Goods');
+			$model_goods_sku = model('app\api\model\wanlshop\GoodsSku');
+
 			// 判断权限
 			$order = $model_order
                 ->where('id', 'in', $order_id)
@@ -123,22 +112,20 @@ class Pay extends Api
 					$redis = Common::redis();
 					// 获取sku
 					$sku = $model_goods_sku->get($data['goods_sku_id']);
-					// 1.1.2升级
-					$sku_key = ($order_type == 'groups' ? 'groups':'goods').'_'.$sku['goods_id'].'_'.$sku['id'];
+					$sku_key = 'goods_'.$sku['goods_id'].'_'.$sku['id'];
 					// 查询商品
 					$goods = $model_goods
 						->where(['id' => $data['goods_id'], 'stock' => 'payment'])
 						->find();
-					// 库存计算方式:porder=下单减库存,payment=付款减库存 1.0.8升级
+					// 库存计算方式:porder=下单减库存,payment=付款减库存
 					if($goods) {
-						// 1.1.2升级
 						if($data['number'] > $redis->llen("{$sku_key}")){
 							$this->error("系统繁忙，请稍后抢购！");
 						}else{
 							for ($i = 0; $i < $data['number']; $i ++) {
 								$redis->rpop("{$sku_key}");
 							}
-							$sku->setDec('stock', $data['number']); // 1.0.3升级
+							$sku->setDec('stock', $data['number']);
 						}
 					}
 				}
@@ -384,43 +371,12 @@ class Pay extends Api
 				if(!$order) $this->error(__('订单异常'));
 			}
 			foreach($order as $vo){
-				// 1.1.2升级
 				$vo['pay'] = model('app\api\model\wanlshop\Pay')
 					->where(['order_id' => $vo['id'], 'type' => 'goods'])
 					->field('price,pay_no,order_no,order_price,trade_no,actual_payment,freight_price,discount_price,total_amount')
 					->find();
 				$vo->shop->visible(['shopname']);
 				$vo->goods = model('app\api\model\wanlshop\OrderGoods')
-					->where(['order_id' => $vo['id']])
-					->field('id,title,difference,image,price,number')
-					->select();
-			}
-			$this->success('ok', $order);
-		}else if($type == 'groups'){
-			$field = 'id,shop_id,createtime,paymenttime';
-			$order = model('app\api\model\wanlshop\groups\Order')
-				->where('order_no', 'in', $id)
-				->where('user_id', $this->auth->id)
-				->field($field)
-				->select();
-			//1.0.5升级 临时修改,后续升级版本重构
-			if(!$order){
-				$shop = model('app\api\model\wanlshop\Shop')->get(['user_id' => $this->auth->id]);
-				$order = model('app\api\model\wanlshop\groups\Order')
-					->where('order_no', 'in', $id)
-					->where('shop_id', $shop['id'])
-					->field($field)
-					->select();
-				if(!$order) $this->error(__('订单异常'));
-			}
-			foreach($order as $vo){
-				// 1.1.2升级
-				$vo['pay'] = model('app\api\model\wanlshop\Pay')
-					->where(['order_id' => $vo['id'], 'type' => 'groups'])
-					->field('price,pay_no,order_no,order_price,trade_no,actual_payment,freight_price,discount_price,total_amount')
-					->find();
-				$vo->shop->visible(['shopname']);
-				$vo->goods = model('app\api\model\wanlshop\groups\OrderGoods')
 					->where(['order_id' => $vo['id']])
 					->field('id,title,difference,image,price,number')
 					->select();

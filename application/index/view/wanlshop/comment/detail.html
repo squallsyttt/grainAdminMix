@@ -28,7 +28,7 @@
 		z-index: 0;
 	}
 </style>
-<p><i class="fa fa-list-ul"></i> {$row.order_type == 'groups' ? '拼团' : '商品'}详情</p>
+<p><i class="fa fa-list-ul"></i> 商品详情</p>
 <table class="table table-bordered">
 	<thead>
 		<tr>
@@ -60,22 +60,6 @@
 	</thead>
 	<tbody>
 		{switch name="row.order_type"}
-		    {case value="groups"}
-			<tr>
-				<td style="text-align: center; vertical-align: middle; ">{$row.ordergroups.goods_id}</td>
-				<td style="text-align: center; vertical-align: middle; ">{$row.ordergroups.title}</td>
-				<td><a href="{$row.ordergroups.image}" target="_blank"><img class="img-sm img-center" src="{$row.ordergroups.image|cdnurl|htmlentities}"></a></td>
-				<td style="text-align: center; vertical-align: middle; ">{$row.groups.comment ?? 0}</td>
-				<td style="text-align: center; vertical-align: middle; ">{$row.groups.praise ?? 0}</td>
-				<td style="text-align: center; vertical-align: middle; ">{$row.groups.moderate ?? 0}</td>
-				<td style="text-align: center; vertical-align: middle; ">{$row.groups.negative ?? 0}</td>
-				<td style="text-align: center; vertical-align: middle; ">
-					<a href="javascript:;" class="btn btn-xs btn-danger groups" data-toggle="tooltip" data-id="{$row.order_id}" data-original-title="查看订单详情">
-						<i class="fa fa-eye"></i> 拼团详情
-					</a>
-				</td>
-			</tr>
-			{/case}
 		    {case value="goods"}
 			<tr>
 				<td style="text-align: center; vertical-align: middle; ">{$row.ordergoods.goods_id}</td>

@@ -129,7 +129,6 @@
 		<div class="panel-lead"><em>全局样式</em>客户端初始风格，也可以在节日、活动时修改</div>
 		<ul class="nav nav-tabs">
 			<li class="active"><a href="#category" data-toggle="tab">类目页样式</a></li>
-			<li><a href="#groups" data-toggle="tab">拼团栏目页样式</a></li>
 			<li><a href="#find" data-toggle="tab">发现页样式</a></li>
 			<li><a href="#cart" data-toggle="tab">购物车样式</a></li>
 			<li><a href="#user" data-toggle="tab">用户中心样式</a></li>
@@ -178,64 +177,6 @@
 					</div>	
 					
 					
-				</div>
-			</div>
-			<div class="tab-pane fade" id="groups">
-				<div class="widget-body no-padding">
-					<form id="form-item" class="form-item" role="form" data-toggle="validator" method="POST" action="{:url('wanlshop.client/edit')}">
-						<table class="table table-striped">
-							<thead>
-								<tr>
-									<th width="15%">配置项</th>
-									<th width="85%">值</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr>
-									<td>导航栏背景图</td>
-									<td>
-										<div class="row">
-											<div class="col-sm-8 col-xs-12">
-												{:Form::image('row[style][groups_nav_image]', $row.groups_nav_image)}
-											</div>
-											<div class="col-sm-4"></div>
-										</div>
-									</td>
-								</tr>
-								<tr>
-									<td>导航栏背景色</td>
-									<td>
-										<div class="row">
-											<div class="col-sm-8 col-xs-12">
-												<input name="row[style][groups_nav_color]" type="color" value="{$row.groups_nav_color|htmlentities}" class="color">
-											</div>
-											<div class="col-sm-4"></div>
-										</div>
-									</td>
-								</tr>
-								<tr>
-									<td>字体前景色</td>
-									<td>
-										<div class="row">
-											<div class="col-sm-8 col-xs-12">
-												{:Form::select('row[style][groups_font_color]', ['dark'=>'深色（即文字颜色黑色）', 'light'=>'浅色（即文字颜色白色）'], $row.groups_font_color)}
-											</div>
-											<div class="col-sm-4"></div>
-										</div>
-									</td>
-								</tr>
-							</tbody>
-							<tfoot>
-								<tr>
-									<td></td>
-									<td>
-										<button type="submit" class="btn btn-success btn-embossed">{:__('保存')}</button>
-										<button type="reset" class="btn btn-default btn-embossed">重置</button>
-									</td>
-								</tr>
-							</tfoot>
-						</table>
-					</form>
 				</div>
 			</div>
 			<div class="tab-pane fade" id="find">

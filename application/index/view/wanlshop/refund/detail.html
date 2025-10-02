@@ -2,10 +2,10 @@
 	<!-- 商品信息 -->
 	<div class="col-md-12">
 		<div class="panel panel-default">
-			<div class="panel-heading"> {switch name="row.order_type"} {case value="groups"}拼团{/case} {case value="goods"}商品{/case} {/switch}信息</div>
+			<div class="panel-heading">商品信息</div>
 			<div class="panel-body">
 				<p><span>订单号：</span>
-				</small> {switch name="row.order_type"} {case value="groups"}{$row.groupsorder.order_no}{/case} {case value="goods"}{$row.order.order_no}{/case} {/switch} <small>
+				</small> {$row.order.order_no} <small>
 				<span style="margin-left: 30px;">订单运费：</span><small>￥{$row.pay.freight_price}</small></p>
 				<table class="table table-bordered">
 					<thead>
@@ -46,16 +46,8 @@
 								<td><img class="img-sm img-center" src="{$vo.image|cdnurl|htmlentities}"></td>
 								<td>{$vo.title}</td>
 								<td>{$vo.difference}</td>
-								{switch name="row.order_type"} 
-									{case value="groups"}
-									<td>￥{$vo.group_price} x {$vo.number}</td>
-									<td>￥{$vo.number * $vo.group_price}</td>
-									{/case} 
-									{case value="goods"}
-									<td>￥{$vo.price} x {$vo.number}</td>
-									<td>￥{$vo.number * $vo.price}</td>
-									{/case} 
-								{/switch}
+								<td>￥{$vo.price} x {$vo.number}</td>
+								<td>￥{$vo.number * $vo.price}</td>
 								<td>￥{$vo.discount_price}</td>
 								<td>￥{$vo.freight_price}</td>
 								<td>￥{$vo.actual_payment}</td>

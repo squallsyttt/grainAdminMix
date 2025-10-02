@@ -83,64 +83,6 @@
 					{case value="2"}
 						后续版本更新举报商家
 					{/case}
-					{case value="3"}
-					<p>商品ID：{$row.groups.id}</p>
-					<table class="table table-bordered">
-						<thead>
-							<tr>
-								<th class="text-center">
-									<div class="th-inner">主图</div>
-								</th>
-								<th class="text-center">
-									<div class="th-inner">商品名称</div>
-								</th>
-								<th class="text-center">
-									<div class="th-inner">点击</div>
-								</th>
-								
-								<th class="text-center">
-									<div class="th-inner">产品价格</div>
-								</th>
-								<th class="text-center">
-									<div class="th-inner">销量</div>
-								</th>
-								<th class="text-center">
-									<div class="th-inner">付款人数</div>
-								</th>
-								<th class="text-center">
-									<div class="th-inner">评论</div>
-								</th>
-								<th class="text-center">
-									<div class="th-inner">好评</div>
-								</th>
-								<th class="text-center">
-									<div class="th-inner">中评</div>
-								</th>
-								<th class="text-center">
-									<div class="th-inner">差评</div>
-								</th>
-								<th class="text-center">
-									<div class="th-inner">喜欢</div>
-								</th>
-							</tr>
-						</thead>
-						<tbody>
-							<tr>
-								<td><a href="javascript:"><img class="img-sm img-center" src="{$row.groups.image|cdnurl|htmlentities}"></a></td>
-								<td><strong>{$row.groups.title}</strong></td>
-								<td>{$row.groups.views}</td>
-								<td>{$row.groups.price}</td>
-								<td>{$row.groups.sales}</td>
-								<td>{$row.groups.payment}</td>
-								<td>{$row.groups.comment}</td>
-								<td>{$row.groups.praise}</td>
-								<td>{$row.groups.moderate}</td>
-								<td>{$row.groups.negative}</td>
-								<td>{$row.groups.like}</td>
-							</tr>
-						</tbody>
-					</table>
-					{/case}
 					{/switch}
 				</div>
 			</div>

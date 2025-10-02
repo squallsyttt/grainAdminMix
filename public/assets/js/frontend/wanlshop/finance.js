@@ -48,7 +48,6 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'vue'], function ($, 
 									var url = '链接异常';
 									switch(row.type) {
 									    case "pay": url = 'wanlshop/order/detail/order_no'; break; // 商品交易
-										case "groups": url = 'wanlshop/groupsorder/detail/order_no'; break; // 拼团交易
 										case "withdraw": url = 'wanlshop/finance/withdrawDetail/ids'; break; // 提现
 										case "refund": url = 'wanlshop/refund/detail/order_no'; break; // 退款 1.1.3升级
 									}

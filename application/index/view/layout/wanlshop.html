@@ -97,21 +97,16 @@
 									<span class="pull-right-container"><small class="label pull-right bg-blue">hot</small></span>
 								</a>
 							</li>
-							<li class="treeview {:in_array($config.controllername,['wanlshop.order','wanlshop.refund','wanlshop.groupsorder'])?'active':''}">
+							<li class="treeview {:in_array($config.controllername,['wanlshop.order','wanlshop.refund'])?'active':''}">
 								<a href="javascript:;">
 									<i class="fa fa-leaf fa-fw"></i> <span>交易管理</span>
 									<span class="pull-right-container"><i class="fa fa-angle-left"></i></span>
 								</a>
-								<ul class="treeview-menu {:in_array($config.controllername,['wanlshop.order','wanlshop.refund','wanlshop.groupsorder'])?'menu-open':''}"
-								 style="display: {:in_array($config.controllername,['wanlshop.order','wanlshop.refund','wanlshop.groupsorder'])?'block':'none'};">
+								<ul class="treeview-menu {:in_array($config.controllername,['wanlshop.order','wanlshop.refund'])?'menu-open':''}"
+								 style="display: {:in_array($config.controllername,['wanlshop.order','wanlshop.refund'])?'block':'none'};">
 									<li class="{$config.controllername.'.'.$config.actionname == 'wanlshop.order.index'?'active':''}">
 										<a href="{:url('index/wanlshop.order/index')}">
 											<i class="fa fa-circle-o fa-fw"></i><span>商品订单</span>
-										</a>
-									</li>
-									<li class="{$config.controllername.'.'.$config.actionname == 'wanlshop.groupsorder.index'?'active':''}">
-										<a href="{:url('index/wanlshop.groupsorder/index')}">
-											<i class="fa fa-circle-o fa-fw"></i><span>拼团订单</span>
 										</a>
 									</li>
 									<li class="{$config.controllername.'.'.$config.actionname == 'wanlshop.order.comment'?'active':''}">
@@ -180,29 +175,6 @@
 									<li class="{$config.controllername.'.'.$config.actionname == 'wanlshop.shop.profile'?'active':''}">
 										<a href="{:url('index/wanlshop.shop/profile')}">
 											<i class="fa fa-circle-o fa-fw"></i><span>店铺资料</span>
-										</a>
-									</li>
-								</ul>
-							</li>
-							<li class="treeview {$config.controllername === 'wanlshop.groups' ? 'active':''}">
-								<a href="javascript:;">
-									<i class="fa fa-users fa-fw"></i> <span>阶梯拼团</span> 
-									<span class="pull-right-container"><i class="fa fa-angle-left"></i> </span>
-								</a>
-								<ul class="treeview-menu {$config.controllername === 'wanlshop.groups' ? 'menu-open' : ''}" style="display: {$config.controllername === 'wanlshop.groups' ? 'block' : 'none'};">
-									<li class="{$config.controllername.'.'.$config.actionname == 'wanlshop.groups.goods'?'active':''}">
-										<a href="{:url('index/wanlshop.groups/goods')}">
-											<i class="fa fa-circle-o fa-fw"></i><span>商品列表</span>
-										</a>
-									</li>
-									<li class="{$config.controllername.'.'.$config.actionname == 'wanlshop.groups.groups'?'active':''}">
-										<a href="{:url('index/wanlshop.groups/groups')}">
-											<i class="fa fa-circle-o fa-fw"></i><span>拼团管理</span>
-										</a>
-									</li>
-									<li class="{$config.controllername.'.'.$config.actionname == 'wanlshop.groupsorder.index'?'active':''}">
-										<a href="{:url('index/wanlshop.groupsorder/index')}">
-											<i class="fa fa-circle-o fa-fw"></i><span>订单管理</span>
 										</a>
 									</li>
 								</ul>

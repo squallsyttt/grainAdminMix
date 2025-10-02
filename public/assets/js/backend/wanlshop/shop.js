@@ -63,22 +63,6 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
                                     }
 						        },
 						        {
-						            name: 'groups',
-                                    text: __('拼团'),
-                                    title: function (row) {
-										return `${row.shopname}  店铺 拼团`;
-								    },
-                                    classname: 'btn btn-xs btn-warning btn-dialog',
-                                    icon: 'fa fa-shopping-bag',
-                                    extend: 'data-area=\'["90%", "80%"]\'',
-                                    url: function (row) {
-										return `wanlshop/groups/goods?shop_id=${row.id}`;
-								    },
-                                    callback: function (data) {
-										$(".btn-refresh").trigger("click"); //刷新数据
-                                    }
-						        },
-						        {
 						            name: 'brand',
                                     text: __('品牌'),
                                     title: function (row) {

@@ -55,22 +55,6 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function($, undefine
                                     callback: function (data) {
 										$(".btn-refresh").trigger("click"); //刷新数据
                                     }
-						        },
-						        {
-						            name: 'groups',
-                                    text: __('拼团'),
-                                    title: function (row) {
-										return `[${row.name}] 类目及子类目 拼团`;
-								    },
-                                    classname: 'btn btn-xs btn-warning btn-dialog',
-                                    icon: 'fa fa-shopping-bag',
-                                    extend: 'data-area=\'["90%", "80%"]\'',
-                                    url: function (row) {
-										return `wanlshop/groups/goods?shop_category_id=${row.id}`;
-								    },
-                                    callback: function (data) {
-										$(".btn-refresh").trigger("click"); //刷新数据
-                                    }
 						        }
 						    ], 
 							formatter: Table.api.formatter.operate

@@ -279,41 +279,6 @@
 														</div>
 													</div>
 												</div>
-												<!-- 拼团组件 -->
-												<div class="groups" v-if="item.type == 'groups'" :style="item.style" :class="`col-3-${item.params.colmargin}`">
-													<div class="bg" :style="{backgroundImage: `url(${cdnurl(item.params.groupsBackground)})`}">
-														<div class="head">
-															<div class="title">
-																<span class="margin-right-sm" :style="{color: item.params.titleColor, fontSize: item.params.titleFontSize}">{{item.params.titleText}}</span>
-																<span :style="{color: item.params.infoColor, fontSize: item.params.infoFontSize}">{{item.params.infoText}}</span>
-															</div>
-															<div class="more">
-																<span class="margin-right-xs">更多</span><i class="wlIcon wlIcon-fanhui2"></i>
-															</div>
-														</div>
-														<div class="main">
-															<div class="item" v-for="groups in 6">
-																<div class="item_pic">
-																	<img src="/assets/addons/wanlshop/img/common/img_default3x.png">
-																</div>
-																<div class="list" style="width: 100%;">
-																	<div class="text-space text-sm">
-																		自动获取拼团
-																	</div>
-																	<div class="text-space text-orange text-xs">
-																		描述专业电商供应厂家
-																	</div>
-																	<div class="flex">
-																		<div class="price">
-																			<span class="text-price text-lg text-orange">{{Math.round(Math.random()*10+10)}}.00</span>
-																		</div>
-																		<div class="cu-tag round sm wanl-bg-orange">拼</div>
-																	</div>
-																</div>
-															</div>
-														</div>
-													</div>
-												</div>
 												<!-- 砍价组件 -->
 												<div class="bargain" v-if="item.type == 'bargain'" :style="item.style">
 													<span>砍价组件-下个版本发布，敬请期待</span>
@@ -667,7 +632,6 @@
 																<label>活动类型:</label>
 																<select class="form-control" v-model="lists[type]">
 																	<option value="distribution">分销</option>
-																	<option value="group">团购拼团</option>
 																	<option value="bargain">砍价</option>
 																	<option value="rush">限时抢购</option>
 																	<option value="coupon">领券中心</option>
@@ -815,23 +779,7 @@
 												<input type="text" class="form-control" v-model="item.params[type]"> <input id="color" class="form-control"
 												 type="color" v-model="item.params[type]">
 											</div>
-											<!-- 拼团组件背景图片 -->
-											<div class="form-inline" v-else-if="type == 'groupsBackground'">
-												<label>拼团组件背景图片:</label>
-												<div class="wanl-upload">
-													<input class="form-control" type="text" v-model="item.params[type]" placeholder="点击右侧按钮上传组件背景">
-													<input type="file" :id="type+index" :ref="type+index" @change="paramsUpload($event,index,type)" accept="image/*" style="display: none;">
-													<label :for="type+index" class="btn btn-info">
-														<i class="fa fa-upload"></i> 上传
-													</label>
-												</div>
-												<ul v-if="item.params[type]" class="row list-inline plupload-preview">
-													<li class="col-xs-3">
-														<a class="thumbnail"><img :src="cdnurl(item.params[type])" class="img-responsive"></a>
-													</li>
-												</ul>
-											</div>
-											
+
 											<!-- 活动橱窗背景图片 -->
 											<div class="form-inline" v-else-if="type == 'activityBackground'">
 												<label>活动橱窗背景图片:</label>
@@ -864,21 +812,9 @@
 													</li>
 												</ul>
 											</div>
-											
-											
-											
-											<!-- 拼团标题颜色 -->
-											<div class="form-inline" v-else-if="type == 'titleColor'">
-												<label>标题字体颜色:</label>
-												<input type="text" class="form-control" v-model="item.params[type]"> <input id="color" class="form-control"
-												 type="color" v-model="item.params[type]">
-											</div>
-											<!-- 拼团描述颜色 -->
-											<div class="form-inline" v-else-if="type == 'infoColor'">
-												<label>描述字体颜色:</label>
-												<input type="text" class="form-control" v-model="item.params[type]"> <input id="color" class="form-control"
-												 type="color" v-model="item.params[type]">
-											</div>
+
+
+
 											<!-- 图片布局方式 -->
 											<div v-else-if="type == 'imgLayout'">
 												<label>图片布局方式:</label>

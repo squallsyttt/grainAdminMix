@@ -100,16 +100,11 @@ class Common extends Api
 			$row->shop->visible(['state','shopname']);
 			$row->isLive = model('app\api\model\wanlshop\Live')->where(['shop_id' => $row['shop_id'], 'state' => 1])->field('id')->find();
 		}
-		// 拼团
-		$groups = model('app\api\model\wanlshop\groups\Goods')
-			->where('category_id', 'in', $category_id)
-			->where('status', 'normal')
-			->orderRaw('rand()')
-			->select();
+
 		$list = [
 			'goods' => $goods,
 			'seckill' => [],
-			'groups' => $groups
+			'groups' => []
 		];
 		$this->success('返回成功', $list);
 	}

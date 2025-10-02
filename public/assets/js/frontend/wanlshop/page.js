@@ -408,29 +408,6 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'upload', 'vue', 'vue
 								// 	}]
 								// },
 								{
-									"name": "拼团组件",
-									"type": "groups",
-									"style": {
-										"background-color": "#ffffff",
-										"border-radius": "10px",
-										"overflow": "hidden",
-										"margin": "12.5px"
-									},
-									"params": {
-										"groupsBackground": null,
-										"colmargin": "25",
-										"titleText" : "热门拼团",
-										"titleColor" : "#333333",
-										"titleFontSize" : "14px",
-										"infoText" : "拼着买，更便宜~",
-										"infoColor" : "#999999",
-										"infoFontSize" : "12px",
-									},
-									"data": [{
-										"title": "自动获取商品"
-									}]
-								},
-								{
 									"name": "商品组件",
 									"type": "goods",
 									"style": {
@@ -708,7 +685,6 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'upload', 'vue', 'vue
 							'describe': '描述',
 							'tags': '标签',
 							'distribution': '分销',
-							'group': '团购拼团',
 							'bargain': '砍价',
 							'rush': '限时抢购',
 							'height': '组件高度',
