@@ -131,7 +131,7 @@ class Dashboard extends Backend
 			->alias([$prefix.'wanlshop_order'=>'order', $prefix.'wanlshop_pay'=>'pay'])
 			->join($prefix.'wanlshop_pay','pay.order_id = order.id')
 			->where('order.createtime', 'between time', [$starttime, $endtime])
-			->field('order.createtime, order.status,COUNT(*) AS nums,SUM(pay.price) AS amount,MIN(order.createtime) AS min_paytime,MAX(order.createtime) AS max_paytime,DATE_FORMAT(FROM_UNIXTIME(order.createtime), "' . $format . '") AS paydata')
+			->field('COUNT(*) AS nums,SUM(pay.price) AS amount,MIN(order.createtime) AS min_paytime,MAX(order.createtime) AS max_paytime,DATE_FORMAT(FROM_UNIXTIME(order.createtime), "' . $format . '") AS paydata')
 			->group('paydata')
 			->select();
 	    $column = [];
