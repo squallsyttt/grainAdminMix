@@ -1,0 +1,29 @@
+<div class="panel panel-default panel-intro">
+    <div class="panel-heading">
+        <div class="panel-lead"><em>人机验证</em>用于客户端人机验证，常用于登录或其他关键业务的真人验证</div>
+        <ul class="nav nav-tabs">
+            <li class="active"><a href="#first" data-toggle="tab">人机验证图片</a></li>
+            <li><a href="#second" data-toggle="tab">验证日志</a></li>
+            <li><a href="wanlshop/client/config?use=captcha" class="addtabsit">系统配置</a></li>
+        </ul>
+    </div>
+    <div class="panel-body">
+        <div id="myTabContent" class="tab-content">
+            <div class="tab-pane fade active in" id="first">
+                <div id="image_toolbar" class="toolbar">
+                    {:build_toolbar('refresh,add,del')}
+                </div>
+                <table id="image" class="table table-striped table-bordered table-hover" width="100%">
+                </table>
+            </div>
+            <div class="tab-pane fade" id="second">
+                <div id="log_toolbar" class="toolbar">
+                    {:build_toolbar('refresh')}
+                    <a class="btn btn-danger  btn-clear" href="javascript:;"><i class="fa fa fa-leaf"></i> 一键清空</a>
+                </div>
+                <table id="log" class="table table-striped table-bordered table-hover" width="100%">
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
