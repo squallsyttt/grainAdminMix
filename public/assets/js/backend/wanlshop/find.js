@@ -31,7 +31,7 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
 						{field: 'user.avatar', title: __('User.avatar'), operate: 'LIKE', events: Table.api.events.image, formatter: Table.api.formatter.image},
 						{field: 'user.nickname', title: __('User.nickname'), operate: 'LIKE'},
 						{field: 'user_no', title: __('User_no'), operate: 'LIKE'},
-                        {field: 'type', title: __('Type'), searchList: {"new":__('Type new'),"live":__('Type live'),"video":__('Type video'),"want":__('Type want'),"show":__('Type show'),"activity":__('Type activity')}, formatter: Table.api.formatter.normal},
+                        {field: 'type', title: __('Type'), searchList: {"new":__('Type new'),"video":__('Type video'),"want":__('Type want'),"show":__('Type show'),"activity":__('Type activity')}, formatter: Table.api.formatter.normal},
                         {field: 'images', title: __('Images'), align:'left', operate: false, events: Table.api.events.image, formatter: Table.api.formatter.images},
                         {field: 'views', title: __('Views')},
                         {field: 'likes', title: __('Likes')},
@@ -72,20 +72,6 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
 								        return row.state !== 'examine';
 								    }
 								},
-								{
-						            name: 'live',
-                                    text: __('播放'),
-                                    title: __('播放'),
-                                    classname: 'btn btn-xs btn-success btn-dialog',
-                        		    icon: 'fa fa-video-camera',
-                        		    extend: 'data-area=\'["380px", "720px"]\'',
-                                    url: function (row) {
-										return `wanlshop/live/detail?live_id=${row.live_id}`;
-								    },
-						            visible: function (row) {
-						                return row.type === 'live';
-						            }
-						        },
 						        {
 						            name: 'video',
                                     text: __('播放'),
@@ -205,7 +191,7 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
             $(".play").click(function(){
                 let id = $(".play").data("id"),
                     type = $(".play").data("type");
-                parent.Fast.api.open(`wanlshop/${type}/detail?${type}_id=${id}`, `${type === 'live' ? '播放直播':'播放视频'}`, {area:["380px", "720px"]});
+                parent.Fast.api.open(`wanlshop/${type}/detail?${type}_id=${id}`, '播放视频', {area:["380px", "720px"]});
             });
             Controller.api.bindevent();
         },

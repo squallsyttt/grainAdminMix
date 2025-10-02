@@ -1,4 +1,4 @@
-<!-- 类型:new=上新,want=种草,show=买家秀   ,live=直播,video=短视频-->
+<!-- 类型:new=上新,want=种草,show=买家秀,video=短视频-->
 <div class="post clearfix">
 	<div class="user-block">
 		<img class="img-circle img-bordered-sm" src="{$row.shop.avatar|cdnurl}">
@@ -19,9 +19,6 @@
 			{eq name="key" value="0"}
 				{eq name="row.type" value="video"}
 					<div class="play" data-id="{$row.video_id}" data-type="video"> <i class="fa fa-play-circle"></i> </div>
-				{/eq}
-				{eq name="row.type" value="live"}
-					<div class="play" data-id="{$row.live_id}" data-type="live"> <i class="fa fa-play-circle"></i> </div>
 				{/eq}
 			{/eq}
 		</div>

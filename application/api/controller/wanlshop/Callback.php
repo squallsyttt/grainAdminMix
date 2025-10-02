@@ -76,70 +76,7 @@ class Callback extends Api
 		}
 		return json(["result" => false, "returnCode" => "500", "message" => "非正常访问"]);
 	}
-	
-	/**
-	 * 推流状态回调
-	 *
-	 * @ApiSummary  (WanlShop 直播接口-推流状态回调)
-	 * @ApiMethod   (POST)
-	 *
-	 * @param string $action 回调状态 publish / publish_done
-	 * @param string $ip 回调地址ip
-	 * @param string $id 推流流名
-	 * @param string $app 推流域名
-	 * @param string $appname 推流app名
-	 * @param string $time timestamp
-	 * @param string $usrargs 用户参数
-	 * @param string $node 内部节点ip
-	 */
-	public function push($id, $action)
-	{
-		$row = model('app\api\model\wanlshop\Live')->get(['liveid' => $id]);
-		$find = model('app\api\model\wanlshop\find\Find');
-		if($row){
-			if($action == 'publish'){
-				$this->sendLiveGroup($id, ['type' => 'publish']);
-				$row->save(['state' => 1]);
-				// 避免多次推流，检查是否存在多个
-				$count = $find->where('live_id', $row['id'])->count();
-				// 发布动态
-				if($count == 0){
-					// 关联商品
-					$goods = model('app\api\model\wanlshop\Goods')
-						->where('id', 'in', $row['goods_ids'])
-						->limit(2)
-						->select();
-					$image = [$row['image']];
-					foreach ($goods as $vo) {
-						$image[] = $vo['image'];
-					}
-					// 1.1.2升级
-					$shop = model('app\api\model\wanlshop\Shop')->get($row['shop_id']);
-					$user = model('app\api\model\wanlshop\find\User')->get([
-						'user_id' => $shop['user_id']
-					]);
-					// 保存数据
-					$find->save([
-						'shop_id' => $shop['id'],
-						'user_id' => $shop['user_id'], // 1.1.2升级
-						'user_no' => $user['user_no'], // 1.1.2升级
-						'type' => 'live',
-						'goods_ids' => $row['goods_ids'],
-						'live_id' => $row['id'],
-						'content' => $row['content'],
-						'images' => implode(',', $image)
-					]);
-				}
-			}else if($action == 'publish_done'){
-				$this->sendLiveGroup($id, ['type' => 'publish_done']);
-				$row->save(['state' => 2]);
-			}
-		}else{
-			$this->error(__('没有找到相关推流'));
-		}
-		
-	}
-	
+
 	/**
 	 * 录制文件回调
 	 *

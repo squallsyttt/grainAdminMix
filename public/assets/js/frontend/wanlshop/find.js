@@ -35,7 +35,6 @@ define(['jquery', 'bootstrap', 'table', 'backend', 'form', 'vue'], function($, u
 							title: __('Type'),
 							searchList: {
 								"new": __('Type new'),
-								"live": __('Type live'),
 								"video": __('Type video'),
 								"want": __('Type want'),
 								"activity": __('Type activity'),
@@ -103,21 +102,6 @@ define(['jquery', 'bootstrap', 'table', 'backend', 'form', 'vue'], function($, u
 									url: 'wanlshop/find/detail',
 									callback: function(data) {
 										$(".btn-refresh").trigger("click");
-									}
-								},
-								{
-									name: 'live',
-									text: __('播放'),
-									title: __('播放'),
-									classname: 'btn btn-xs btn-success btn-dialog',
-									icon: 'fa fa-video-camera',
-									extend: 'data-area=\'["380px", "720px"]\'',
-									url: 'wanlshop/find/play',
-									url: function(row) {
-										return `wanlshop/find/play?live_id=${row.live_id}`;
-									},
-									visible: function(row) {
-										return row.type === 'live';
 									}
 								},
 								{
@@ -276,7 +260,6 @@ define(['jquery', 'bootstrap', 'table', 'backend', 'form', 'vue'], function($, u
 						type: Config.type,
 						typeList: {
 							new: '上新',
-							live: '直播',
 							video: '短视频',
 							want: '种草',
 							activity: '活动',
@@ -482,7 +465,7 @@ define(['jquery', 'bootstrap', 'table', 'backend', 'form', 'vue'], function($, u
 				let id = $(".play").data("id"),
 					type = $(".play").data("type");
 				parent.Fast.api.open(`wanlshop/find/play?${type}_id=${id}`,
-					`${type === 'live' ? '播放直播':'播放视频'}`, {
+					'播放视频', {
 						area: ["380px", "720px"]
 					});
 			});

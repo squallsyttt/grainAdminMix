@@ -48,7 +48,7 @@ class Find extends Model
 	
     public function getTypeList()
     {
-        return ['new' => __('Type new'), 'live' => __('Type live'), 'want' => __('Type want'), 'activity' => __('Type activity'), 'show' => __('Type show'), 'video' => __('Type video')];
+        return ['new' => __('Type new'), 'want' => __('Type want'), 'activity' => __('Type activity'), 'show' => __('Type show'), 'video' => __('Type video')];
     }
 
     public function getTypeTextAttr($value, $data)
@@ -67,13 +67,7 @@ class Find extends Model
 	{
 	    return is_array($value) ? implode(',', $value) : $value;
 	}
-	
-	// 直播
-	public function live()
-	{
-	    return $this->belongsTo('app\api\model\wanlshop\Live', 'live_id', 'id', [], 'LEFT')->setEagerlyType(0);
-	}
-	
+
 	// 视频
 	public function video()
 	{

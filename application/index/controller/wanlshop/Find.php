@@ -88,14 +88,9 @@ class Find extends Wanlshop
 	/**
 	 * 作品详情
 	 */
-	public function play($live_id = "", $video_id = "")
+	public function play($video_id = "")
 	{
-		if($live_id){
-			$type = 'live';
-			$row = model('app\index\model\wanlshop\Live')
-				->where('id', $live_id)
-				->find();
-		}else if($video_id){
+		if($video_id){
 			$type = 'video';
 			$row = model('app\index\model\wanlshop\Video')
 				->where('video_id', $video_id)
@@ -314,18 +309,12 @@ class Find extends Wanlshop
 	        $count = 0;
 	        Db::startTrans();
 	        try {
-	            $live = [];
                 $video = [];
                 foreach ($list as $k => $row) {
-                    if($row['type'] === 'live'){
-                        $live[] = $row['live_id'];
-                    }else if($row['type'] === 'video'){
+                    if($row['type'] === 'video'){
                         $video[] = $row['video_id'];
                     }
                     $count += $row->delete();
-                }
-                foreach (model('app\index\model\wanlshop\Live')->where('id', 'in', $live)->select() as $k => $v) {
-                    $v->delete();
                 }
                 foreach (model('app\index\model\wanlshop\Video')->where('video_id', 'in', $video)->select() as $k => $v) {
                     $v->delete();
@@ -360,19 +349,13 @@ class Find extends Wanlshop
 	    $count = 0;
 	    Db::startTrans();
 	    try {
-	        $live = [];
             $video = [];
             $list = $this->model->onlyTrashed()->select();
             foreach ($list as $index => $row) {
-                if($row['type'] === 'live'){
-                    $live[] = $row['live_id'];
-                }else if($row['type'] === 'video'){
+                if($row['type'] === 'video'){
                     $video[] = $row['video_id'];
                 }
                 $count += $row->restore();
-            }
-            foreach (model('app\index\model\wanlshop\Live')->onlyTrashed()->where('id', 'in', $live)->select() as $k => $v) {
-                $v->restore();
             }
             foreach (model('app\index\model\wanlshop\Video')->onlyTrashed()->where('video_id', 'in', $video)->select() as $k => $v) {
                 $v->restore();
