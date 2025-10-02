@@ -1,50 +1,152 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+同步影响报告：
+版本：1.0.0 → 1.1.0
+修改的原则：
+  - 原则三：测试覆盖（不可协商）→ MVP 快速交付（外包模式）
+新增章节：无
+删除章节：无
+需要更新的模板：
+  ✅ .specify/templates/plan-template.md - 宪章检查章节已更新原则三
+  ✅ .specify/templates/spec-template.md - 无需宪章相关修改
+  ✅ .specify/templates/tasks-template.md - 移除强制测试要求
+  ✅ .specify/templates/agent-file-template.md - 无需宪章相关修改
+  ✅ CLAUDE.md - 已更新核心原则和质量检查清单
+项目配置更新：
+  ✅ 数据库表前缀：fa_ → grain_（配置在 .env 文件）
+  ✅ 数据库名：grainPro
+后续待办：无
+-->
 
-## Core Principles
+# GrainAdminMix 项目宪章
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+## 核心原则
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### 一、模块优先架构
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+所有新功能必须按照 FastAdmin 插件规范开发为独立模块。每个模块必须：
+- 与核心框架代码保持清晰分离
+- 包含独立的配置、控制器、模型和视图
+- 可以独立安装/卸载而不影响其他模块
+- 在 info.ini 中明确记录依赖关系
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+**理由**：模块化架构防止核心框架污染，支持选择性功能部署，并保持与 FastAdmin 上游的升级兼容性。
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### 二、后端优先开发
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+每个功能必须先完成后端实现（控制器 → 模型 → 数据库），然后再进行前端工作。后端交付物包括：
+- 符合规范的 RESTful API 端点和路由
+- 包含迁移文件的数据库架构
+- 与 Auth 系统集成的权限规则
+- 标准化格式的 API 文档
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+**理由**：ThinkPHP 的后端优先设计确保数据完整性，在 API 层强制执行安全策略，并支持多种前端实现（Web、移动端、API 消费者）。
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+### 三、MVP 快速交付（外包模式）
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+所有功能必须以最小可行产品（MVP）方式快速交付。开发重点：
+- 优先实现核心业务功能，快速验证客户需求
+- 避免过度设计和抽象，聚焦业务价值交付
+- 代码以可读性和可维护性为主，不强制单元测试
+- 通过人工测试和演示方式进行功能验收
 
-## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
+**理由**：外包项目需要快速响应客户需求变化，过度的测试覆盖会降低交付速度。人工测试结合客户验收更符合项目实际。
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+### 四、权限感知开发
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+每个控制器操作必须与 FastAdmin 的 Auth 系统集成。要求：
+- 菜单项注册到 grain_auth_rule 表
+- 在控制器构造函数或操作中进行权限检查
+- 正确配置基于角色的访问控制
+- 多租户场景下的分层权限管理
+
+**理由**：Auth 系统是 FastAdmin 安全模型的核心。绕过它会造成权限提升漏洞并破坏管理员继承模型。
+
+### 五、性能与可扩展性
+
+所有数据库查询必须针对多租户规模进行优化。标准：
+- 尽可能使用模型关联而非原始查询
+- 列表操作实现分页（默认 10 条）
+- 为频繁查询的字段添加数据库索引
+- 适当缓存配置和静态数据
+
+**理由**：多商户架构需要查询优化以防止跨租户数据泄露并确保负载下的一致性能。
+
+## 开发标准
+
+### 技术栈
+- **后端**：ThinkPHP 5.x 框架（PSR-4 规范）
+- **前端**：RequireJS + Bootstrap + AdminLTE
+- **数据库**：MySQL 5.7+ with InnoDB 引擎
+  - **数据库名**：grainPro
+  - **表前缀**：`grain_`（⚠️ 所有表必须使用此前缀）
+- **构建工具**：Grunt 用于资源编译（JS/CSS 压缩）
+- **代码风格**：PHP 遵循 PSR-2，JavaScript 遵循 eslint 配置
+
+### 文件组织
+```
+application/
+├── admin/              # 后台管理模块
+│   ├── controller/     # Auth 保护的控制器
+│   ├── model/          # 带验证的数据库模型
+│   ├── view/           # Blade 风格模板
+│   └── validate/       # 请求验证规则
+├── api/                # 公开 API 端点
+├── common/             # 共享模型、库、异常处理
+└── [自定义模块]/       # 特定功能模块
+```
+
+### 命名规范
+- 控制器：大驼峰 + `Controller` 后缀（如 `UserController`）
+- 模型：大驼峰，匹配表名（如 `AdminLog` 对应 `grain_admin_log`）
+- 数据表：蛇形命名 + `grain_` 前缀（如 `grain_user_profile`）
+- API 路由：短横线命名（如 `/api/user-profile`）
+
+⚠️ **重要**：所有数据库表必须使用 `grain_` 前缀（配置在 `.env` 文件中）。
+
+## 质量关卡
+
+### 提交前检查
+- [ ] 所有新迁移已通过全新安装测试
+- [ ] 权限规则已添加到 grain_auth_rule
+- [ ] 未绕过模型层直接查询数据库
+- [ ] 前端资源已通过 `npm run build` 编译
+- [ ] 未将敏感数据（密钥、密码）纳入版本控制
+
+### 合并前要求
+- [ ] 代码通过 PSR-2 检查（PHP_CodeSniffer）
+- [ ] 功能已通过人工测试验证
+- [ ] API 文档已更新（如有端点变更）
+- [ ] 语言文件已更新支持国际化（zh-cn + en）
+- [ ] 数据库迁移可逆（有 up/down 方法）
+
+### 部署前验证
+- [ ] 迁移前备份数据库
+- [ ] 在预发布环境测试迁移
+- [ ] 验证新规则的权限继承
+- [ ] 确认资源编译成功
+- [ ] 检查错误日志中的警告
+
+## 治理规范
+
+### 修订程序
+1. 提议的修改必须以宪章修订 PR 形式记录
+2. 修订必须包含理由和影响分析
+3. `.specify/templates/` 中受影响的模板必须更新
+4. 版本必须按照语义化版本规范递增：
+   - **主版本**：核心原则或开发工作流的破坏性变更
+   - **次版本**：新增原则或现有原则的扩展
+   - **补丁版本**：澄清说明、措辞改进、非语义修复
+
+### 合规审查
+- 所有 PR 必须在描述中引用宪章合规性
+- 计划阶段（通过 `/plan` 命令）必须包含宪章检查章节
+- 违规必须在复杂度跟踪中记录并说明理由
+- 无理由的偏离将导致 PR 被拒绝
+
+### 冲突解决
+- 宪章优先于所有其他开发实践和文档
+- 当宪章与 FastAdmin 上游模式冲突时，以宪章为准
+- 安全原则（Auth 集成、权限检查）不可协商
+- 性能标准在特定用例下可通过书面说明放宽
+
+**版本**：1.1.0 | **批准日期**：2025-10-02 | **最后修订**：2025-10-02

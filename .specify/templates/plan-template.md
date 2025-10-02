@@ -44,10 +44,53 @@
 **Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
 **Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
 
-## Constitution Check
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+## 宪章检查
+*关卡：必须在阶段0研究前通过。阶段1设计后重新检查。*
 
-[Gates determined based on constitution file]
+### 一、模块优先架构
+- [ ] 功能设计为 application/[模块名]/ 下的独立模块
+- [ ] 未修改 FastAdmin 核心文件（application/admin/controller/Index.php 等）
+- [ ] 模块依赖已在 info.ini 或 README 中记录
+- [ ] 模块可以禁用而不影响其他功能
+
+**违规说明**（如有未选中项）：
+[说明为何核心修改不可避免，如全部选中则留空]
+
+### 二、后端优先开发
+- [ ] 数据库架构在控制器逻辑之前定义
+- [ ] 模型在视图之前创建
+- [ ] API 端点在前端实现之前记录
+- [ ] Auth/权限规则在控制器设计阶段定义
+
+**违规说明**（如有未选中项）：
+[说明为何需要前端优先，如全部选中则留空]
+
+### 三、MVP 快速交付（外包模式）
+- [ ] 功能聚焦核心业务需求，避免过度设计
+- [ ] 实现方案简单直接，优先可读性和可维护性
+- [ ] 已规划人工测试和演示验收流程
+- [ ] 快速迭代方案已考虑（支持后续需求变更）
+
+**违规说明**（如有未选中项）：
+[说明为何需要复杂设计或自动化测试，如全部选中则留空]
+
+### 四、权限感知开发
+- [ ] 控制器操作受 Auth 系统检查保护
+- [ ] 已规划向 grain_auth_rule 表添加菜单项
+- [ ] 基于角色的访问控制已设计
+- [ ] 已考虑多租户权限隔离
+
+**违规说明**（如有未选中项）：
+[说明为何需要绕过权限（如公开 API），如全部选中则留空]
+
+### 五、性能与可扩展性
+- [ ] 列表操作包含分页（默认 10 条）
+- [ ] 数据库查询使用模型关联（尽可能避免原始 SQL）
+- [ ] 为频繁查询的字段规划索引
+- [ ] 为静态/配置数据定义缓存策略
+
+**违规说明**（如有未选中项）：
+[说明性能权衡，如全部选中则留空]
 
 ## Project Structure
 
@@ -216,4 +259,4 @@ directories captured above]
 - [ ] Complexity deviations documented
 
 ---
-*Based on Constitution v2.1.1 - See `/memory/constitution.md`*
+*基于宪章 v1.1.0 - 参见 `.specify/memory/constitution.md`*
