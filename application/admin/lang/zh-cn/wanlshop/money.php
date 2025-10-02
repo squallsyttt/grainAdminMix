@@ -9,7 +9,6 @@ return [
     'Memo'          => '备注',
     'Type'          => '业务类型',
     'Type pay'      => '商品交易',
-    'Type groups'   => '拼团交易',
     'Type recharge' => '充值',
     'Type withdraw' => '提现',
     'Type refund'   => '退款',
