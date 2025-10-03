@@ -167,7 +167,7 @@ class Find extends Api
 				$row->user->visible(['id','username','nickname','avatar','bio']);
 				$row->shop = model('app\api\model\wanlshop\Shop')
 					->where('user_id', $row['user_id'])
-					->field('id, user_id, avatar, shopname, bio, isself')
+					->field('id, user_id, avatar, shopname, bio')
 					->find();
 			}
 		}else{
@@ -183,7 +183,7 @@ class Find extends Api
 						$row->shop = null;
 						$shop = model('app\api\model\wanlshop\Shop')
 							->where(['user_id' => $row['user_id']])
-							->field('id, user_id, avatar, shopname, isself')
+							->field('id, user_id, avatar, shopname')
 							->find();
 						if($shop){
 							$row->shop = $shop;
@@ -239,7 +239,7 @@ class Find extends Api
 		$row->shop = null;
 		$shop = model('app\api\model\wanlshop\Shop')
 			->where(['user_id' => $row['user_id']])
-			->field('id, user_id, avatar, shopname, isself')
+			->field('id, user_id, avatar, shopname')
 			->find();
 		if($shop){
 			$row->shop = $shop;

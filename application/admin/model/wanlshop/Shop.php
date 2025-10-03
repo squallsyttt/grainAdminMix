@@ -25,7 +25,6 @@ class Shop extends Model
 
     // 追加属性
     protected $append = [
-		'isself', //追加是否为自营店
         'state_text',
 		'user_no',
         'status_text'
@@ -48,13 +47,8 @@ class Shop extends Model
     	}
     	return $user_no;
     }
-	
-	public function getIsselfAttr($value, $data)
-	{
-	    return $data['isself'];
-	}
-	
-	
+
+
     protected static function init()
     {
         self::afterInsert(function ($row) {

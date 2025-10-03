@@ -54,13 +54,13 @@ class User extends Api
 					->user->visible(['id', 'avatar', 'nickname', 'username', 'bio']);
 				$row['isFollow'] = $model
 					->where([
-						'user_no' => $row['user_no'], 
+						'user_no' => $row['user_no'],
 						'user_id' => $this->auth->id
 					])
 					->count();
 				$row['shop'] = model('app\api\model\wanlshop\Shop')
 					->where(['user_id' => $row['user']['id']])
-					->field('id, user_id, avatar, shopname, bio, isself')
+					->field('id, user_id, avatar, shopname, bio')
 					->find();
 			}else if($type === 'fans'){
 				$find = $this->getFindUser('user_id', $row['user_id']);
@@ -74,7 +74,7 @@ class User extends Api
 					->count();
 				$row['shop'] = model('app\api\model\wanlshop\Shop')
 					->where(['user_id' => $row['user']['id']])
-					->field('id, user_id, avatar, shopname, bio, isself')
+					->field('id, user_id, avatar, shopname, bio')
 					->find();
 			}
 		}
@@ -109,7 +109,7 @@ class User extends Api
 		foreach ($list as $row) {
 			$row['shop'] = model('app\api\model\wanlshop\Shop')
 				->where(['user_id' => $this->getFindUser('user_no', $row['user_no'])->user_id])
-				->field('id, user_id, shopname, avatar, state, level, city, isself')
+				->field('id, user_id, shopname, avatar, state, level, city')
 				->find();
 			$row['isFollow'] = 1;
 		}
@@ -147,7 +147,7 @@ class User extends Api
 			$row->user->visible(['id','avatar','nickname','username','bio']);
 			$row->shop = model('app\api\model\wanlshop\Shop')
 				->where(['user_id' => $row->user->id])
-				->field('id, user_id, shopname, avatar, state, level, city, isself')
+				->field('id, user_id, shopname, avatar, state, level, city')
 				->find();
 			$config = get_addon_config('wanlshop');
 			$video = true;

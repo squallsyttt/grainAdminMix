@@ -44,7 +44,7 @@ class Product extends Api
     	    ->order($sort, $order)
     	    ->paginate();
     	foreach ($list as $row) {
-    	    $row->getRelation('shop')->visible(['city', 'shopname', 'state', 'isself']);
+    	    $row->getRelation('shop')->visible(['city', 'shopname', 'state']);
     		$row->getRelation('category')->visible(['id','pid','name']);
     	}	
     	$this->success('返回成功', $list);

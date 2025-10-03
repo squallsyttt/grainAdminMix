@@ -42,7 +42,7 @@ class Chat extends Api
 			$id ? $id : ($this->error(__('非正常访问')));
 			$row = model('app\api\model\wanlshop\Shop')
 				->where(['id' => $id])
-				->field('id,user_id,shopname,avatar,state,level,city,like,isself,createtime')
+				->field('id,user_id,shopname,avatar,state,level,city,like,createtime')
 				->find();
 			if($row){
 				if($type == 'chat'){

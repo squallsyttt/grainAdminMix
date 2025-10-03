@@ -19,15 +19,9 @@ class Shop extends Model
 	
 	// 追加属性
 	protected $append = [
-		'isself', //追加是否为自营店
 		'find_user'
 	];
-	
-	public function getIsselfAttr($value, $data)
-	{
-	    return $data['isself'];
-	}
-	
+
 	// 获取店铺 发现号
 	public function getFindUserAttr($value, $data)
 	{
