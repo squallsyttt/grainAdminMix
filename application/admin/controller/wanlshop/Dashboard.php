@@ -22,7 +22,6 @@ class Dashboard extends Backend
 		$user = model('app\common\model\User');
 		$order = model('app\admin\model\wanlshop\Order');
 		$goods = model('app\admin\model\wanlshop\Goods');
-		$sku = model('app\api\model\wanlshop\GoodsSku');
 		$shop = model('app\admin\model\wanlshop\Shop');
 		$shopauth = model('app\admin\model\wanlshop\Auth');
 		$comment = model('app\admin\model\wanlshop\Comment');
@@ -46,14 +45,9 @@ class Dashboard extends Backend
 		$this->view->assign("totalDayUser", $user->whereTime('jointime', 'today')->count());
 		// 商品
 		$this->view->assign("totalGoods", $goods->count());
-		$this->view->assign("totalGoodsViews", $goods->sum('views'));
 		// 订单
 		$this->view->assign("totalOrder", $order->count());
 		$this->view->assign("paidOrder", $order->where('state','1')->count());
-		$this->view->assign("deliveredOrder", $order->where('state','2')->count());
-		$this->view->assign("receivedOrder", $order->where('state','3')->count());
-		// SKU
-		$this->view->assign("totalSku", $sku->where('stock','gt',0)->count());
 		// 评论
 		$this->view->assign("totalComment", $comment->count());
 		// 退款->field('id,shopname,state')
