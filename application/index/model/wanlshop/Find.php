@@ -32,7 +32,7 @@ class Find extends Model
     
     public function getTypeList()
     {
-        return ['new' => __('Type new'), 'video' => __('Type video'), 'live' => __('Type live'), 'want' => __('Type want'), 'activity' => __('Type activity'), 'show' => __('Type show')];
+        return ['new' => __('Type new'), 'video' => __('Type video'), 'live' => __('Type live'), 'activity' => __('Type activity'), 'show' => __('Type show')];
     }
 
 

@@ -6,7 +6,6 @@ return [
     'Type'                  => '类型',
     'Type new'              => '上新',
     'Type live'             => '直播',
-    'Type want'             => '种草',
     'Type activity'         => '活动',
     'Type show'             => '买家秀',
 	'Type video'            => '短视频',

@@ -8,7 +8,6 @@ return [
     'Type new'          => '上新',
     'Type live'         => '直播',
     'Type video'        => '短视频',
-    'Type want'         => '种草',
     'Type show'         => '买家秀',
     'Type activity'     => '活动',
     'Goods_ids'         => '商品ID',

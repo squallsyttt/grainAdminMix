@@ -31,7 +31,7 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
 						{field: 'user.avatar', title: __('User.avatar'), operate: 'LIKE', events: Table.api.events.image, formatter: Table.api.formatter.image},
 						{field: 'user.nickname', title: __('User.nickname'), operate: 'LIKE'},
 						{field: 'user_no', title: __('User_no'), operate: 'LIKE'},
-                        {field: 'type', title: __('Type'), searchList: {"new":__('Type new'),"video":__('Type video'),"want":__('Type want'),"show":__('Type show'),"activity":__('Type activity')}, formatter: Table.api.formatter.normal},
+                        {field: 'type', title: __('Type'), searchList: {"new":__('Type new'),"video":__('Type video'),"show":__('Type show'),"activity":__('Type activity')}, formatter: Table.api.formatter.normal},
                         {field: 'images', title: __('Images'), align:'left', operate: false, events: Table.api.events.image, formatter: Table.api.formatter.images},
                         {field: 'views', title: __('Views')},
                         {field: 'likes', title: __('Likes')},

@@ -9,7 +9,6 @@
 			<li class="{:$Think.get.use === 'withdraw' ? 'active' : ''}"><a href="#withdraw" data-toggle="tab">提现配置</a></li>
 			<li class="{:$Think.get.use === 'order' ? 'active' : ''}"><a href="#order" data-toggle="tab">订单配置</a></li>
 			<li class="{:$Think.get.use === 'return' ? 'active' : ''}"><a href="#return" data-toggle="tab">退货配置</a></li>
-			<li class="{:$Think.get.use === 'find' ? 'active' : ''}"><a href="#find" data-toggle="tab">发现页管理</a></li>
 			<li class="{:$Think.get.use === 'live' ? 'active' : ''}"><a href="#live" data-toggle="tab">阿里直播</a></li>
 			<li class="{:$Think.get.use === 'video' ? 'active' : ''}"><a href="#video" data-toggle="tab">阿里点播</a></li>
 			<li class="{:$Think.get.use === 'im' ? 'active' : ''}"><a href="#im" data-toggle="tab">IM即时通讯</a></li>
@@ -1029,115 +1028,6 @@
 									</td>
 								</tr>
 							</tbody>
-							<tfoot>
-								<tr>
-									<th></th>
-									<th>
-										<button type="submit" class="btn btn-success btn-embossed">确定</button>
-										<button type="reset" class="btn btn-default btn-embossed">重置</button>
-									</th>
-								</tr>
-							</tfoot>
-						</table>
-					</form>
-				</div>
-			</div>
-			<div class="tab-pane fade {:$Think.get.use === 'find' ? 'active in' : ''}" id="find">
-				<div class="widget-body no-padding">
-					<form id="ini-form" class="edit-form form-horizontal" role="form" data-toggle="validator"
-						method="POST" action="{:url('wanlshop.client/edit')}">
-						{:token()}
-						<table class="table table-striped">
-							<thead>
-								<tr>
-									<th width="15%">配置项</th>
-									<th width="85%">参数</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr>
-									<td>发现启用社交评论</td>
-									<td>
-										<div class="row">
-											<div class="col-sm-8 col-xs-12">
-												{:Form::switcher('row[config][comment_switch]', $wanlshop.config.comment_switch, ['color'=>'success', 'yes'=>'Y', 'no'=>'N'])} 
-											</div>
-											<div class="col-sm-4"></div>
-										</div>
-									</td>
-								</tr>
-								<tr>
-									<td>APP功能开关</td>
-									<td>
-										<div class="row">
-											<div class="col-sm-8 col-xs-12">
-												{:Form::checkboxs('row[find][app_switch]', ['new'=>'上新',
-												'live'=>'直播', 'video'=>'短视频（取消则关闭此功能）', 'want'=>'种草', 'show'=>'买家秀'], $wanlshop.find.app_switch)}
-											</div>
-											<div class="col-sm-4"></div>
-										</div>
-									</td>
-								</tr>
-								<tr>
-									<td>小程序功能开关</td>
-									<td>
-										<div class="row">
-											<div class="col-sm-8 col-xs-12">
-												{:Form::checkboxs('row[find][mp_switch]', ['new'=>'上新',
-												'live'=>'直播', 'video'=>'短视频（取消则关闭此功能）', 'want'=>'种草', 'show'=>'买家秀'], $wanlshop.find.mp_switch)}
-											</div>
-											<div class="col-sm-4"></div>
-										</div>
-									</td>
-								</tr>
-								<tr>
-									<td>H5功能开关</td>
-									<td>
-										<div class="row">
-											<div class="col-sm-8 col-xs-12">
-												{:Form::checkboxs('row[find][h5_switch]', ['new'=>'上新',
-												'live'=>'直播', 'video'=>'短视频（取消则关闭此功能）', 'want'=>'种草', 'show'=>'买家秀'], $wanlshop.find.h5_switch)}
-											</div>
-											<div class="col-sm-4"></div>
-										</div>
-									</td>
-								</tr>
-								<tr>
-									<td>微信内置浏览器</td>
-									<td>
-										<div class="row">
-											<div class="col-sm-8 col-xs-12">
-												{:Form::checkboxs('row[find][wechat_switch]', ['new'=>'上新',
-												'live'=>'直播', 'video'=>'短视频（取消则关闭此功能）', 'want'=>'种草', 'show'=>'买家秀'], $wanlshop.find.wechat_switch)}
-											</div>
-											<div class="col-sm-4"></div>
-										</div>
-									</td>
-								</tr>
-								<tr>
-									<td>个人发布需审核</td>
-									<td>
-										<div class="row">
-											<div class="col-sm-8 col-xs-12">
-												{:Form::switcher('row[find][personalExamine_switch]', $wanlshop.find.personalExamine_switch, ['color'=>'success', 'yes'=>'Y', 'no'=>'N'])}
-											</div>
-											<div class="col-sm-4"></div>
-										</div>
-									</td>
-								</tr>
-								<tr>
-									<td>店铺个人发布均审核</td>
-									<td>
-										<div class="row">
-											<div class="col-sm-8 col-xs-12">
-												{:Form::switcher('row[find][allExamine_switch]', $wanlshop.find.allExamine_switch, ['color'=>'success', 'yes'=>'Y', 'no'=>'N'])}
-											</div>
-											<div class="col-sm-4"></div>
-										</div>
-									</td>
-								</tr>
-							</tbody>
-
 							<tfoot>
 								<tr>
 									<th></th>

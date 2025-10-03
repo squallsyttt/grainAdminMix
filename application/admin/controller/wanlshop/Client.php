@@ -270,7 +270,7 @@ class Client extends Backend
 	{
 		// 获取配置
 		$config = get_addon_config('wanlshop');
-		// 升级种草
+		// 升级发现列表
 		$findModel = model('app\admin\model\wanlshop\Find');
 		$findList = [];
 		foreach ($findModel->where(['user_id' => 0])->select() as $vo) {

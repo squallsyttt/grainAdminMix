@@ -179,12 +179,6 @@
 									</li>
 								</ul>
 							</li>
-							<li class="treeview {$config.controllername === 'wanlshop.find' ? 'active':''}">
-								<a href="{:url('index/wanlshop/find')}">
-									<i class="fa fa-video-camera fa-fw"></i> <span>种草短视频</span> 
-									<span class="pull-right-container"><small class="label pull-right bg-red">new</small></span>
-								</a> 
-							</li>
 							<li class="treeview {$config.controllername === 'wanlshop.coupon' ? 'active':''}">
 								<a href="javascript:;">
 									<i class="fa fa-cloud fa-fw"></i> <span>营销活动</span> 
@@ -286,11 +280,6 @@
 										</a>
 										<ul class="dropdown-menu wipecache">
 											<li><a href="{:url('index/wanlshop.goods/add')}"><i class="fa fa-circle-o"></i> 发布宝贝</a></li>
-											<li class="divider"></li>
-											<li><a href="javascript:;" @click="toFind('video')"><i class="fa fa-video-camera"></i> 发布 短视频</a></li>
-											<li><a href="javascript:;" @click="toFind('new')"><i class="fa fa-hacker-news"></i> 发布 宝贝上新</a></li>
-											<li><a href="javascript:;" @click="toFind('want')"><i class="fa fa-heartbeat"></i> 发布 种草</a></li>
-											<li><a href="javascript:;" @click="toFind('show')"><i class="fa fa-users"></i> 发布 买家秀</a></li>
 										</ul>
 									</li>
 									<!-- 即时通讯  open-->

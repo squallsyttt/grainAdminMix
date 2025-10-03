@@ -92,21 +92,6 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
                                     }
 						        },
 						        {
-						            name: 'find',
-                                    title: function (row) {
-										return `${row.shopname}  店铺 种草`;
-								    },
-                                    classname: 'btn btn-xs btn-warning btn-dialog',
-                                    icon: 'fa fa-envira',
-                                    extend: 'data-area=\'["90%", "80%"]\'',
-                                    url: function (row) {
-										return `wanlshop/find?user_no=${row.user_no}`;
-								    },
-                                    callback: function (data) {
-										$(".btn-refresh").trigger("click"); //刷新数据
-                                    }
-						        },
-						        {
 						            name: 'shopsort',
                                     title: function (row) {
 										return `${row.shopname}  店铺 类目`;

@@ -48,7 +48,7 @@ class Find extends Model
 	
     public function getTypeList()
     {
-        return ['new' => __('Type new'), 'want' => __('Type want'), 'activity' => __('Type activity'), 'show' => __('Type show'), 'video' => __('Type video')];
+        return ['new' => __('Type new'), 'activity' => __('Type activity'), 'show' => __('Type show'), 'video' => __('Type video')];
     }
 
     public function getTypeTextAttr($value, $data)

@@ -36,7 +36,6 @@ define(['jquery', 'bootstrap', 'table', 'backend', 'form', 'vue'], function($, u
 							searchList: {
 								"new": __('Type new'),
 								"video": __('Type video'),
-								"want": __('Type want'),
 								"activity": __('Type activity'),
 								"show": __('Type show')
 							},
@@ -170,14 +169,6 @@ define(['jquery', 'bootstrap', 'table', 'backend', 'form', 'vue'], function($, u
 					}
 				});
 			});
-			$("#want").click(function() {
-				Fast.api.open(`wanlshop/find/add.html?type=want`, `发布种草`, {
-					area: ["390px", "720px"],
-					callback: res =>{
-						table.bootstrapTable('refresh', {});
-					}
-				});
-			});
 			$("#show").click(function() {
 				Fast.api.open(`wanlshop/find/add.html?type=show`, `发布买家秀`, {
 					area: ["390px", "720px"],
@@ -261,7 +252,6 @@ define(['jquery', 'bootstrap', 'table', 'backend', 'form', 'vue'], function($, u
 						typeList: {
 							new: '上新',
 							video: '短视频',
-							want: '种草',
 							activity: '活动',
 							show: '买家秀'
 						},
@@ -340,10 +330,6 @@ define(['jquery', 'bootstrap', 'table', 'backend', 'form', 'vue'], function($, u
 							}
 							if (params.type === 'video' && this.upload) {
 								layer.msg('请上传视频');
-								return;
-							}
-							if (params.type === 'want' && params.images.length ===0) {
-								layer.msg('请上传种草图片');
 								return;
 							}
 							if (!params.content) {

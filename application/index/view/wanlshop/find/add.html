@@ -217,24 +217,7 @@
 						placeholder="点击编辑给视频添加文案，提升曝光率获取更多赞赏~" cols="50"></textarea>
 				</div>
 			</div>
-			<div class="want" v-if="params.type === 'want'">
-				<div class="find_title">
-					<span> 上传图片 </span>
-				</div>
-				<div class="subject">
-					<div class="item" v-for="(item, index) in params.images" :key="index">
-						<img :src="cdnurl(item)">
-						<div class="closes pointer" @click="delImg(index)"> <span>x</span> </div>
-					</div>
-					<div class="item pointer" v-if="params.images.length < 9" @click="addImg">
-						<div class="text-center text">
-							<i class="fa fa-plus"></i>
-							<p>添加图片</p>
-						</div>
-					</div>
-				</div>
-			</div>
-			<div class="describe" v-if="params.type === 'new' || params.type === 'want'">
+			<div class="describe" v-if="params.type === 'new'">
 				<div class="find_title">
 					<span> <i class="fa fa-pencil-square-o"></i> {{typeList[params.type]}}文案 </span>
 				</div>
