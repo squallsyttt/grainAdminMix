@@ -19,7 +19,7 @@ return [
     'Bio'             => '店铺简介',
     'City'            => '省市',
     'Like'            => '收藏/喜欢',
-    'Score_describe'  => '宝贝描述',
+    'Score_describe'  => '商品描述',
     'Score_service'   => '卖家服务',
     'Score_logistics' => '物流服务',
     'Weigh'           => '权重',
