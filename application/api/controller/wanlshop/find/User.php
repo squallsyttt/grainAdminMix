@@ -169,10 +169,9 @@ class User extends Api
 				case 'wechat-wanlshop':
 					$video = isset($config['find']['wechat_switch']['video']);
 					$live = isset($config['find']['wechat_switch']['live']);
-					break;  
+					break;
 			}
 			$row->isVideo = $video;
-			$row->isLive = $live;
 			$this->success('返回成功', $row);
 		}
 		$this->error(__('非法请求'));

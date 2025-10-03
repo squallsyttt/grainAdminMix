@@ -29,7 +29,6 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
                         {field: 'avatar', title: __('Avatar'), events: Table.api.events.image, formatter: Table.api.formatter.image},
                         {field: 'state', title: __('State'), searchList: {"0":__('State 0'),"1":__('State 1'),"2":__('State 2')}, formatter: Table.api.formatter.normal},
                         {field: 'shopname', title: __('Shopname')},
-                        {field: 'islive', title: __('Islive'), searchList: {"1": __('Yes'), "0": __('No')}, formatter: Table.api.formatter.toggle},
 						{field: "isself",title: __("IsSelf"), searchList: {"1": __('Yes'), "0": __('No')}, formatter: Table.api.formatter.toggle},
 						{field: 'user.username', title: __('User.username'), formatter: Table.api.formatter.search},
                         {field: 'city', title: __('City')},

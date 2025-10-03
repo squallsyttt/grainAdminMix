@@ -52,10 +52,6 @@ class Shop extends Api
 				'user_id' => $this->auth->id
 			])
 			->count();
-		$row['isLive'] = model('app\api\model\wanlshop\Live')
-			->where(['shop_id' => $row['id'], 'state' => 1])
-			->field('id')
-			->find();
 		// 获取类目样式配置
 		$shopConfig = model('app\api\model\wanlshop\ShopConfig')
 			->where(['shop_id' => $row['id']])

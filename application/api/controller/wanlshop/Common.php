@@ -98,7 +98,6 @@ class Common extends Api
 			->paginate();
 		foreach ($goods as $row) {
 			$row->shop->visible(['state','shopname']);
-			$row->isLive = model('app\api\model\wanlshop\Live')->where(['shop_id' => $row['shop_id'], 'state' => 1])->field('id')->find();
 		}
 
 		$list = [

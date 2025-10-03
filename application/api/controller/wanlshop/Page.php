@@ -83,7 +83,6 @@ class Page extends Api
 			->select();
 		foreach($list as $row){
 			$row->shop->visible(['state','shopname']);
-			$row->isLive = model('app\api\model\wanlshop\Live')->where(['shop_id' => $row['shop_id'], 'state' => 1])->field('id')->find();
 		}
 		$this->success('ok', $list);
 	}

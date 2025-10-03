@@ -187,7 +187,6 @@ class Find extends Api
 							->find();
 						if($shop){
 							$row->shop = $shop;
-							$row->isLive = model('app\api\model\wanlshop\Live')->where(['shop_id' => $shop['id'], 'state' => 1])->field('id')->find();
 							$row->newGoods = model('app\api\model\wanlshop\Goods')
 								->where('shop_id', $shop['id'])
 								->whereTime('createtime', 'w') // 查询本周
@@ -244,7 +243,6 @@ class Find extends Api
 			->find();
 		if($shop){
 			$row->shop = $shop;
-			$row->isLive = model('app\api\model\wanlshop\Live')->where(['shop_id' => $shop['id'], 'state' => 1])->field('id')->find();
 			$row->newGoods = model('app\api\model\wanlshop\Goods')
 				->where('shop_id', $shop['id'])
 				->whereTime('createtime', 'w') // 查询本周

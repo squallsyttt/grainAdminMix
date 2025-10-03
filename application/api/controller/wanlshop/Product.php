@@ -46,7 +46,6 @@ class Product extends Api
     	foreach ($list as $row) {
     	    $row->getRelation('shop')->visible(['city', 'shopname', 'state', 'isself']);
     		$row->getRelation('category')->visible(['id','pid','name']);
-    		$row->isLive = model('app\api\model\wanlshop\Live')->where(['shop_id' => $row['shop_id'], 'state' => 1])->field('id')->find();
     	}	
     	$this->success('返回成功', $list);
     }
@@ -199,7 +198,6 @@ class Product extends Api
 		}
 		foreach ($goods as $row) {
 			$row->shop->visible(['state','shopname']);
-			$row->isLive = model('app\api\model\wanlshop\Live')->where(['shop_id' => $row['shop_id'], 'state' => 1])->field('id')->find();
 		}
 		$this->success('返回成功', $goods);
 	}
@@ -240,8 +238,6 @@ class Product extends Api
 			$goods['sku'] = $goods->sku;
 			// 查询SPU
 			$goods['spu'] = $goods->spu;
-			// 查询直播状态
-			$goods['isLive'] = model('app\api\model\wanlshop\Live')->where(['shop_id' => $goods['shop_id'], 'state' => 1])->field('id')->find();
 			// 查询评论
 			$goods['comment_list'] = $goods->comment_list;
 			// 获取店铺详情
