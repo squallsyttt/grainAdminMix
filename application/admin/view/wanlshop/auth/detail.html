@@ -6,7 +6,6 @@
 				{switch name="row.state"}
 					{case value="0"}<span class="label label-info">{$row.state_text}</span>{/case}
 				    {case value="1"}<span class="label label-default">{$row.state_text}</span>{/case}
-					{case value="2"}<span class="label label-danger">{$row.state_text}</span>{/case}
 				{/switch}
 			</td>
 		</tr>
@@ -40,12 +39,6 @@
 			<td>{:__('Avatar')}</td>
 			<td><a href="{$row.avatar|cdnurl|htmlentities}" target="_blank"><img class="img-sm img-center" src="{$row.avatar|cdnurl|htmlentities}"></a></td>
 		</tr>
-		{eq name="row.state" value="2"}
-		<tr>
-			<td>{:__('Trademark')}</td>
-			<td><a href="{$row.trademark|cdnurl|htmlentities}" target="_blank"><img class="img-sm img-center" src="{$row.trademark|cdnurl|htmlentities}"></a></td>
-		</tr>
-		{/eq}
 		<tr>
 			<td>{:__('Bio')}</td>
 			<td>{$row.bio|htmlentities}</td>

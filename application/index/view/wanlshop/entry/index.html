@@ -50,9 +50,8 @@
 							<label class="control-label col-xs-12 col-sm-2">{:__('店铺类型')}:</label>
 							<div class="col-xs-12 col-sm-8">
 								<div class="radio">
-									<label for="state-0"><input id="state-0" name="state" type="radio" value="0" v-model="state"> 个人</label> 
-									<label for="state-1"><input id="state-1" name="state" type="radio" value="1" v-model="state"> 企业</label> 
-									<label for="state-2"><input id="state-2" name="state" type="radio" value="2" v-model="state"> 旗舰店</label>
+									<label for="state-0"><input id="state-0" name="state" type="radio" value="0" v-model="state"> 个人</label>
+									<label for="state-1"><input id="state-1" name="state" type="radio" value="1" v-model="state"> 企业</label>
 								</div>
 							</div>
 						</div>
@@ -83,21 +82,8 @@
 						        <ul class="row list-inline plupload-preview" id="p-image"></ul>
 						    </div>
 						</div>
-						<div class="form-group" v-show="state == 2">
-							<label class="control-label col-xs-12 col-sm-2">{:__('商标证书')}:</label>
-							<div class="col-xs-12 col-sm-8">
-							    <div class="input-group">
-							        <input id="c-trademark"  class="form-control" size="50" name="trademark" type="text" value="{$entry.trademark ?? ''}">
-							        <div class="input-group-addon no-border no-padding">
-							            <span><button type="button" id="plupload-trademark" class="btn btn-danger plupload" data-input-id="c-trademark" data-mimetype="image/gif,image/jpeg,image/png,image/jpg,image/bmp" data-multiple="false" data-preview-id="p-trademark"><i class="fa fa-upload"></i> {:__('Upload')}</button></span>
-							        </div>
-							        <span class="msg-box n-right" for="c-trademark"></span>
-							    </div>
-							    <ul class="row list-inline plupload-preview" id="p-trademark"></ul>
-							</div>
-						</div>
-						
-						
+
+
 						<div class="form-group">
 							<label class="control-label col-xs-12 col-sm-2">{:__('微信')}:</label>
 							<div class="col-xs-12 col-sm-8">

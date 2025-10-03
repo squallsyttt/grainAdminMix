@@ -64,7 +64,7 @@ class Shop extends Model
     
     public function getStateList()
     {
-        return ['0' => __('State 0'), '1' => __('State 1'), '2' => __('State 2')];
+        return ['0' => __('State 0'), '1' => __('State 1')];
     }
 
     public function getStatusList()
