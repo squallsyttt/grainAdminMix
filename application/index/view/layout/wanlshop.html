@@ -168,39 +168,7 @@
 									</li>
 								</ul>
 							</li>
-							<li class="treeview {$config.controllername === 'wanlshop.coupon' ? 'active':''}">
-								<a href="javascript:;">
-									<i class="fa fa-cloud fa-fw"></i> <span>营销活动</span> 
-									<span class="pull-right-container"><i class="fa fa-angle-left"></i> </span>
-								</a>
-								<ul class="treeview-menu {$config.controllername === 'wanlshop.coupon' ? 'menu-open' : ''}" 
-								style="display: {$config.controllername === 'wanlshop.coupon' ? 'block' : 'none'};">
-									<li class="{$config.controllername.'.'.$config.actionname == 'wanlshop.coupon.index'?'active':''}">
-										<a href="{:url('index/wanlshop/coupon')}">
-											<i class="fa fa-circle-o fa-fw"></i><span>满折减包邮券</span>
-										</a>
-									</li>
-								</ul>
-							</li>
-							<li class="treeview {:in_array($config.controllername,['wanlshop.logistics']) ?'active':''}">
-								<a href="javascript:;">
-									<i class="fa fa-truck fa-fw"></i> <span>物流运费</span>
-									<span class="pull-right-container"><i class="fa fa-angle-left"></i> </span>
-								</a>
-								<ul class="treeview-menu {:in_array($config.controllername,['wanlshop.logistics']) ?'menu-open':''}" style="display: {:in_array($config.controllername,['wanlshop.logistics']) ?'block':'none'};">
-									<!-- <li class="{$config.controllername.'.'.$config.actionname == 'wanlshop.logistics.deliver'?'active':''}">
-										<a href="{:url('index/wanlshop.logistics/deliver')}">
-											<i class="fa fa-circle-o fa-fw"></i><span>发货</span>
-										</a>
-									</li> -->
-									<li class="{$config.controllername.'.'.$config.actionname == 'wanlshop.logistics.template'?'active':''}">
-										<a href="{:url('index/wanlshop.logistics/template')}">
-											<i class="fa fa-circle-o fa-fw"></i><span>运费模板</span>
-										</a>
-									</li>
-								</ul>
-							</li>
-							
+
 							<li class="treeview {:in_array($config.controllername,['wanlshop.finance']) ?'active':''}">
 								<a href="javascript:;">
 									<i class="fa fa-paypal fa-fw"></i> <span>财务管理</span>

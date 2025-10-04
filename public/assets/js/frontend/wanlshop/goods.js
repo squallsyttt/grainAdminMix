@@ -430,14 +430,6 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'vue'], function($, u
 					}
 				});
 			});
-			// 新建运费模板
-			$(document).on("click", ".btn-freight", function () {
-				Backend.api.open('wanlshop/freight/add', __('新建运费模板'), {
-					callback:function(value){
-						console.log(value);
-					}
-				});
-			});
 			// 新建店铺分类
 			$(document).on("click", ".btn-shopsort", function () {
 				Backend.api.open('wanlshop/shopsort/add', __('新建店铺分类'), {
@@ -663,14 +655,6 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'vue'], function($, u
 			// 申请品牌
 			$(document).on("click", ".btn-brand", function () {
 				Backend.api.open('wanlshop/brand/add/', __('申请品牌'), {
-					callback:function(value){
-						console.log(value);
-					}
-				});
-			});
-			// 新建运费模板
-			$(document).on("click", ".btn-freight", function () {
-				Backend.api.open('wanlshop/freight/add', __('新建运费模板'), {
 					callback:function(value){
 						console.log(value);
 					}

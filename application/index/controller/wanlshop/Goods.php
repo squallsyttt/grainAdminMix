@@ -127,7 +127,6 @@ class Goods extends Wanlshop
 	                $this->model->status = $params['status'];
 	                $this->model->content = $params['content'];
 	                $this->model->price = min($params['price']);
-	                $this->model->freight_id = $params['freight_id'];
 	                if($this->model->save()){
 	                	$result = true;
 	                }
@@ -182,8 +181,6 @@ class Goods extends Wanlshop
 	    $shop_id = $this->shop->id;
 		// 判断是否存在品牌
 		$row['brand'] = model('app\index\model\wanlshop\Brand')->where(['state' => 1])->count();
-		// 判断是否有运费模板
-		$row['freight'] = model('app\index\model\wanlshop\ShopFreight')->where('shop_id',$shop_id)->count();
 		// 判断是否有寄件人信息
 		$row['config'] = model('app\index\model\wanlshop\ShopConfig')->where('shop_id',$shop_id)->find();
 		// 打开方式
