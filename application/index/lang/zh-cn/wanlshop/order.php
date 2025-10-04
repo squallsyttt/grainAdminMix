@@ -9,7 +9,7 @@ return [
     'Express_no'            => '快递号',
     'State'                 => '订单状态',
     'State 1'               => '待支付',
-    'State 2'               => '待发货',
+    'State 2'               => '待核销',
     'State 3'               => '待收货',
     'State 4'               => '待评论',
     'State 5'               => '退款',

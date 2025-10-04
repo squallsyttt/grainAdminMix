@@ -36,7 +36,7 @@ class Order extends Model
     
     public function getStateList()
     {
-        return ['1' => __('State 1'), '2' => __('State 2'), '3' => __('State 3'), '4' => __('State 4'), '6' => __('State 6'), '7' => __('State 7')];
+        return ['2' => __('State 2'), '7' => __('State 7')];
     }
 
     public function getStatusList()

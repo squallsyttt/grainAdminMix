@@ -40,15 +40,6 @@ class Shop extends Wanlshop
 
 
     /**
-     * 品牌管理
-     */
-    public function brand()
-    {
-		$this->view->assign("stateList", model('app\index\model\wanlshop\Brand')->getStateList());
-        return $this->view->fetch('wanlshop/brand/index');
-    }
-    
-    /**
      * 店铺资料
      */
     public function profile($ids = null)
@@ -92,25 +83,7 @@ class Shop extends Wanlshop
         $this->view->assign("row", $row);
         return $this->view->fetch();
     }
-    
-    /**
-     * 图片空间
-     */
-    public function attachment()
-    {
-        $attachment = model('Attachment');
-        $this->view->assign("picCount", $attachment->where('user_id', $this->auth->id)->count());
-        $size = $attachment->where('user_id', $this->auth->id)->sum('filesize');
-        $units = array('K','Kb','M','G','T');
-        $i = 0;
-        for (; $size>=1024 && $i<count($units); $i++) {
-            $size /= 1024;
-        }
-        $this->view->assign("picSum", round($size, 2).$units[$i]);
-		$this->view->assign("mimetypeList", \app\common\model\Attachment::getMimetypeList());
-        return $this->view->fetch('wanlshop/attachment/index');
-    }
-    
+
     /**
      * 类目管理
      */

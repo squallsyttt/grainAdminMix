@@ -114,7 +114,6 @@ class Goods extends Wanlshop
 	                $spuItem = isset($params['spuItem'])?$params['spuItem']:$this->error(__('请填写销售信息-产品属性-产品规格'));
 	                // 获取自增ID
 	                $this->model->shop_id = $this->shop->id;
-	                $this->model->brand_id = $params['brand_id'];
 	                $this->model->category_id = $params['category_id'];
 					if(isset($params['attribute'])){
 						$this->model->category_attribute = json_encode($params['attribute'], JSON_UNESCAPED_UNICODE);
@@ -178,9 +177,8 @@ class Goods extends Wanlshop
 	        }
 	        $this->error(__('Parameter %s can not be empty', ''));
 	    }
+	    $row = [];
 	    $shop_id = $this->shop->id;
-		// 判断是否存在品牌
-		$row['brand'] = model('app\index\model\wanlshop\Brand')->where(['state' => 1])->count();
 		// 打开方式
 		$this->assignconfig("isdialog", IS_DIALOG);
 		$this->view->assign("row", $row);

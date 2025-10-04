@@ -177,53 +177,13 @@
 							<p style="color:#6c6c6c;font-family:verdana;margin-bottom:1px;"> (含运费：￥<%= item.pay.freight_price %>) </p>
 						</td>
 						<td class="fix-108 operation">
-							<% if(item.state == 1){ %>
-							<p>
-								<a href="javascript:;" class="searchit" data-toggle="tooltip" title="" data-field="state" data-value="<%=item.state%>" data-original-title="点击搜索 <%=item.state_text%>">
-									<span class="text-<%=labelarr[4]%>"><i class="fa fa-circle"></i> <%=item.state_text%> </span>
-								</a>
-							</p>
-							<p><a href="javascript:;" class="detail" data-id="<%=item.id%>">订单详情</a> </p>
-							<% }else if(item.state == 2){ %>
+							<% if(item.state == 2){ %>
 							<p>
 								<a href="javascript:;" class="searchit" data-toggle="tooltip" title="" data-field="state" data-value="<%=item.state%>" data-original-title="点击搜索 <%=item.state_text%>">
 									<span class="text-<%=labelarr[0]%>"><i class="fa fa-circle"></i> <%=item.state_text%></span>
 								</a>
 							</p>
 							<p><a href="javascript:;" class="detail" data-id="<%=item.id%>">订单详情</a> </p>
-							<% }else if(item.state == 3){ %>
-							<p>
-								<a href="javascript:;" class="searchit" data-toggle="tooltip" title="" data-field="state" data-value="<%=item.state%>" data-original-title="点击搜索 <%=item.state_text%>">
-									<span class="text-<%=labelarr[2]%>"><i class="fa fa-circle"></i> <%=item.state_text%></span>
-								</a>
-							</p>
-							<p><a href="javascript:;" class="detail" data-id="<%=item.id%>">订单详情</a> </p>
-							<p><a href="javascript:;" class="kuaidisub" data-id="<%=item.id%>">查看物流</a> </p>
-							<% }else if(item.state == 4){ %>
-							<p>
-								<a href="javascript:;" class="searchit" data-toggle="tooltip" title="" data-field="state" data-value="<%=item.state%>" data-original-title="点击搜索 <%=item.state_text%>">
-									<span class="text-<%=labelarr[1]%>"><i class="fa fa-circle"></i> <%=item.state_text%></span>
-								</a>
-							</p>
-							<p><a href="javascript:;" class="detail" data-id="<%=item.id%>">订单详情</a> </p>
-							<p><a href="javascript:;" class="kuaidisub" data-id="<%=item.id%>">查看物流</a> </p>
-							<% }else if(item.state == 5){ %>
-							<p>
-								<a href="javascript:;" class="searchit" data-toggle="tooltip" title="" data-field="state" data-value="<%=item.state%>" data-original-title="点击搜索 <%=item.state_text%>">
-									<span class="text-<%=labelarr[0]%>"><i class="fa fa-circle"></i> <%=item.state_text%></span>
-								</a>
-							</p>
-							<p><a href="javascript:;" class="detail" data-id="<%=item.id%>">订单详情</a> </p>
-							<p><a href="javascript:;" class="kuaidisub" data-id="<%=item.id%>">查看物流</a> </p>
-							<% }else if(item.state == 6){ %>
-							<p>
-								<a href="javascript:;" class="searchit" data-toggle="tooltip" title="" data-field="state" data-value="<%=item.state%>" data-original-title="点击搜索 <%=item.state_text%>">
-									<span class="text-<%=labelarr[3]%>"><i class="fa fa-circle"></i> <%=item.state_text%></span>
-								</a>
-							</p>
-							<p><a href="javascript:;" class="detail" data-id="<%=item.id%>">订单详情</a> </p>
-							<p><a href="javascript:;" class="kuaidisub" data-id="<%=item.id%>">查看物流</a> </p>
-							<p><a href="javascript:;" class="comment" data-id="<%=item.id%>">查看评论</a> </p>
 							<% }else if(item.state == 7){ %>
 							<p>
 								<a href="javascript:;" class="searchit" data-toggle="tooltip" title="" data-field="state" data-value="<%=item.state%>" data-original-title="点击搜索 <%=item.state_text%>">

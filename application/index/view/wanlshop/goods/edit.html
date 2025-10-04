@@ -161,19 +161,6 @@
 											</div>
 											
 											<div class="form-group">
-											    <label class="control-label col-xs-12 col-sm-2">{:__('商品品牌')}:</label>
-											    <div class="col-xs-12 col-sm-8">
-													<div class="input-group">
-														<input id="c-brand_id" data-rule="required"
-														data-source="wanlshop/brand/selectpage"
-														class="form-control selectpage"
-														name="row[brand_id]"
-														type="text" placeholder="点击选择商品品牌" value="{$row.brand_id|htmlentities}">
-														<div class="input-group-addon no-border no-padding">
-															<span><button type="button" class="btn btn-danger btn-brand">{:__('申请品牌')}</button></span>
-														</div>
-													</div>
-											    </div>
 											</div>
 											
 											<div class="form-group" v-if="attributeData.length != 0">
