@@ -37,15 +37,8 @@ class Shop extends Wanlshop
         $tree->init(collection($category->where(['type' => 'goods'])->order('weigh desc,id desc')->field('id,pid,type,name,name_spacer')->select())->toArray(), 'pid');
         $this->assignconfig('pageCategory', $tree->getTreeList($tree->getTreeArray(0), 'name_spacer'));
     }
-    
-    /**
-     * 类目管理
-     */
-    public function index()
-    {
-        return $this->view->fetch('wanlshop/page/index');
-    }
-	
+
+
     /**
      * 品牌管理
      */
