@@ -107,12 +107,10 @@
 		color: #777;
 	}
 </style>
-{if condition="($row.brand == 0) OR empty($row.config.sendPhoneNum) OR empty($row.config.returnPhoneNum)"}
+{if condition="($row.brand == 0)"}
 <div class="alert alert-danger-light">
 	<strong>暂不可发布商品：</strong>
 	{in name="row.brand" value="0"}<p> 系统中没有任何品牌，请到【总后台】> 多用户商城 > 商品管理 > 品牌管理添加。</p>{/in}
-	{empty name="row.config.sendPhoneNum"}<p> 尚未填写完整 "寄件人信息"，请 <a class="btn-send" href="#">点击填写</a> 寄件人信息。</p>{/empty}
-	{empty name="row.config.returnPhoneNum"}<p> 尚未填写完整 "退货信息"，请 <a class="btn-return" href="#">点击填写</a> 退货信息。</p>{/empty}
 </div>
 {/if}
 <div class="panel panel-default panel-intro">

@@ -181,8 +181,6 @@ class Goods extends Wanlshop
 	    $shop_id = $this->shop->id;
 		// 判断是否存在品牌
 		$row['brand'] = model('app\index\model\wanlshop\Brand')->where(['state' => 1])->count();
-		// 判断是否有寄件人信息
-		$row['config'] = model('app\index\model\wanlshop\ShopConfig')->where('shop_id',$shop_id)->find();
 		// 打开方式
 		$this->assignconfig("isdialog", IS_DIALOG);
 		$this->view->assign("row", $row);

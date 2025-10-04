@@ -72,12 +72,7 @@ class Entry extends Frontend
 				$shop->description = $row['bio'];
 				$shop->city = $row['city'];
 				$shop->verify = $verify;
-				// 新增店铺配置
-				if($shop->save()){
-					$config = model('app\index\model\wanlshop\ShopConfig');
-					$config->shop_id = $shop->id;
-					$config->save();
-				}
+				$shop->save();
 			}
 			$this->success();
 			// $result ? $this->success() : $this->error(__('提交失败'));

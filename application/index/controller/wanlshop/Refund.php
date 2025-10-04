@@ -229,16 +229,7 @@ class Refund extends Wanlshop
 				$refund_status = 2;
 				$data['state'] = 1; // 先同意退款，还需要买家继续退货
 				$data['agreetime'] = time(); // 卖家同意 时间
-				// 退货地址
-				$shopConfig = model('app\index\model\wanlshop\ShopConfig')
-					->where(['shop_id' => $this->shop->id])
-					->field('returnAddr,returnName,returnPhoneNum')
-					->find();
-				// 添加添加判断
-				if(!$shopConfig['returnAddr']){
-					$error = '请在店铺配置，先填写退货信息！';
-				}
-				$refundLog = '卖家同意退货申请，退货地址：'.$shopConfig['returnName'].'，'.$shopConfig['returnPhoneNum'].'，'.$shopConfig['returnAddr'];
+				$refundLog = '卖家同意退货申请';
 				// 推送标题
 				$pushLog = '卖家同意退货';
 				
