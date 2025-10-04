@@ -50,10 +50,6 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'template', 'jquery-j
 			$(document).on("click", ".refund[data-id]", function () {
 			    Backend.api.open('wanlshop/refund/detail/ids/' + $(this).data('id'), __('查看退款'));
 			});
-			// 查看评论
-			$(document).on("click", ".comment[data-id]", function () {
-			    Backend.api.open('wanlshop/comment/detail/order_id/' + $(this).data('id'), __('查看评论'));
-			});
 			// 查看退款
 			$(document).on("click", ".btn-selected", function () {
 			    Backend.api.open('wanlshop/refund/detail/order_id/' + $(this).data('id'), __('查看退款'));

@@ -24,7 +24,6 @@ class Dashboard extends Backend
 		$goods = model('app\admin\model\wanlshop\Goods');
 		$shop = model('app\admin\model\wanlshop\Shop');
 		$shopauth = model('app\admin\model\wanlshop\Auth');
-		$comment = model('app\admin\model\wanlshop\Comment');
 		$refund = model('app\admin\model\wanlshop\Refund');
 		$withdraw = model('app\api\model\wanlshop\Withdraw');
 		$moneylog = model('app\common\model\MoneyLog');
@@ -48,14 +47,12 @@ class Dashboard extends Backend
 		// 订单
 		$this->view->assign("totalOrder", $order->count());
 		$this->view->assign("paidOrder", $order->where('state','1')->count());
-		// 评论
-		$this->view->assign("totalComment", $comment->count());
 		// 退款->field('id,shopname,state')
 		$this->view->assign("totalRefund", $refund->where('state','gt','4,5')->count());
 		// 提现
 		$this->view->assign("initiateWithdraw", $withdraw->count());
 		// 资金统计
-		$MoneyPaySum = $MoneyLogDayPay = $MoneyLogDayRecharge = 0;
+		$MoneyPaySum = $MoneyLogDayPay = $MoneyLogDayVerify = 0;
 		foreach ($moneylog->where('type','in',['pay','recharge'])->select() as $vo) {
 			$money = abs(floatval($vo['money']));
 			// 统计总额
@@ -66,14 +63,20 @@ class Dashboard extends Backend
 			if(date("Ymd", $vo['createtime']) == date("Ymd")){
 				if($vo['type'] == 'pay'){
 					$MoneyLogDayPay += $money;
-				}else if($vo['type'] == 'recharge'){
-					$MoneyLogDayRecharge += $money;
 				}
 			}
 		}
+		// 今日核销金额（待核销订单金额）
+		$prefix = Config::get('database.prefix');
+		$MoneyLogDayVerify = model('app\admin\model\wanlshop\Pay')
+			->alias('pay')
+			->join($prefix.'wanlshop_order order', 'pay.order_id = order.id')
+			->where('order.state', '2')
+			->whereTime('order.createtime', 'today')
+			->sum('pay.price');
 		$this->view->assign("MoneyPaySum", $MoneyPaySum);
 		$this->view->assign("MoneyLogDayPay", $MoneyLogDayPay);
-		$this->view->assign("MoneyLogDayRecharge", $MoneyLogDayRecharge);
+		$this->view->assign("MoneyLogDayVerify", $MoneyLogDayVerify ?: 0);
 		// 热销TOP10
 		$this->view->assign("goodsTopList", $goods->order('sales desc')->limit(10)->select());
 		

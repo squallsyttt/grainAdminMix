@@ -327,14 +327,7 @@ class Order extends Wanlshop
         return $this->view->fetch();
     }
     
-    /**
-     * 评论管理
-     */
-    public function comment()
-    {
-        return $this->view->fetch('wanlshop/comment/index');
-    }
-	
+
 	/**
 	 * 订单推送消息（方法内使用）
 	 * 
