@@ -88,7 +88,7 @@ class Goods extends Wanlshop
     }
     
     /**
-     * 仓库中的宝贝
+     * 仓库中的商品
      */
     public function stock()
     {

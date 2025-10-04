@@ -111,7 +111,7 @@ class Order extends Wanlshop
 		switch ($row['state']) {
 			case 1:
 				$express = [
-					'context' => '付款后，即可将宝贝发出',
+					'context' => '付款后，即可将商品发出',
 					'status' => '尚未付款',
 					'time' => date('Y-m-d H:i:s', $row['createtime'])
 				];

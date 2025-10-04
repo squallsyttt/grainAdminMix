@@ -123,23 +123,23 @@
 							</li>
 							<li class="treeview {:in_array($config.controllername,['wanlshop.goods'])?'active':''}">
 								<a href="javascript:;">
-									<i class="fa fa-shopping-bag fa-fw"></i> <span>宝贝管理</span>
+									<i class="fa fa-shopping-bag fa-fw"></i> <span>商品管理</span>
 									<span class="pull-right-container"><i class="fa fa-angle-left"></i> </span>
 								</a>
 								<ul class="treeview-menu {:in_array($config.controllername,['wanlshop.goods'])?'menu-open':''}" style="display: {:in_array($config.controllername,['wanlshop.goods'])?'block':'none'};">
 									<li class="{$config.controllername.'.'.$config.actionname == 'wanlshop.goods.add'?'active':''}">
 										<a href="{:url('index/wanlshop.goods/add')}">
-											<i class="fa fa-circle-o fa-fw"></i><span>发布宝贝</span>
+											<i class="fa fa-circle-o fa-fw"></i><span>发布商品</span>
 										</a>
 									</li>
 									<li class="{$config.controllername.'.'.$config.actionname == 'wanlshop.goods.index'?'active':''}">
 										<a href="{:url('index/wanlshop.goods/index')}">
-											<i class="fa fa-circle-o fa-fw"></i><span>出售中的宝贝</span>
+											<i class="fa fa-circle-o fa-fw"></i><span>出售中的商品</span>
 										</a>
 									</li>
 									<li class="{$config.controllername.'.'.$config.actionname == 'wanlshop.goods.stock'?'active':''}">
 										<a href="{:url('index/wanlshop.goods/stock')}">
-											<i class="fa fa-circle-o fa-fw"></i><span>仓库中的宝贝</span>
+											<i class="fa fa-circle-o fa-fw"></i><span>仓库中的商品</span>
 										</a>
 									</li>
 								</ul>
@@ -273,7 +273,7 @@
 											<i class="fa fa-paper-plane margin-r-5"></i>
 										</a>
 										<ul class="dropdown-menu wipecache">
-											<li><a href="{:url('index/wanlshop.goods/add')}"><i class="fa fa-circle-o"></i> 发布宝贝</a></li>
+											<li><a href="{:url('index/wanlshop.goods/add')}"><i class="fa fa-circle-o"></i> 发布商品</a></li>
 										</ul>
 									</li>
 									<!-- 即时通讯  open-->

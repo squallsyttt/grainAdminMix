@@ -67,7 +67,7 @@ class Goods extends Model
 
     public function getStatusList()
     {
-        return ['normal' => __('出售中宝贝'), 'hidden' => __('仓库中宝贝')];
+        return ['normal' => __('出售中商品'), 'hidden' => __('仓库中商品')];
     }
 
 
