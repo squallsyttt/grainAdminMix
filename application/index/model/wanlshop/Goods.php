@@ -128,12 +128,6 @@ class Goods extends Model
 	{
 	    return $this->belongsTo('app\index\model\wanlshop\Category', 'category_id', 'id', [], 'LEFT')->setEagerlyType(0);
 	}
-	
-	
-	public function shopsort()
-	{
-	    return $this->belongsTo('app\index\model\wanlshop\ShopSort', 'shop_category_id', 'id', [], 'LEFT')->setEagerlyType(0);
-	}
-	
-	
+
+
 }

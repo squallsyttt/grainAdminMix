@@ -54,20 +54,19 @@ class Goods extends Wanlshop
             }
             list($where, $sort, $order, $offset, $limit) = $this->buildparams();
             $total = $this->model
-                ->with(['category','shopsort'])
+                ->with(['category'])
                 ->where($where)
                 ->order($sort, $order)
                 ->count();
-    
+
             $list = $this->model
-                ->with(['category','shopsort'])
+                ->with(['category'])
                 ->where($where)
                 ->order($sort, $order)
                 ->limit($offset, $limit)
                 ->select();
             foreach ($list as $row) {
                 $row->getRelation('category')->visible(['name']);
-                $row->getRelation('shopsort')->visible(['name']);
             }
             $list = collection($list)->toArray();
             $result = array("total" => $total, "rows" => $list);
@@ -127,7 +126,6 @@ class Goods extends Wanlshop
 	                $this->model->stock = $params['stock'];
 	                $this->model->status = $params['status'];
 	                $this->model->content = $params['content'];
-	                $this->model->shop_category_id = $params['shop_category_id'];
 	                $this->model->price = min($params['price']);
 	                $this->model->freight_id = $params['freight_id'];
 	                if($this->model->save()){
@@ -184,8 +182,6 @@ class Goods extends Wanlshop
 	    $shop_id = $this->shop->id;
 		// 判断是否存在品牌
 		$row['brand'] = model('app\index\model\wanlshop\Brand')->where(['state' => 1])->count();
-		// 判断是否有店铺分类
-		$row['shopsort'] = model('app\index\model\wanlshop\ShopSort')->where('shop_id',$shop_id)->count();
 		// 判断是否有运费模板
 		$row['freight'] = model('app\index\model\wanlshop\ShopFreight')->where('shop_id',$shop_id)->count();
 		// 判断是否有寄件人信息

@@ -107,12 +107,11 @@
 		color: #777;
 	}
 </style>
-{if condition="($row.brand == 0) OR ($row.shopsort == 0) OR ($row.freight == 0) OR empty($row.config.sendPhoneNum) OR empty($row.config.returnPhoneNum)"}
+{if condition="($row.brand == 0) OR ($row.freight == 0) OR empty($row.config.sendPhoneNum) OR empty($row.config.returnPhoneNum)"}
 <div class="alert alert-danger-light">
 	<strong>暂不可发布商品：</strong>
-	{in name="row.brand" value="0"}<p> 系统中没有任何品牌，请到【总后台】> 多用户商城 > 商品管理 > 品牌管理添加。</p>{/in} 
-	{in name="row.shopsort" value="0"}<p> 尚未创建 “店铺分类”，请 <a class="btn-shopsort" href="#">点击创建</a>。</p>{/in}
-	{in name="row.freight" value="0"}<p> 尚未创建 “运费模板”，请 <a class="btn-freight" href="#">点击创建</a>。</p>{/in}
+	{in name="row.brand" value="0"}<p> 系统中没有任何品牌，请到【总后台】> 多用户商城 > 商品管理 > 品牌管理添加。</p>{/in}
+	{in name="row.freight" value="0"}<p> 尚未创建 "运费模板"，请 <a class="btn-freight" href="#">点击创建</a>。</p>{/in}
 	{empty name="row.config.sendPhoneNum"}<p> 尚未填写完整 “寄件人信息”，请 <a class="btn-send" href="#">点击填写</a> 寄件人信息。</p>{/empty}
 	{empty name="row.config.returnPhoneNum"}<p> 尚未填写完整 “退货信息”，请 <a class="btn-return" href="#">点击填写</a> 退货信息。</p>{/empty}
 </div>
@@ -379,26 +378,6 @@
 											<label class="control-label col-xs-12 col-sm-2">{:__('Content')}:</label>
 											<div class="col-xs-12 col-sm-8">
 												<textarea id="c-content" data-rule="required" class="form-control editor" rows="5" name="row[content]" cols="50"></textarea>
-											</div>
-										</div>
-										<div class="form-group">
-											<label class="control-label col-xs-12 col-sm-2">{:__('店铺中分类')}:</label>
-											<div class="col-xs-12 col-sm-8">
-												<div class="input-group">
-													<input id="c-shop_category_id" data-rule="required"
-													data-source="wanlshop/shopsort"
-													data-params='{"isTree":1}'
-													data-multiple="true"
-													data-pagination="true"
-													data-page-size="1"
-													class="form-control selectpage"
-													name="row[shop_category_id]"
-													type="text"
-													placeholder="点击选择店铺分类">
-													<div class="input-group-addon no-border no-padding">
-														<span><button type="button" class="btn btn-danger btn-shopsort" >{:__('新建分类')}</button></span>
-													</div>
-												</div>
 											</div>
 										</div>
 									</div>
