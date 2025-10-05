@@ -151,7 +151,7 @@ class Order extends Wanlshop
 			    	}
 				}
 				$express = [
-					'status' => '已发货',
+					'status' => '已核销',
 					'context' => '包裹正在等待快递小哥揽收~',
 					'time' => date('Y-m-d H:i:s', $row['delivertime'])
 				];
@@ -199,9 +199,9 @@ class Order extends Wanlshop
 		return $this->view->fetch();
 	}
 	
-    
+
     /**
-     * 打印发货单 1.1.2升级
+     * 打印核销单 1.1.2升级
      */
     public function invoice($ids = null)
     {
@@ -227,9 +227,9 @@ class Order extends Wanlshop
         $this->view->assign("row", $list);
         return $this->view->fetch();
     }
-    
+
     /**
-     * 发货 & 批量发货
+     * 核销 & 批量核销
      */
     public function delivery($ids = null)
     {
@@ -260,10 +260,10 @@ class Order extends Wanlshop
         if ($this->request->isAjax()) {
             $request = $this->request->post();
             if (!array_key_exists("order", $request['row'])) {
-                $this->success(__('没有发现可以发货订单~'));
+                $this->success(__('没有发现可以核销订单~'));
             }
 			if(!$this->wanlchat->isWsStart()){
-				$this->error('平台未启动IM即时通讯服务，暂时不可以发货');
+				$this->error('平台未启动IM即时通讯服务，暂时不可以核销');
 			}
             $config = get_addon_config('wanlshop');
             $ehund = new Ehund($config['kuaidi']['secretKey'], $config['ini']['appurl'].$config['kuaidi']['callbackUrl']);
@@ -298,31 +298,31 @@ class Order extends Wanlshop
                     ];
                 }
 				// 推送消息
-				$this->pushOrder($id,'已发货');
+				$this->pushOrder($id,'已核销');
             }
-			// 使用事务 1.1.2升级
-			$result = false;
-			Db::startTrans();
-			try {
-			  	$result = $this->model->saveAll($order);
-			  	// 写入快递订阅列表
-			  	if ($express) model('app\index\model\wanlshop\KuaidiSub')->saveAll($express);
-				Db::commit();
-			} catch (PDOException $e) {
-			    Db::rollback();
-			    $this->error($e->getMessage());
-			} catch (Exception $e) {
-			    Db::rollback();
-			    $this->error($e->getMessage());
-			}
-			// 判断是否支付成功
-			if($result){
-				$this->success();
-			}else{
-				$this->error('网络异常，发货失败');
-			}
+		// 使用事务 1.1.2升级
+		$result = false;
+		Db::startTrans();
+		try {
+		  	$result = $this->model->saveAll($order);
+		  	// 写入快递订阅列表
+		  	if ($express) model('app\index\model\wanlshop\KuaidiSub')->saveAll($express);
+			Db::commit();
+		} catch (PDOException $e) {
+		    Db::rollback();
+		    $this->error($e->getMessage());
+		} catch (Exception $e) {
+		    Db::rollback();
+		    $this->error($e->getMessage());
+		}
+		// 判断是否支付成功
+		if($result){
+			$this->success();
+		}else{
+			$this->error('网络异常，核销失败');
+		}
         }
-        $this->view->assign("lists", $lists); //可以发货
+        $this->view->assign("lists", $lists); //可以核销
         $this->view->assign("data", $data);
         return $this->view->fetch();
     }
@@ -330,11 +330,11 @@ class Order extends Wanlshop
 
 	/**
 	 * 订单推送消息（方法内使用）
-	 * 
+	 *
 	 * @param string order_id 订单ID
 	 * @param string state 状态
 	 */
-	private function pushOrder($order_id = 0, $state = '已发货')
+	private function pushOrder($order_id = 0, $state = '已核销')
 	{
 		$order = $this->model->get($order_id);
 		$orderGoods = model('app\index\model\wanlshop\OrderGoods')

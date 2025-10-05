@@ -64,20 +64,20 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'template', 'jquery-j
 					isOnline: 1
 				}, 'fun');
 			});
-			// 发货 & 批量发货
+			// 核销 & 批量核销
 			$(document).on("click", ".btn-delivery", function () {
 				if($(this).data('id')){
-					Backend.api.open('wanlshop/order/delivery/ids/' + $(this).data('id'), __('发货'),{area:['1000px', '700px']});
+					Backend.api.open('wanlshop/order/delivery/ids/' + $(this).data('id'), __('核销'),{area:['1000px', '700px']});
 				}else{
-					Backend.api.open('wanlshop/order/delivery/ids/' + Table.api.selectedids(table), __('批量发货'),{area:['1000px', '700px']});
+					Backend.api.open('wanlshop/order/delivery/ids/' + Table.api.selectedids(table), __('批量核销'),{area:['1000px', '700px']});
 				}
 			});
 			// 打印 & 批量打印订单 自动关闭窗口parent.Layer.closeAll();
 			$(document).on("click", ".btn-invoice", function () {
 				if($(this).data('id')){
-					Backend.api.open('wanlshop/order/invoice/ids/' + $(this).data('id'), __('查看发货单'),{area:['1100px', '750px']});
+					Backend.api.open('wanlshop/order/invoice/ids/' + $(this).data('id'), __('查看核销单'),{area:['1100px', '750px']});
 				}else{
-					Backend.api.open('wanlshop/order/invoice/ids/' + Table.api.selectedids(table), __('批量查看发货单'),{area:['1100px', '750px']});
+					Backend.api.open('wanlshop/order/invoice/ids/' + Table.api.selectedids(table), __('批量查看核销单'),{area:['1100px', '750px']});
 				}
 			});
 			// 查询物流状态

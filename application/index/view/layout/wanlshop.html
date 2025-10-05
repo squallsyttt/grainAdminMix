@@ -162,12 +162,7 @@
 								<ul class="treeview-menu {:in_array($config.controllername,['wanlshop.finance']) ?'menu-open':''}" style="display: {:in_array($config.controllername,['wanlshop.finance']) ?'block':'none'};">
 									<li class="{$config.controllername.'.'.$config.actionname == 'wanlshop.finance.bill'?'active':''}">
 										<a href="{:url('index/wanlshop.finance/bill')}">
-											<i class="fa fa-circle-o fa-fw"></i><span>商家对账单</span>
-										</a>
-									</li>
-									<li class="{$config.controllername.'.'.$config.actionname == 'wanlshop.finance.withdraw'?'active':''}">
-										<a href="{:url('index/wanlshop.finance/withdraw')}">
-											<i class="fa fa-circle-o fa-fw"></i><span>商家提现</span>
+											<i class="fa fa-circle-o fa-fw"></i><span>对账明细</span>
 										</a>
 									</li>
 								</ul>

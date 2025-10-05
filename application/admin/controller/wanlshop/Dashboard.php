@@ -25,7 +25,6 @@ class Dashboard extends Backend
 		$shop = model('app\admin\model\wanlshop\Shop');
 		$shopauth = model('app\admin\model\wanlshop\Auth');
 		$refund = model('app\admin\model\wanlshop\Refund');
-		$withdraw = model('app\api\model\wanlshop\Withdraw');
 		$moneylog = model('app\common\model\MoneyLog');
 		// 处理POST
 		if ($this->request->isPost()) {
@@ -49,8 +48,6 @@ class Dashboard extends Backend
 		$this->view->assign("paidOrder", $order->where('state','1')->count());
 		// 退款->field('id,shopname,state')
 		$this->view->assign("totalRefund", $refund->where('state','gt','4,5')->count());
-		// 提现
-		$this->view->assign("initiateWithdraw", $withdraw->count());
 		// 资金统计
 		$MoneyPaySum = $MoneyLogDayPay = $MoneyLogDayVerify = 0;
 		foreach ($moneylog->where('type','in',['pay','recharge'])->select() as $vo) {

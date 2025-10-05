@@ -99,9 +99,9 @@
 				<div class="widget-body no-padding">
 					<div id="toolbar" class="toolbar">
 						<a href="javascript:;" class="btn btn-primary btn-refresh" title="{:__('Refresh')}" ><i class="fa fa-refresh"></i> </a>
-						<a class="btn btn-info btn-disabled disabled btn-invoice" href="javascript:;"><i class="fa fa-leaf"></i> 查看发货单</a>
+						<a class="btn btn-info btn-disabled disabled btn-invoice" href="javascript:;"><i class="fa fa-leaf"></i> 查看待核销单</a>
 						<!-- <a class="btn btn-success btn-disabled disabled btn-express" href="javascript:;"><i class="fa fa-leaf"></i> 电子面单云打印</a> -->
-						<a class="btn btn-danger btn-disabled disabled btn-delivery" href="javascript:;"><i class="fa fa-leaf"></i> 批量发货</a>
+						<a class="btn btn-danger btn-disabled disabled btn-delivery" href="javascript:;"><i class="fa fa-leaf"></i> 批量核销</a>
 						<!-- <a class="btn btn-warning btn-recyclebin btn-dialog" href="wanlshop/order/recyclebin" title="{:__('Recycle bin')}"><i class="fa fa-recycle"></i> {:__('Recycle bin')}</a> -->
 					</div>
 					<table id="table" data-show-export="false" data-show-toggle="false" data-show-columns="false" class="table" width="100%"></table>
@@ -201,8 +201,8 @@
 								<a href="javascript:;" class="btn btn-xs btn-<%=labelarr[2]%> btn-selected" data-toggle="tooltip" title="查看退款" data-id="<%=item.id%>"><i class="fa fa-eye"></i></a>
 							<% }else{ %>
 								<% if(item.state == 2){ %>
-									<a href="javascript:;" class="btn btn-xs btn-<%=labelarr[4]%> btn-delivery" data-toggle="tooltip" title="发货" data-id="<%=item.id%>"><i class="fa fa-truck"></i></a>
-									<a href="javascript:;" class="btn btn-xs btn-<%=labelarr[3]%> btn-invoice" data-toggle="tooltip" title="打印出库单" data-id="<%=item.id%>"><i class="fa fa-print"></i></a>
+									<a href="javascript:;" class="btn btn-xs btn-<%=labelarr[4]%> btn-delivery" data-toggle="tooltip" title="核销" data-id="<%=item.id%>"><i class="fa fa-truck"></i></a>
+									<a href="javascript:;" class="btn btn-xs btn-<%=labelarr[3]%> btn-invoice" data-toggle="tooltip" title="打印核销单" data-id="<%=item.id%>"><i class="fa fa-print"></i></a>
 								<% } %>
 							<% } %>
 						</td>

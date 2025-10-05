@@ -57,7 +57,7 @@
 					<td style="text-align: center; vertical-align: middle;">{$order.address.name}</td>
 					<td style="text-align: center; vertical-align: middle;">{$order.address.mobile}</td>
 					<td style="vertical-align: middle;">{$order.address.address}</td>
-					<td style="text-align: center; vertical-align: middle;"><input class="form-control" type="text" value="" placeholder="此订单不可发货 填单" disabled></td>
+					<td style="text-align: center; vertical-align: middle;"><input class="form-control" type="text" value="" placeholder="此订单不可核销" disabled></td>
 				</tr>
 				{/volist}
 			</tbody>
@@ -65,7 +65,7 @@
 	</div>
 
 	<!-- <div class="form-group">
-		<label for="shopname" class="control-label">设置订单: <span>（开启后将所选订单设置为发货）</span></label>
+		<label for="shopname" class="control-label">设置订单: <span>（开启后将所选订单设置为核销）</span></label>
 		<p>{:Form::switcher('row[setorder]', '0', ['color'=>'info'])}</p>
 	</div> -->
 
