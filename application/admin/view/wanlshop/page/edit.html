@@ -1,6 +1,73 @@
 <link href="__CDN__/assets/addons/wanlshop/css/appUI.css?v={$site['version']}" rel="stylesheet">
 <link href="__CDN__/assets/addons/wanlshop/css/page.css?v={$site['version']}" rel="stylesheet">
 <link href="//at.alicdn.com/t/font_1394144_afdog2ap4uo.css?v={$site['version']}" rel="stylesheet">
+<style>
+/* 简化版组件列表样式 */
+.component-list-wrapper {
+	padding: 15px;
+	background: #f5f5f5;
+	min-height: 400px;
+}
+.component-sortable-list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.component-item-card {
+	background: #fff;
+	border: 2px solid #e0e0e0;
+	border-radius: 4px;
+	margin-bottom: 10px;
+	padding: 12px 15px;
+	cursor: pointer;
+	transition: all 0.3s ease;
+}
+.component-item-card:hover {
+	border-color: #3c8dbc;
+	box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.component-item-card.active {
+	border-color: #00a65a;
+	background: #f0f9ff;
+	box-shadow: 0 2px 12px rgba(0,166,90,0.2);
+}
+.component-item-header {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+.drag-handle {
+	color: #999;
+	cursor: move;
+	font-size: 16px;
+}
+.drag-handle:hover {
+	color: #333;
+}
+.component-info {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+.component-info strong {
+	font-size: 14px;
+	color: #333;
+}
+.component-info small {
+	font-size: 12px;
+	color: #999;
+}
+.empty-component-tip {
+	text-align: center;
+	padding: 60px 20px;
+	color: #999;
+}
+.empty-component-tip p {
+	margin-top: 15px;
+	font-size: 14px;
+}
+</style>
 <div class="panel panel-default panel-intro" id="app" v-cloak>
 	<div class="panel-body" style="padding: 0;">
 		<div id="myTabContent" class="tab-content">
@@ -18,229 +85,33 @@
 									</div>
 								</div>
 							</div>
-							<!-- 组件预览区域 -->
+							<!-- 组件列表区域 -->
 							<div class="frame">
-								<div class="preview">
-									<div ref="parant" class="page" :style="{'background-color': pageData.page.style.pageBackgroundColor,'background-repeat': pageData.page.style.pageBackgroundRepeat,'background-image': 'url('+pageData.page.style.pageBackgroundImage+')'}">
-										<!-- 模块&拖动 -->
-										<wanldraggable class="draggable" v-model="pageData.item" v-bind="{animation:500}">
-											<div class="wanlshop" v-for="(item,index) in pageData.item" :key="index" @click="onType(index)" :class="{action: type == index}">
-												<!-- 轮播组件 -->
-												<div class="banner" v-if="item.type == 'banner'" :style="item.style">
-													<img :src="cdnurl(item.data[0].image)" :style="{height: item.params.height}">
-													<div class="indicator">
-														<div class="item">
-															<span v-for="indic in item.data"></span>
-														</div>
-													</div>
-												</div>
-												<!-- 广告轮播组件 -->
-												<div class="advertBanner" v-if="item.type == 'advertBanner'" :style="item.style">
-													<img src="/assets/addons/wanlshop/img/page/advert-banner.png" :style="{height: item.params.height}">
-													<div class="indicator">
-														<div class="item">
-															<span v-for="indic in item.data"></span>
-														</div>
-													</div>
-												</div>
-												<!-- 图片櫥窗 -->
-												<div class="image" :class="'layout-' + item.params.imgLayout" v-if="item.type == 'image'" :style="[{ padding: item.params.imgPaddingTb + ' ' + item.params.imgPaddingLf },item.style]">
-													<div class="item" v-for="image in item.data" :style="{ padding: item.params.imgPaddingTb + ' ' + item.params.imgPaddingLf }">
-														<img :src="cdnurl(image.image)">
-													</div>
-												</div>
-												<!-- 广告单图 -->
-												<div class="advertImage" v-if="item.type == 'advertImage'" :style="item.style">
-													<img src="/assets/addons/wanlshop/img/page/advert-image.png">
-												</div>
-												<!-- 视频 -->
-												<div class="video" v-if="item.type == 'video'" :style="item.style">
-													<img :src="cdnurl(item.data[0].image)">
-													<div class="play"><i class="wlIcon wlIcon-bofang"></i></div>
-												</div>
-												<!-- 菜单组件 -->
-												<div class="menu" v-if="item.type == 'menu'" :style="item.style">
-													<div class="grid text-center" :class="'col-' + item.params.colfive">
-														<div class="item" v-for="meun in item.data" :style="{'margin-top':item.params.menuMarginTop}">
-															<div v-if="item.params.menuType == 'icon'" class="picicon" :class="meun.bgClass" :style="{
-																'height':item.params.menuHeightWidth,
-																'width':item.params.menuHeightWidth,
-																'margin-bottom':item.params.menuMarginBottom,
-																'border-radius':item.params.menuBorderRadius
-															}">
-																<span :class="meun.iconClass"><i class="wlIcon" :class="meun.icon" :style="{'font-size':item.params.menuIconSize}"></i></span>
-															</div>
-															<div v-else class="picicon">
-																<img :src="cdnurl(meun.iconImage)" :class="meun.bgClass" :style="{
-																	'height':item.params.menuHeightWidth,
-																	'width':item.params.menuHeightWidth,
-																	'margin-bottom':item.params.menuMarginBottom,
-																	'border-radius':item.params.menuBorderRadius
-																}">
-															</div>
-															<div :style="{'font-size':item.params.menuTextSize}">{{meun.text}}</div>
-														</div>
-													</div>
-												</div>
-												<!-- 公告栏 -->
-												<div class="notice" v-if="item.type == 'notice'" :style="item.style">
-													<i class="wlIcon wlIcon-notice margin-right-xs" v-if="item.params.show"></i><span>{{item.data[0].content}}</span>
-												</div>
-												<!-- 文章组件 -->
-												<div class="article" v-if="item.type == 'article'" :style="item.style">
-													<div class="item" v-for="article in item.data">
-														<div class="image">
-															<img :src="cdnurl(article.image)" >
-														</div>
-														<div class="article-content">
-															<div class="title">
-																{{article.articleTitle ? article.articleTitle : '请点击右侧操作栏选择文章'}}
-															</div>
-															<div class="operate">
-																<span v-if="item.params.showTime == 'true'">2020年5月30日20:53</span>
-																<span v-if="item.params.showView == 'true'">浏览：100</span>
-															</div>
-														</div>
-													</div>
-												</div>
-												<!-- 头条组件 -->
-												<div class="headlines" v-if="item.type == 'headlines'" :style="item.style">
-													<div class="margin-lr-bj">
-														<i class="wlIcon wlIcon-toutiao"></i>
-													</div>
-													<div class="swiper">
-														<div class="list padding-tb-xs">
-															<div class="text-sm">
-																<div class="cu-tag sm radius bg-gradual-red margin-right-xs">热门</div>
-																..客户端自动获取后台头条数据..
-															</div>
-															<div class="text-sm">
-																<div class="cu-tag sm radius bg-gradual-red margin-right-xs">热门</div>
-																..客户端自动获取后台头条数据.. 
-															</div>
-														</div>
-														<div class="pic">
-															<img :src="cdnurl(item.data[0].image)" >
-														</div>
-													</div>
-												</div>
-												<!-- 搜索栏 -->
-												<div class="search" v-if="item.type == 'search'" :style="item.style">
-													<div :style="{'border-radius':item.params.searchRadius,'background':item.params.searchBackground,'padding':item.params.searchPadding}">
-														<i class="wlIcon wlIcon-sousuo margin-right-xs"></i><span>{{item.data[0].content}}</span>
-													</div>
-												</div>
-												<!-- 活动橱窗 -->
-												<div class="category" v-if="item.type == 'activity'" :style="item.style">
-													<div class="bg" :style="{backgroundImage: `url(${cdnurl(item.params.activityBackground)})`}">
-														<div class="cu-list grid" :class="item.params.colStyle">
-															<div class="cu-item" v-for="(act, index) in item.data" :key="index">
-																<div class="name">
-																	<span class="text-lg" :class="act.textColor">{{getParameter(act.activity)}}</span>
-																	<div v-if="act.tags" class="cu-tag round sm wanl-bg-orange"> 
-																		<span class="wlIcon wlIcon-dot"></span>{{act.tags}}
-																	</div>
-																</div>
-																<div v-if="act.describe" class="wanl-gray">{{act.describe}}</div>
-																<div class="goods margin-top-bj">
-																	<div v-for="image in getListNum('col-2-2_1', index)">
-																		<img src="/assets/addons/wanlshop/img/common/img_default3x.png">
-																	</div>
-																</div>
-															</div>
-														</div>
-													</div>
-												</div>
-												<!-- 分类橱窗 -->
-												<div class="category" v-if="item.type == 'classify'" :style="item.style">
-													<div class="bg" :style="{backgroundImage: `url(${cdnurl(item.params.classifyBackground)})`}">
-														<div class="cu-list grid" :class="item.params.colStyle">
-															<div class="cu-item" v-for="(cat, index) in item.data" :key="index">
-																<div class="name">
-																	<span class="text-lg" :class="cat.textColor">{{categoryName(cat.categoryId)}}</span>
-																	<div v-if="cat.tags" class="cu-tag round sm wanl-bg-orange">
-																		<span class="wlIcon wlIcon-dot"></span>{{cat.tags}}
-																	</div>
-																</div>
-																<div v-if="cat.describe" class="wanl-gray">{{cat.describe}}</div>
-																<div class="goods margin-top-bj">
-																	<div v-for="image in getListNum(item.params.colStyle, index)">
-																		<img src="/assets/addons/wanlshop/img/common/img_default3x.png">
-																	</div>
-																</div>
-															</div>
-														</div>
-													</div>
-												</div>
-												<!-- 类目标题 -->
-												<div class="categoryTitle" v-if="item.type == 'categoryTitle'" :style="item.style">
-													<div class="text-lg"> <span class="wlIcon margin-right-xs" :class="item.data[0].categoryIcon"></span>
-														{{item.data[0].categoryName}} ···</div>
-													<div class="text-sm wanl-gray">更多 <span class="wlIcon wlIcon-fanhui2 margin-left-xs"></span> </div>
-												</div>
-												<!-- 猜你喜欢 -->
-												<div class="product" v-if="item.type == 'likes'" :style="item.style" :class="'col-'+ item.params.colthree +'-'+item.params.colmargin" >
-													<div class="item" v-for="pro in 4">
-														<div class="item_pic">
-															<img src="/assets/addons/wanlshop/img/common/img_default3x.png">
-														</div>
-														<div class="item_list padding-bj">
-															<div class="margin-bottom-xs">
-																<div class="text-df text-cut-2">通过大数据分析用户行为表自动获取猜你喜欢的商品</div>
-																<div class="wanl-orange text-price text-lg">{{Math.round(Math.random()*10+10)}}.00</div>
-															</div>
-															<div>
-																<div class="text-xs wanl-gray">
-																	<span class="margin-right-sm">{{Math.round(Math.random()*10+10)}}条评论</span> <span>100%好评率</span>
-																</div>
-															</div>
-														</div>
-													</div>
-												</div>
-												<!-- 商品组件 -->
-												<div class="product" v-if="item.type == 'goods'" :style="item.style" :class="'col-'+ item.params.colthree +'-'+item.params.colmargin" >
-													<div class="item" v-for="goods in item.data">
-														<div class="item_pic">
-															<img src="/assets/addons/wanlshop/img/common/img_default3x.png">
-														</div>
-														<div class="item_list padding-bj">
-															<div class="margin-bottom-xs">
-																<div class="text-df text-cut-2">标题标题标题标题标题标题标题标题标题标题标题标题标题标题标题标题</div>
-																<div class="wanl-orange text-price text-lg">{{Math.round(Math.random()*10+10)}}.00</div>
-															</div>
-															<div class="">
-																<div class="margin-bottom-xs">
-																	<div class="cu-tag sm round bg-gradual-red">新品</div>
-																	<div class="cu-tag sm round bg-white">领券66减6</div>
-																</div>
-																<div class="text-xs wanl-gray">
-																	<span class="margin-right-sm">{{Math.round(Math.random()*10+10)}}条评论</span> <span>100%好评率</span>
-																</div>
-															</div>
-														</div>
-													</div>
-												</div>
-												<!-- 砍价组件 -->
-												<div class="bargain" v-if="item.type == 'bargain'" :style="item.style">
-													<span>砍价组件-下个版本发布，敬请期待</span>
-												</div>
-												<!-- 秒杀组件 -->
-												<div class="seckill" v-if="item.type == 'seckill'" :style="item.style">
-													<span>秒杀组件-下个版本发布，敬请期待</span>
-												</div>
-												<!-- 搜索栏 -->
-												<div class="empty" v-if="item.type == 'empty'" :style="item.style">
-												</div>
-												<!-- 分隔符 -->
-												<div class="division" v-if="item.type == 'division'" :style="item.style">
-													<div class="line" :style="{'width':item.params.lineWidth,'height':item.params.lineHeight,'background':item.params.lineBackground}"></div>
-													<div class="linetext" :style="{'color':item.params.lineTextColor,'font-size':item.params.lineTextSize,'line-height':item.params.lineTextSize,'background':item.params.lineTextBackground,'padding':item.params.lineTextPadding}">
-														{{item.params.lineText}}
-													</div>
-												</div>
-												<div class="sub-del" @click="delModule(index)"><i class="wlIcon wlIcon-31guanbi"></i></div>
+								<div class="component-list-wrapper">
+									<div class="alert alert-info" style="margin: 15px;">
+										<i class="fa fa-info-circle"></i> <strong>提示:</strong> 点击下方组件进行编辑,拖动可调整顺序
+									</div>
+									<!-- 组件列表 -->
+									<wanldraggable v-model="pageData.item" v-bind="{animation:300}" class="component-sortable-list">
+										<div class="component-item-card" v-for="(item,index) in pageData.item" :key="index" @click="onType(index)" :class="{active: type == index}">
+											<div class="component-item-header">
+												<span class="drag-handle">
+													<i class="fa fa-bars"></i>
+												</span>
+												<span class="component-info">
+													<strong>{{item.name}}</strong>
+													<small class="text-muted">#{{index + 1}} | 类型: {{item.type}}</small>
+												</span>
+												<button type="button" class="btn btn-xs btn-danger" @click.stop="delModule(index)" title="删除组件">
+													<i class="fa fa-trash"></i>
+												</button>
 											</div>
-										</wanldraggable>
+										</div>
+									</wanldraggable>
+									<!-- 空状态提示 -->
+									<div v-if="!pageData.item || pageData.item.length === 0" class="empty-component-tip">
+										<i class="fa fa-inbox fa-3x text-muted"></i>
+										<p class="text-muted">暂无组件，请从下方添加</p>
 									</div>
 								</div>
 								<div class="template">

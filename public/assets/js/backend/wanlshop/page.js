@@ -726,28 +726,6 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'upload', 'vue', 'vue
 					cdnurl(url){
 						if(url) return Fast.api.cdnurl(url);
 					},
-					mergeSpace(str){
-						str=str.replace(/(\s|&nbsp;)+/g,'');
-						return str;
-					},
-					categoryName(id){
-						let category = this.pageCategory,categoryData = category[category.map((item) => item.id).indexOf(parseInt(id))];
-						if(categoryData){
-							return categoryData.name;
-						}
-					},
-					getListNum(style, key){
-						var list = {
-							'col-1-2-2': [3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
-							'col-1-1_2': [3,2,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
-							'col-2-1_2': [2,2,2,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
-							'col-2-2_1': [2,2,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
-							'col-2-2-1_2': [2,2,2,2,2,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2],
-							'col-2-4': [2,2,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
-							'col-2-2-4': [2,2,2,2,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2]
-						};
-						return list[style][key];
-					},
 					getParameter(name) {
 						var language = {
 							'Basics': '基础组件',
