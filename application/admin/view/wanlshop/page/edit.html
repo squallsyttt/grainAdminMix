@@ -6,41 +6,10 @@
 		<div id="myTabContent" class="tab-content">
 			<div class="tab-pane fade active in" id="one">
 				<div class="widget-body no-padding">
-					<div class="wanl-page" :class="device">
+					<div class="wanl-page">
 						<!-- 左侧 -->
 						<div class="left">
 							<div class="wanl-tool">
-								<div class="menu">
-									<div class="dropdown">
-										<div class="bnt" id="dLabel" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-											<span>{{device}}</span><span class="caret"></span>
-										</div>
-										<ul class="dropdown-menu" aria-labelledby="dLabel">
-											<li><a @click="onDevice('huaweiMate30')">华为Mate30</a></li>
-											<li role="separator" class="divider"></li>
-											<li><a @click="onDevice('iPhoneX')">iPhoneX</a></li>
-											<li><a @click="onDevice('iPhoneXmax')">iPhoneXmax</a></li>
-											<li><a @click="onDevice('iPhone7')">iPhone7</a></li>
-											<li><a @click="onDevice('iPhone7plus')">iPhone7plus</a></li>
-											<li role="separator" class="divider"></li>
-											<li><a @click="onDevice('OPPORenoAce')">OPPORenoAce</a></li>
-											<li><a @click="onDevice('vivoNEX3')">vivoNEX3</a></li>
-											<li><a @click="onDevice('xiaomi9Pro')">xiaomi9Pro</a></li>
-										</ul>
-									</div>
-									<div class="dropdown">
-										<div class="bnt" id="dLabel2" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-											<span>{{signal}}</span><span class="caret"></span>
-										</div>
-										<ul class="dropdown-menu" aria-labelledby="dLabel2">
-											<li><a @click="onSignal('WIFI')">WIFI</a></li>
-											<li role="separator" class="divider"></li>
-											<li><a @click="onSignal('3G')">3G</a></li>
-											<li><a @click="onSignal('4G')">4G</a></li>
-											<li><a @click="onSignal('5G')">5G</a></li>
-										</ul>
-									</div>
-								</div>
 								<div class="Button">
 									<div class="dropdown">
 										<div @click="historyPage" class="btn btn-info btn-sm"><i class="fa fa-cloud"></i> 云端历史</div>
@@ -49,38 +18,10 @@
 									</div>
 								</div>
 							</div>
-							<!-- 手机 -->
+							<!-- 组件预览区域 -->
 							<div class="frame">
 								<div class="preview">
 									<div ref="parant" class="page" :style="{'background-color': pageData.page.style.pageBackgroundColor,'background-repeat': pageData.page.style.pageBackgroundRepeat,'background-image': 'url('+pageData.page.style.pageBackgroundImage+')'}">
-										<!-- 导航 -->
-										<div class="navigation" :class="{action: type == 'page'}" :style="{'background-color': pageData.page.style.navigationBarBackgroundColor,'background-image': 'url('+pageData.page.style.navigationBackgroundImage+')', color:pageData.page.style.navigationBarTextStyle}" @click="onType('page')">
-											<div class="Statusbar">
-												<div class="time"> {{nowTime}} </div>
-												<div class="bangs">
-													<div class="sub"></div>
-												</div>
-												<div class="device">
-													<i class="wlIcon wlIcon-xinhao"></i>
-													<i v-if="signal == '3G'">3G</i>
-													<i v-if="signal == '4G'">4G</i>
-													<i v-if="signal == '5G'">5G</i>
-													<i v-if="signal == 'WIFI'" class="wlIcon wlIcon-WIFI"></i>
-													<i class="wlIcon wlIcon-dianchifull"></i>
-												</div>
-											</div>
-											<div class="page-head">
-												<span class="wanlicon">
-													<i class="wlIcon wlIcon-fanhui1"></i>
-												</span>
-												<span class="title">
-													{{pageData.page.params.navigationBarTitleText}}
-												</span>
-												<span class="wanlicon">
-													<i class="wlIcon wlIcon-fenxiang"></i>
-												</span>
-											</div>
-										</div>
 										<!-- 模块&拖动 -->
 										<wanldraggable class="draggable" v-model="pageData.item" v-bind="{animation:500}">
 											<div class="wanlshop" v-for="(item,index) in pageData.item" :key="index" @click="onType(index)" :class="{action: type == index}">

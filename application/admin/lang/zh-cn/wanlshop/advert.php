@@ -5,7 +5,7 @@ return [
     'Admin_id'        => '管理员ID',
     'Module'          => '投放模块',
     'Module open'     => '开屏广告',
-    'Module page'     => '自定义页面广告',
+    'Module page'     => '主页轮播',
     'Module category' => '类目广告',
     'Module first'    => '首次欢迎广告',
     'Module other'    => '其他广告',

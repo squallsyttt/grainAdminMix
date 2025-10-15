@@ -533,21 +533,12 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'upload', 'vue', 'vue
 						pageCategory: Config.pageCategory,
 						pageType: Config.page.type,
 						type: 'page', //选中
-						device: 'iPhoneX', //设备
-						nowTime: '11:11', //时间
-						signal: 'WIFI', //信号
 						moveDom: '',
 						changeDom: '',
 						startY: 0,
 						endY: 0
 
 					}
-				},
-				created() {
-					this.nowTimes();
-				},
-				mounted() {
-					this.nowTimes();
 				},
 				filters: {
 					formatDate(timestamp) {
@@ -629,12 +620,6 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'upload', 'vue', 'vue
 					delModule(key) {
 						Vue.delete(vm.pageData.item, key); //vue方法
 						this.type = this.type - 1;
-					},
-					onDevice(e) {
-						this.device = e;
-					},
-					onSignal(e) {
-						this.signal = e;
 					},
 					addTemplate(arr) {
 						this.type = this.pageData.item.length;
@@ -737,18 +722,6 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'upload', 'vue', 'vue
 								Vue.set(vm.pageData.item[key].data[num], type, data.name);	
 						    }
 						});
-					},
-					// 获取当前时间函数
-					timeFormate(timeStamp) {
-						let hh = new Date(timeStamp).getHours() < 10 ? "0" + new Date(timeStamp).getHours() : new Date(timeStamp).getHours();
-						let mm = new Date(timeStamp).getMinutes() < 10 ? "0" + new Date(timeStamp).getMinutes() : new Date(
-							timeStamp).getMinutes();
-						this.nowTime = hh + ":" + mm;
-					},
-					// 定时器函数
-					nowTimes() {
-						this.timeFormate(new Date());
-						setInterval(this.nowTimes, 50 * 1000);
 					},
 					cdnurl(url){
 						if(url) return Fast.api.cdnurl(url);
