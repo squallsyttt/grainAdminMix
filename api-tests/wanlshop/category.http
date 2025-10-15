@@ -1,0 +1,87 @@
+### WanlShop 商品类目接口 API 测试
+### 对应控制器: application/api/controller/wanlshop/Category.php
+### 对应后台页面: http://grain.local.com/FZqKhTezgP.php/wanlshop/category/goods
+
+### ========================================
+### 环境变量
+### ========================================
+@baseUrl = http://grain.local.com
+@apiPrefix = /api/wanlshop/category
+
+### ========================================
+### 1. 获取所有商品类目列表（扁平结构）
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/lists
+Content-Type: application/json
+
+### ========================================
+### 2. 获取指定类型的类目列表 - 商品类型
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/lists?type=goods
+Content-Type: application/json
+
+### ========================================
+### 3. 获取指定类型的类目列表 - 文章类型
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/lists?type=article
+Content-Type: application/json
+
+### ========================================
+### 4. 获取顶级类目（pid=0）
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/lists?type=goods&pid=0
+Content-Type: application/json
+
+### ========================================
+### 5. 获取指定父级的子类目
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/lists?type=goods&pid=1
+Content-Type: application/json
+
+### ========================================
+### 6. 获取导航类目（isnav=1）
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/lists?type=goods&isnav=1
+Content-Type: application/json
+
+### ========================================
+### 7. 获取商品类目树形结构（用于级联选择）
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/tree
+Content-Type: application/json
+
+### ========================================
+### 8. 获取商品类目树形结构 - 指定类型
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/tree?type=goods
+Content-Type: application/json
+
+### ========================================
+### 9. 获取文章类目树形结构
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/tree?type=article
+Content-Type: application/json
+
+### ========================================
+### 10. 获取类目详情 - ID=1
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/detail?id=1
+Content-Type: application/json
+
+### ========================================
+### 11. 获取类目详情 - ID=2
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/detail?id=2
+Content-Type: application/json
+
+### ========================================
+### 12. 测试异常情况 - 缺少必填参数
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/detail
+Content-Type: application/json
+
+### ========================================
+### 13. 测试异常情况 - 不存在的类目ID
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/detail?id=999999
+Content-Type: application/json

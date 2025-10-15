@@ -6,7 +6,8 @@
 api-tests/
 ├── README.md                    # 本文件
 └── wanlshop/                    # WanlShop 模块测试
-    └── advert.http             # 广告接口测试
+    ├── advert.http             # 广告接口测试
+    └── category.http           # 商品类目接口测试
 ```
 
 ## 🚀 使用说明
@@ -16,6 +17,7 @@ api-tests/
 
 ### 2. 打开对应的测试文件
 - 广告接口：[wanlshop/advert.http](wanlshop/advert.http)
+- 商品类目接口：[wanlshop/category.http](wanlshop/category.http)
 
 ### 3. 发送请求
 点击请求上方的 `Send Request` 按钮，或使用快捷键 `Cmd+Alt+R` (Mac) / `Ctrl+Alt+R` (Windows)
@@ -24,9 +26,10 @@ api-tests/
 
 ## 📋 测试文件对应关系
 
-| 测试文件 | 控制器路径 |
-|---------|-----------|
-| [wanlshop/advert.http](wanlshop/advert.http) | `application/api/controller/wanlshop/Advert.php` |
+| 测试文件 | 控制器路径 | 后台管理页面 |
+|---------|-----------|-------------|
+| [wanlshop/advert.http](wanlshop/advert.http) | `application/api/controller/wanlshop/Advert.php` | - |
+| [wanlshop/category.http](wanlshop/category.http) | `application/api/controller/wanlshop/Category.php` | [商品类目管理](http://grain.local.com/FZqKhTezgP.php/wanlshop/category/goods) |
 
 ---
 
