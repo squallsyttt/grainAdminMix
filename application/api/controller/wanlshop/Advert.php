@@ -26,6 +26,7 @@ class Advert extends Api
      * @ApiParams   (name="module", type="string", required=false, description="广告位置: open/page/category/first/other")
      * @ApiParams   (name="type", type="string", required=false, description="广告类型: banner/image/video")
      * @ApiParams   (name="category_id", type="integer", required=false, description="分类ID")
+     * @ApiParams   (name="city", type="string", required=false, description="城市筛选(支持模糊匹配)")
      * @ApiParams   (name="limit", type="integer", required=false, description="每页数量,默认10")
      * @ApiParams   (name="page", type="integer", required=false, description="页码,默认1")
      *
@@ -63,6 +64,7 @@ class Advert extends Api
         $module = $this->request->get('module', '');
         $type = $this->request->get('type', '');
         $categoryId = $this->request->get('category_id', 0);
+        $city = $this->request->get('city', '');
         $limit = $this->request->get('limit', 10);
 
         // 构建查询条件
@@ -82,8 +84,14 @@ class Advert extends Api
 
         // 查询数据
         $advertModel = model('app\api\model\wanlshop\Advert');
-        $list = $advertModel
-            ->where($where)
+        $query = $advertModel->where($where);
+
+        // city 筛选 - 包含匹配
+        if ($city) {
+            $query->where('city', 'like', '%' . $city . '%');
+        }
+
+        $list = $query
             ->order('weigh', 'desc')  // 按权重降序
             ->order('id', 'desc')     // 按ID降序
             ->paginate($limit);
@@ -99,6 +107,7 @@ class Advert extends Api
      *
      * @ApiParams   (name="module", type="string", required=true, description="广告位置")
      * @ApiParams   (name="category_id", type="integer", required=false, description="分类ID")
+     * @ApiParams   (name="city", type="string", required=false, description="城市筛选(支持模糊匹配)")
      * @ApiParams   (name="limit", type="integer", required=false, description="数量,默认5")
      *
      * @ApiReturn   ({
@@ -124,6 +133,7 @@ class Advert extends Api
         // 获取参数
         $module = $this->request->get('module', '');
         $categoryId = $this->request->get('category_id', 0);
+        $city = $this->request->get('city', '');
         $limit = $this->request->get('limit', 5);
 
         // 验证必填参数
@@ -143,8 +153,14 @@ class Advert extends Api
 
         // 查询数据
         $advertModel = model('app\api\model\wanlshop\Advert');
-        $list = $advertModel
-            ->where($where)
+        $query = $advertModel->where($where);
+
+        // city 筛选 - 包含匹配
+        if ($city) {
+            $query->where('city', 'like', '%' . $city . '%');
+        }
+
+        $list = $query
             ->field('id,title,media,url,type,weigh')
             ->order('weigh', 'desc')
             ->limit($limit)
