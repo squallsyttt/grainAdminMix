@@ -40,8 +40,7 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'vue'], function($, u
 						{field: 'price',title: __('Price'),operate: 'BETWEEN'},
 						// {field: 'distribution',title: __('Distribution'),searchList: {"true": __('Distribution true'),"false": __('Distribution false')},formatter: Table.api.formatter.normal},
 						// {field: 'activity',title: __('Activity'),searchList: {"true": __('Activity true'),"false": __('Activity false')},formatter: Table.api.formatter.normal},
-						{field: 'views',title: __('Views')},{field: 'sales',title: __('Sales')},{field: 'comment',title: __('Comment')},{field: 'praise',title: __('Praise')},
-						{field: 'like',title: __('Like')},{field: 'createtime',title: __('Createtime'),operate: 'RANGE',addclass: 'datetimerange',formatter: Table.api.formatter.datetime},
+						{field: 'createtime',title: __('Createtime'),operate: 'RANGE',addclass: 'datetimerange',formatter: Table.api.formatter.datetime},
 						{field: 'updatetime',title: __('Updatetime'),operate: 'RANGE',addclass: 'datetimerange',formatter: Table.api.formatter.datetime},
 						{field: 'status',title: __('Status'),searchList: {"normal": __('Normal'),"hidden": __('Hidden')},formatter: Table.api.formatter.status},
 						{field: 'operate',title: __('Operate'),table: table, events: Table.api.events.operate,formatter: Table.api.formatter.operate}
@@ -94,8 +93,7 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'vue'], function($, u
 						{field: 'price',title: __('Price'),operate: 'BETWEEN'},
 						// {field: 'distribution',title: __('Distribution'),searchList: {"true": __('Distribution true'),"false": __('Distribution false')},formatter: Table.api.formatter.normal},
 						// {field: 'activity',title: __('Activity'),searchList: {"true": __('Activity true'),"false": __('Activity false')},formatter: Table.api.formatter.normal},
-						{field: 'views',title: __('Views')},{field: 'sales',title: __('Sales')},{field: 'comment',title: __('Comment')},{field: 'praise',title: __('Praise')},
-						{field: 'like',title: __('Like')},{field: 'createtime',title: __('Createtime'),operate: 'RANGE',addclass: 'datetimerange',formatter: Table.api.formatter.datetime},
+						{field: 'createtime',title: __('Createtime'),operate: 'RANGE',addclass: 'datetimerange',formatter: Table.api.formatter.datetime},
 						{field: 'updatetime',title: __('Updatetime'),operate: 'RANGE',addclass: 'datetimerange',formatter: Table.api.formatter.datetime},
 						{field: 'status',title: __('Status'),searchList: {"normal": __('Normal'),"hidden": __('Hidden')},formatter: Table.api.formatter.status},
 						{field: 'operate',title: __('Operate'),table: table,events: Table.api.events.operate,formatter: Table.api.formatter.operate}
