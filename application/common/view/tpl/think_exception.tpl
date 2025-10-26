@@ -34,45 +34,177 @@ $langSet == 'en' && $lang = array_combine(array_keys($lang), array_keys($lang));
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
     <link rel="shortcut icon" href="<?php echo $cdnurl;?>/assets/img/favicon.ico" />
     <style>
-        * {-moz-box-sizing:border-box;-webkit-box-sizing:border-box;box-sizing:border-box;}
-        html,body,div,span,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,abbr,address,cite,code,del,dfn,em,img,ins,kbd,q,samp,small,strong,sub,sup,var,b,i,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,caption,article,aside,canvas,details,figcaption,figure,footer,header,hgroup,menu,nav,section,summary,time,mark,audio,video {margin:0;padding:0;border:0;outline:0;vertical-align:baseline;background:transparent;}
-        article,aside,details,figcaption,figure,footer,header,hgroup,nav,section {display:block;}
-        html {font-size:16px;line-height:24px;width:100%;height:100%;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;overflow-y:scroll;overflow-x:hidden;}
-        img {vertical-align:middle;max-width:100%;height:auto;border:0;-ms-interpolation-mode:bicubic;}
-        body {min-height:100%;background:#f4f6f8;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;font-family:"Helvetica Neue",Helvetica,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",微软雅黑,Arial,sans-serif;}
-        .clearfix {clear:both;zoom:1;}
-        .clearfix:before,.clearfix:after {content:"\0020";display:block;height:0;visibility:hidden;}
-        .clearfix:after {clear:both;}
-        body.error-page-wrapper,.error-page-wrapper.preview {background-position:center center;background-repeat:no-repeat;background-size:cover;position:relative;}
-        .error-page-wrapper .content-container {border-radius:2px;text-align:center;box-shadow:0 0 30px rgba(99,99,99,0.06);padding:50px;background-color:#fff;width:100%;max-width:560px;position:absolute;left:50%;top:50%;margin-top:-220px;margin-left:-280px;}
-        .error-page-wrapper .content-container.in {left:0px;opacity:1;}
-        .error-page-wrapper .head-line {transition:color .2s linear;font-size:40px;line-height:60px;letter-spacing:-1px;margin-bottom:20px;color:#777;}
-        .error-page-wrapper .subheader {transition:color .2s linear;font-size:32px;line-height:46px;color:#494949;}
-        .error-page-wrapper .hr {height:1px;background-color:#eee;width:80%;max-width:350px;margin:25px auto;}
-        .error-page-wrapper .context {transition:color .2s linear;font-size:16px;line-height:27px;color:#aaa;}
-        .error-page-wrapper .context p {margin:0;}
-        .error-page-wrapper .context p:nth-child(n+2) {margin-top:16px;}
-        .error-page-wrapper .buttons-container {margin-top:35px;overflow:hidden;}
-        .error-page-wrapper .buttons-container a {transition:text-indent .2s ease-out,color .2s linear,background-color .2s linear;text-indent:0px;font-size:14px;text-transform:uppercase;text-decoration:none;color:#fff;background-color:#2ecc71;border-radius:99px;padding:8px 0 8px;text-align:center;display:inline-block;overflow:hidden;position:relative;width:45%;}
-        .error-page-wrapper .buttons-container a:hover {text-indent:15px;}
-        .error-page-wrapper .buttons-container a:nth-child(1) {float:left;}
-        .error-page-wrapper .buttons-container a:nth-child(2) {float:right;}
-        @media screen and (max-width:580px) {
-            .error-page-wrapper {padding:30px 5%;}
-            .error-page-wrapper .content-container {padding:37px;position:static;left:0;margin-top:0;margin-left:0;}
-            .error-page-wrapper .head-line {font-size:36px;}
-            .error-page-wrapper .subheader {font-size:27px;line-height:37px;}
-            .error-page-wrapper .hr {margin:30px auto;width:215px;}
+        * {
+            margin: 0;
+            padding: 0;
+            border: 0;
+            outline: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
-        @media screen and (max-width:450px) {
-            .error-page-wrapper {padding:30px;}
-            .error-page-wrapper .head-line {font-size:32px;}
-            .error-page-wrapper .hr {margin:25px auto;width:180px;}
-            .error-page-wrapper .context {font-size:15px;line-height:22px;}
-            .error-page-wrapper .context p:nth-child(n+2) {margin-top:10px;}
-            .error-page-wrapper .buttons-container {margin-top:29px;}
-            .error-page-wrapper .buttons-container a {float:none !important;width:65%;margin:0 auto;font-size:13px;padding:9px 0;}
-            .error-page-wrapper .buttons-container a:nth-child(2) {margin-top:12px;}
+        
+        html, body {
+            width: 100%;
+            height: 100%;
+        }
+        
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f5f7fa;
+            padding: 20px;
+            position: relative;
+            overflow: auto;
+        }
+        
+        .error-page-wrapper {
+            width: 100%;
+            max-width: 600px;
+            position: relative;
+        }
+        
+        .content-container {
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            padding: 60px 50px;
+            text-align: center;
+            animation: slideUp 0.6s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .head-line {
+            margin-bottom: 30px;
+        }
+        
+        .head-line img {
+            width: 100px;
+            height: 100px;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+        }
+        
+        .subheader {
+            font-size: 24px;
+            font-weight: 600;
+            color: #2c3e50;
+            line-height: 1.5;
+            margin-bottom: 25px;
+            word-wrap: break-word;
+        }
+        
+        .hr {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #e4e7ed 20%, #e4e7ed 80%, transparent);
+            margin: 30px 0;
+            border: none;
+        }
+        
+        .context {
+            font-size: 15px;
+            line-height: 1.8;
+            color: #8492a6;
+            margin: 20px 0;
+        }
+        
+        .context p {
+            margin: 12px 0;
+        }
+        
+        .buttons-container {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 40px;
+        }
+        
+        .buttons-container a {
+            flex: 1;
+            max-width: 180px;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            display: inline-block;
+        }
+        
+        .buttons-container a:nth-child(1) {
+            background: #f7f8fa;
+            color: #8492a6;
+        }
+        
+        .buttons-container a:nth-child(1):hover {
+            background: #e4e7ed;
+            color: #606266;
+        }
+        
+        .buttons-container a:nth-child(2) {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .buttons-container a:nth-child(2):hover {
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+            transform: translateY(-2px);
+        }
+        
+        @media screen and (max-width: 640px) {
+            body {
+                padding: 15px;
+            }
+            
+            .content-container {
+                padding: 40px 30px;
+            }
+            
+            .subheader {
+                font-size: 20px;
+            }
+            
+            .buttons-container {
+                flex-direction: column;
+                gap: 12px;
+            }
+            
+            .buttons-container a {
+                max-width: 100%;
+            }
+        }
+        
+        @media screen and (max-width: 480px) {
+            .content-container {
+                padding: 35px 25px;
+            }
+            
+            .head-line img {
+                width: 80px;
+                height: 80px;
+            }
+            
+            .subheader {
+                font-size: 18px;
+            }
+            
+            .context {
+                font-size: 14px;
+            }
         }
     </style>
 </head>

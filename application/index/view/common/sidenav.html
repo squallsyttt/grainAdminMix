@@ -1,3 +1,171 @@
+<style>
+    /* 侧边栏现代化设计 */
+    .sidebar-toggle {
+        display: none;
+        position: fixed;
+        top: 70px;
+        left: 15px;
+        z-index: 1000;
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 10px;
+        color: #fff;
+        text-align: center;
+        line-height: 40px;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        transition: all 0.3s ease;
+    }
+    
+    .sidebar-toggle:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+    }
+    
+    .sidenav {
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+    
+    .sidenav:hover {
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+    
+    .sidenav .list-group {
+        margin-bottom: 0;
+        border-radius: 16px;
+    }
+    
+    /* 标题样式 */
+    .sidenav .list-group-heading {
+        background: #fff;
+        color: #1a1a1a;
+        padding: 16px 24px 12px;
+        font-size: 13px;
+        font-weight: 600;
+        border: none;
+        margin: 0;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+        border-bottom: 2px solid #f0f2f5;
+    }
+    
+    /* 第一个分组标题 */
+    .sidenav .list-group:first-child .list-group-heading {
+        border-top-left-radius: 16px;
+        border-top-right-radius: 16px;
+        padding-top: 20px;
+    }
+    
+    /* 非第一个分组标题 */
+    .sidenav .list-group:not(:first-child) {
+        margin-top: 24px;
+    }
+    
+    /* 菜单项样式 */
+    .sidenav .list-group-item {
+        border: none;
+        border-left: 3px solid transparent;
+        padding: 0;
+        background: #fff;
+        transition: all 0.2s ease;
+        margin: 2px 0;
+    }
+    
+    .sidenav .list-group-item a {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 24px;
+        color: #495057;
+        text-decoration: none;
+        font-weight: 400;
+        transition: all 0.2s ease;
+        font-size: 14px;
+    }
+    
+    .sidenav .list-group-item a i {
+        width: 20px;
+        text-align: center;
+        color: #6c757d;
+        transition: all 0.2s ease;
+        font-size: 16px;
+    }
+    
+    /* 悬停效果 */
+    .sidenav .list-group-item:hover {
+        background: #f8f9fa;
+        border-left-color: #495057;
+    }
+    
+    .sidenav .list-group-item:hover a {
+        color: #1a1a1a;
+    }
+    
+    .sidenav .list-group-item:hover a i {
+        color: #1a1a1a;
+    }
+    
+    /* 激活状态 */
+    .sidenav .list-group-item.active {
+        background: #f0f2f5;
+        border-left-color: #1a1a1a;
+        border-left-width: 3px;
+    }
+    
+    .sidenav .list-group-item.active a {
+        color: #1a1a1a;
+        font-weight: 500;
+    }
+    
+    .sidenav .list-group-item.active a i {
+        color: #1a1a1a;
+    }
+    
+    /* 最后一项圆角 */
+    .sidenav .list-group:last-child .list-group-item:last-child {
+        border-bottom-left-radius: 16px;
+        border-bottom-right-radius: 16px;
+    }
+    
+    /* 响应式设计 */
+    @media (max-width: 991px) {
+        .sidebar-toggle {
+            display: block;
+        }
+        
+        .sidenav {
+            position: fixed;
+            left: -280px;
+            top: 60px;
+            width: 260px;
+            height: calc(100vh - 60px);
+            overflow-y: auto;
+            z-index: 999;
+            transition: left 0.3s ease;
+        }
+        
+        .sidenav.active {
+            left: 0;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .sidenav .list-group-heading {
+            padding: 16px 20px;
+            font-size: 15px;
+        }
+        
+        .sidenav .list-group-item a {
+            padding: 12px 20px;
+            font-size: 13px;
+        }
+    }
+</style>
 <div class="sidebar-toggle"><i class="fa fa-bars"></i></div>
 <div class="sidenav" id="sidebar-nav">
     {:hook('user_sidenav_before')}

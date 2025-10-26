@@ -3,6 +3,113 @@
     <head>
         {include file="common/meta" /}
         <link href="__CDN__/assets/css/user.css?v={$Think.config.site.version|htmlentities}" rel="stylesheet">
+        <style>
+            /* 导航栏现代化优化 */
+            .navbar-white {
+                background: #fff;
+                border-bottom: 1px solid #e9ecef;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            }
+            
+            .navbar-nav > li > a {
+                padding: 15px 20px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-weight: 500;
+                color: #495057;
+                transition: all 0.3s ease;
+            }
+            
+            .navbar-nav > li > a:hover {
+                color: #667eea;
+                background-color: rgba(102, 126, 234, 0.05);
+            }
+            
+            /* 头像样式统一 */
+            .navbar-nav .avatar-img {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 36px;
+                height: 36px;
+                border-radius: 50%;
+                overflow: hidden;
+                border: 2px solid #e9ecef;
+                transition: all 0.3s ease;
+                vertical-align: middle;
+            }
+            
+            .navbar-nav .avatar-img img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+            
+            .navbar-nav .dropdown-toggle:hover .avatar-img {
+                border-color: #667eea;
+                transform: scale(1.05);
+            }
+            
+            /* 下拉菜单优化 */
+            .navbar-nav .dropdown-menu {
+                border-radius: 12px;
+                border: 1px solid #e9ecef;
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+                padding: 8px 0;
+                margin-top: 8px;
+                min-width: 200px;
+            }
+            
+            .navbar-nav .dropdown-menu > li > a {
+                padding: 10px 20px;
+                color: #495057;
+                transition: all 0.3s ease;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+            
+            .navbar-nav .dropdown-menu > li > a:hover {
+                background: rgba(102, 126, 234, 0.1);
+                color: #667eea;
+            }
+            
+            .navbar-nav .dropdown-menu > li > a i {
+                width: 20px;
+                text-align: center;
+                color: #6c757d;
+            }
+            
+            .navbar-nav .dropdown-menu > li > a:hover i {
+                color: #667eea;
+            }
+            
+            /* 确保对齐 */
+            .navbar-nav > li {
+                display: flex;
+                align-items: center;
+            }
+            
+            .navbar-brand {
+                font-weight: 600;
+                font-size: 20px;
+                color: #1a1a1a;
+                transition: all 0.3s ease;
+            }
+            
+            .navbar-brand:hover {
+                color: #667eea;
+            }
+            
+            /* 响应式优化 */
+            @media (max-width: 768px) {
+                .navbar-nav .avatar-img {
+                    width: 32px;
+                    height: 32px;
+                }
+            }
+        </style>
     </head>
 
     <body>
@@ -25,7 +132,7 @@
                             {if $user}
                             <a href="{:url('user/index')}" class="dropdown-toggle" data-toggle="dropdown">
                                 <span class="avatar-img"><img src="{$user.avatar|htmlentities|cdnurl}" alt=""></span>
-                                <span class="visible-xs-inline-block" style="padding:5px;">{$user.nickname} <b class="caret"></b></span>
+                                <span class="visible-xs-inline-block" style="padding:0 5px;">{$user.nickname} <b class="caret"></b></span>
                             </a>
                             {else /}
                             <a href="{:url('user/index')}" class="dropdown-toggle" data-toggle="dropdown">{:__('Member center')} <b class="caret"></b></a>
