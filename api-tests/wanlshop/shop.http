@@ -1,0 +1,39 @@
+### WanlShop 店铺接口 API 测试
+### 对应控制器: application/api/controller/wanlshop/Shop.php
+
+### ========================================
+### 环境变量
+### ========================================
+@baseUrl = http://grain.local.com
+@apiPrefix = /api/wanlshop/shop
+
+### ========================================
+### 1. 获取店铺列表（分页，默认按 id DESC）
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/lists
+Content-Type: application/json
+
+### ========================================
+### 2. 关键字搜索（shopname/city 模糊匹配）
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/lists?search=店
+Content-Type: application/json
+
+### ========================================
+### 3. 过滤示例：仅企业店铺（state=1）
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/lists?filter={"state":"1"}&op={"state":"="}
+Content-Type: application/json
+
+### ========================================
+### 4. 自定义排序：按权重倒序
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/lists?sort=weigh&order=DESC
+Content-Type: application/json
+
+### ========================================
+### 5. 获取单个店铺详情（getShopInfo）
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/getShopInfo?id=1
+Content-Type: application/json
+
