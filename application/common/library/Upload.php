@@ -73,6 +73,7 @@ class Upload
         $fileInfo['suffix'] = $suffix;
         $fileInfo['imagewidth'] = 0;
         $fileInfo['imageheight'] = 0;
+        $fileInfo['is_image'] = false;
 
         $this->file = $file;
         $this->fileInfo = $fileInfo;
@@ -135,10 +136,37 @@ class Upload
             }
             $this->fileInfo['imagewidth'] = $imgInfo[0] ?? 0;
             $this->fileInfo['imageheight'] = $imgInfo[1] ?? 0;
+            $this->fileInfo['is_image'] = true;
             return true;
         } else {
+            $this->fileInfo['is_image'] = false;
             return !$force;
         }
+    }
+
+    /**
+     * 将配置的大小字符串解析为字节数
+     * @param string|int|null $value
+     * @return int|null
+     */
+    protected function parseSizeValue($value)
+    {
+        if (!$value) {
+            return null;
+        }
+        if (is_numeric($value)) {
+            return (int)$value;
+        }
+        if (!is_string($value)) {
+            return null;
+        }
+        if (!preg_match('/([0-9\.]+)(\w+)/', strtolower($value), $matches)) {
+            return null;
+        }
+        $size = (float)$matches[1];
+        $type = $matches[2] ?? 'b';
+        $typeDict = ['b' => 0, 'k' => 1, 'kb' => 1, 'm' => 2, 'mb' => 2, 'g' => 3, 'gb' => 3];
+        return (int)($size * pow(1024, $typeDict[$type] ?? 0));
     }
 
     /**
@@ -147,17 +175,39 @@ class Upload
      */
     protected function checkSize()
     {
-        preg_match('/([0-9\.]+)(\w+)/', $this->config['maxsize'], $matches);
-        $size = $matches ? $matches[1] : $this->config['maxsize'];
-        $type = $matches ? strtolower($matches[2]) : 'b';
-        $typeDict = ['b' => 0, 'k' => 1, 'kb' => 1, 'm' => 2, 'mb' => 2, 'gb' => 3, 'g' => 3];
-        $size = (int)($size * pow(1024, $typeDict[$type] ?? 0));
+        $size = $this->parseSizeValue($this->config['maxsize'] ?? null);
+        if (!$size) {
+            return;
+        }
         if ($this->fileInfo['size'] > $size) {
             throw new UploadException(__(
                 'File is too big (%sMiB), Max filesize: %sMiB.',
                 round($this->fileInfo['size'] / pow(1024, 2), 2),
                 round($size / pow(1024, 2), 2)
             ));
+        }
+    }
+
+    /**
+     * 检测图片专用大小限制
+     * @throws UploadException
+     */
+    protected function checkImageLimit()
+    {
+        $limit = $this->parseSizeValue($this->config['imagemaxsize'] ?? null);
+        if (!$limit) {
+            return;
+        }
+        if (!empty($this->fileInfo['is_image']) && $this->fileInfo['size'] > $limit) {
+            $display = $this->config['imagemaxsize'];
+            if (is_string($display)) {
+                $display = strtolower(trim($display));
+                $display = preg_replace('/b$/', '', $display);
+            }
+            if (!$display) {
+                $display = '400k';
+            }
+            throw new UploadException('文件过大请控制大小在' . $display . '以内');
         }
     }
 
@@ -366,6 +416,7 @@ class Upload
         $this->checkExecutable();
         $this->checkMimetype();
         $this->checkImage();
+        $this->checkImageLimit();
 
         $savekey = $savekey ? $savekey : $this->getSavekey();
         $savekey = '/' . ltrim($savekey, '/');
