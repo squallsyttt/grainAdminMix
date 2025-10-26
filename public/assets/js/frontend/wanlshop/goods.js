@@ -36,7 +36,7 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'vue'], function($, u
 						{field: 'image',title: __('Image'),events: Table.api.events.image,formatter: Table.api.formatter.image},
 						{field: 'images',title: __('Images'),events: Table.api.events.image,formatter: Table.api.formatter.images},
 						// {field: 'flag',title: __('Flag'),searchList: {"hot": __('Flag hot'),"index": __('Flag index'),"recommend": __('Flag recommend')},operate: 'FIND_IN_SET',formatter: Table.api.formatter.label},
-						{field: 'shopsort.name', title: __('Shopsort.name'), formatter: Table.api.formatter.search},
+						// Removed per requirement: hide shop internal category column
 						{field: 'price',title: __('Price'),operate: 'BETWEEN'},
 						// {field: 'distribution',title: __('Distribution'),searchList: {"true": __('Distribution true'),"false": __('Distribution false')},formatter: Table.api.formatter.normal},
 						// {field: 'activity',title: __('Activity'),searchList: {"true": __('Activity true'),"false": __('Activity false')},formatter: Table.api.formatter.normal},
@@ -89,7 +89,7 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'vue'], function($, u
 						{field: 'image',title: __('Image'),events: Table.api.events.image,formatter: Table.api.formatter.image},
 						{field: 'images',title: __('Images'),events: Table.api.events.image,formatter: Table.api.formatter.images},
 						// {field: 'flag',title: __('Flag'),searchList: {"hot": __('Flag hot'),"index": __('Flag index'),"recommend": __('Flag recommend')},operate: 'FIND_IN_SET',formatter: Table.api.formatter.label},
-						{field: 'shopsort.name', title: __('Shopsort.name'), formatter: Table.api.formatter.search},
+						// Removed per requirement: hide shop internal category column
 						{field: 'price',title: __('Price'),operate: 'BETWEEN'},
 						// {field: 'distribution',title: __('Distribution'),searchList: {"true": __('Distribution true'),"false": __('Distribution false')},formatter: Table.api.formatter.normal},
 						// {field: 'activity',title: __('Activity'),searchList: {"true": __('Activity true'),"false": __('Activity false')},formatter: Table.api.formatter.normal},
