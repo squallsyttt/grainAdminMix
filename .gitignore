@@ -18,3 +18,5 @@ composer.lock
 node_modules
 .user.ini
 .claude/
+
+.serena
