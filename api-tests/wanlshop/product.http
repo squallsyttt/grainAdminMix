@@ -1,0 +1,33 @@
+### 商品接口 API 测试文件（Product）
+
+### ========================================
+### 环境变量
+### ========================================
+@baseUrl = http://grain.local.com
+@apiPrefix = /api/wanlshop/product
+
+### ========================================
+### 1. 获取商品列表（全部，默认分页）
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/lists
+Content-Type: application/json
+
+### ========================================
+### 2. 按店铺筛选商品（shop_id=1）
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/lists?shop_id=1
+Content-Type: application/json
+
+### ========================================
+### 3. 按店铺筛选商品（shop_id 不存在的店铺）
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/lists?shop_id=999999
+Content-Type: application/json
+
+### ========================================
+### 4. 使用通用 filter 过滤（与 shop_id 等效的方式）
+###    便于复合过滤：category_id/brand_id 等
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/lists?filter={"shop_id":"1"}&op={"shop_id":"="}
+Content-Type: application/json
+

@@ -34,15 +34,19 @@ class Product extends Api
 		}else if($type === 'groups'){
 			$goodsModel  = model('app\api\model\wanlshop\groups\Goods');
 		}
-    	// 生成搜索条件
-    	list($where, $sort, $order) = $this->buildparams('title,category.name',false); // 查询标题 和类目字段  ！！！！！！排除已下架//-------------------------------------------
-		// 查询数据
-    	$list = $goodsModel
-    		->with(['shop','category'])
-    	    ->where($where)
-			->where('goods.status', 'normal')
-    	    ->order($sort, $order)
-    	    ->paginate();
+	    	// 生成搜索条件
+	    	list($where, $sort, $order) = $this->buildparams('title,category.name',false); // 查询标题 和类目字段
+			// 可选：按店铺筛选（便捷参数）
+			$shopId = $this->request->get('shop_id');
+			// 查询数据
+	    	$query = $goodsModel
+	    		->with(['shop','category'])
+	    	    ->where($where)
+				->where('goods.status', 'normal');
+			if($shopId !== null && $shopId !== ''){
+				$query->where('goods.shop_id', intval($shopId));
+			}
+	    	$list = $query->order($sort, $order)->paginate();
     	foreach ($list as $row) {
     	    $row->getRelation('shop')->visible(['city', 'shopname', 'state']);
     		$row->getRelation('category')->visible(['id','pid','name']);
