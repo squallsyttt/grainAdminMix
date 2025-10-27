@@ -1,0 +1,62 @@
+### WanlShop 用户绑定店铺 API 测试
+### 对应控制器: application/api/controller/wanlshop/User.php::bindShop
+
+### ========================================
+### 环境变量
+### ========================================
+@baseUrl = http://grain.local.com
+@apiPrefix = /api/wanlshop/user
+@token = REPLACE_WITH_LOGIN_TOKEN
+
+### ========================================
+### 1. 绑定店铺 - 成功用例（请替换为真实商家账户）
+### 前置：当前请求头携带普通用户登录产生的 token
+### 条件：account/password 指向一个存在店铺（wanlshop_shop.user_id 对应）的用户
+### ========================================
+POST {{baseUrl}}{{apiPrefix}}/bindShop
+Content-Type: application/json
+token: {{token}}
+
+{
+  "account": "merchant_username_or_mobile_or_email",
+  "password": "merchant_password"
+}
+
+### ========================================
+### 2. 绑定店铺 - 密码错误
+### 期望：返回错误（Password is incorrect）
+### ========================================
+POST {{baseUrl}}{{apiPrefix}}/bindShop
+Content-Type: application/json
+token: {{token}}
+
+{
+  "account": "merchant_username_or_mobile_or_email",
+  "password": "wrong_password"
+}
+
+### ========================================
+### 3. 绑定店铺 - 目标账户无店铺
+### 期望：返回错误（未找到此商家）
+### ========================================
+POST {{baseUrl}}{{apiPrefix}}/bindShop
+Content-Type: application/json
+token: {{token}}
+
+{
+  "account": "user_without_shop",
+  "password": "password_here"
+}
+
+### ========================================
+### 4. 绑定店铺 - 缺少参数
+### 期望：返回错误（Invalid parameters）
+### ========================================
+POST {{baseUrl}}{{apiPrefix}}/bindShop
+Content-Type: application/json
+token: {{token}}
+
+{
+  "account": "only_account_no_password"
+}
+

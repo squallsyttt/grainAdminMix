@@ -33,6 +33,64 @@ class User extends Api
 		// Auth 读取
 		$this->auth->getAllowFields(['id','username','nickname','mobile','avatar','level','gender','birthday','bio','money','score','successions','maxsuccessions','prevtime','logintime','loginip','jointime']);
     }
+
+    /**
+     * 绑定店铺（通过商家账户用户名/邮箱/手机号 + 密码校验）
+     * @ApiMethod   (POST)
+     * @param string $account  商家账户（用户名/邮箱/手机号）
+     * @param string $password 商家账户密码
+     * 成功条件：账户存在且密码正确，并且该账户在 wanlshop_shop 中存在店铺记录
+     * 结果：将当前登录用户的 bind_shop 更新为目标店铺 ID
+     */
+    public function bindShop()
+    {
+        // 需要登录
+        // 设置过滤
+        $this->request->filter(['strip_tags']);
+        if (!$this->request->isPost()) {
+            $this->error(__('非法请求'));
+        }
+
+        $account = $this->request->post('account');
+        $password = $this->request->post('password');
+        if (!$account || !$password) {
+            $this->error(__('Invalid parameters'));
+        }
+
+        // 查找目标用户（支持用户名/邮箱/手机号）
+        $field = \think\Validate::is($account, 'email') ? 'email' : (\think\Validate::regex($account, '/^1\d{10}$/') ? 'mobile' : 'username');
+        $targetUser = \app\common\model\User::get([$field => $account]);
+        if (!$targetUser) {
+            $this->error(__('Account is incorrect'));
+        }
+        if ($targetUser->status != 'normal') {
+            $this->error(__('Account is locked'));
+        }
+
+        // 密码校验（不改变当前登录态）
+        $encrypt = $this->auth->getEncryptPassword($password, $targetUser->salt);
+        if ($encrypt !== $targetUser->password) {
+            // 口径与登录保持一致
+            $this->error(__('Password is incorrect'));
+        }
+
+        // 校验是否有店铺
+        $shop = model('app\\api\\model\\wanlshop\\Shop')
+            ->where('user_id', $targetUser->id)
+            ->find();
+        if (!$shop) {
+            $this->error(__('未找到此商家'));
+        }
+
+        // 绑定：更新当前登录用户的 bind_shop 字段
+        \think\Db::name('user')
+            ->where('id', $this->auth->id)
+            ->update(['bind_shop' => $shop['id']]);
+
+        $this->success('绑定成功', [
+            'bind_shop' => (int)$shop['id']
+        ]);
+    }
 	
     /**
      * 会员登录
