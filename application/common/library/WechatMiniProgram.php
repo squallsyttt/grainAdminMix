@@ -13,6 +13,8 @@ class WechatMiniProgram
 {
     // 微信API接口地址
     const CODE2SESSION_URL = 'https://api.weixin.qq.com/sns/jscode2session';
+    const ACCESS_TOKEN_URL  = 'https://api.weixin.qq.com/cgi-bin/token';
+    const GET_PHONE_URL     = 'https://api.weixin.qq.com/wxa/business/getuserphonenumber';
     
     protected $appId;
     protected $appSecret;
@@ -66,6 +68,70 @@ class WechatMiniProgram
             'session_key' => $result['session_key'] ?? '',
             'unionid' => $result['unionid'] ?? '',
         ];
+    }
+
+    /**
+     * 获取小程序全局 access_token（服务端调用微信开放接口所需）
+     * 使用缓存，避免频繁请求微信服务器
+     * @return string access_token
+     * @throws Exception
+     */
+    public function getAccessToken()
+    {
+        // 使用 ThinkPHP 缓存
+        $cacheKey = 'wechat:miniprogram:access_token:' . $this->appId;
+        $token = \think\Cache::get($cacheKey);
+        if ($token) {
+            return $token;
+        }
+
+        $params = [
+            'grant_type' => 'client_credential',
+            'appid'      => $this->appId,
+            'secret'     => $this->appSecret,
+        ];
+        $url = self::ACCESS_TOKEN_URL . '?' . http_build_query($params);
+        $result = $this->httpGet($url);
+
+        if (empty($result['access_token'])) {
+            $errcode = $result['errcode'] ?? 0;
+            $errmsg  = $result['errmsg'] ?? '获取access_token失败';
+            Log::error('获取access_token失败：' . json_encode($result, JSON_UNESCAPED_UNICODE));
+            throw new Exception("{$errmsg} ({$errcode})");
+        }
+
+        $ttl = max(0, ((int)($result['expires_in'] ?? 7200)) - 200); // 留出缓冲
+        \think\Cache::set($cacheKey, $result['access_token'], $ttl);
+        return $result['access_token'];
+    }
+
+    /**
+     * 通过 getPhoneNumber 事件返回的一次性 code 获取手机号（推荐方式）
+     * @param string $phoneCode 小程序端 getPhoneNumber 返回的 code
+     * @return array phone_info 数组
+     * @throws Exception
+     */
+    public function getPhoneNumberByCode($phoneCode)
+    {
+        if (empty($phoneCode)) {
+            throw new Exception('phone_code 不能为空');
+        }
+
+        $accessToken = $this->getAccessToken();
+        $url = self::GET_PHONE_URL . '?access_token=' . urlencode($accessToken);
+        $result = $this->httpPostJson($url, ['code' => $phoneCode]);
+
+        if (isset($result['errcode']) && (int)$result['errcode'] !== 0) {
+            $errorMsg = $result['errmsg'] ?? ('微信接口错误：' . $result['errcode']);
+            Log::error('获取手机号失败：' . json_encode($result, JSON_UNESCAPED_UNICODE));
+            throw new Exception($errorMsg);
+        }
+
+        if (empty($result['phone_info']) || empty($result['phone_info']['phoneNumber'])) {
+            throw new Exception('未能获取到有效的手机号');
+        }
+
+        return $result['phone_info'];
     }
     
     /**
@@ -132,6 +198,45 @@ class WechatMiniProgram
             throw new Exception('微信接口返回数据格式错误');
         }
         
+        return $result;
+    }
+
+    /**
+     * 发送HTTP POST JSON 请求
+     * @param string $url
+     * @param array $data
+     * @return array
+     * @throws Exception
+     */
+    protected function httpPostJson($url, array $data)
+    {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+        curl_setopt($ch, CURLOPT_POST, 1);
+        $json = json_encode($data, JSON_UNESCAPED_UNICODE);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $json);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+            'Content-Length: ' . strlen($json),
+        ]);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error = curl_error($ch);
+        curl_close($ch);
+
+        if ($response === false || $httpCode != 200) {
+            throw new Exception('HTTP请求失败：' . $error);
+        }
+
+        $result = json_decode($response, true);
+        if (!is_array($result)) {
+            throw new Exception('微信接口返回数据格式错误');
+        }
         return $result;
     }
     

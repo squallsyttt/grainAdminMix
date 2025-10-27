@@ -16,7 +16,7 @@ use think\Log;
 class MiniProgramAuth extends Api
 {
     // 无需登录的接口
-    protected $noNeedLogin = ['login', 'loginByPhone'];
+    protected $noNeedLogin = ['login', 'loginByPhone', 'register'];
     // 无需鉴权的接口
     protected $noNeedRight = ['*'];
     
@@ -154,26 +154,36 @@ class MiniProgramAuth extends Api
      */
     public function loginByPhone()
     {
-        $code = $this->request->post('code', '');
-        $encryptedData = $this->request->post('encryptedData', '');
-        $iv = $this->request->post('iv', '');
-        
-        if (empty($code) || empty($encryptedData) || empty($iv)) {
+        $jsCode       = $this->request->post('code', '');           // wx.login() 返回的 code（用于拿 openid）
+        $phoneCode    = $this->request->post('phone_code', '');      // getPhoneNumber 返回的一次性 code（新推荐）
+        $encryptedData = $this->request->post('encryptedData', '');  // 旧方式（可选）
+        $iv            = $this->request->post('iv', '');             // 旧方式（可选）
+
+        if (empty($phoneCode) && (empty($jsCode) || empty($encryptedData) || empty($iv))) {
             $this->error('参数不完整');
         }
-        
+
         try {
-            // 1. 获取 session_key
+            // 1) 获取 openid/unionid（两种路径均需要 openid 以进行第三方记录绑定）
             $wechat = new WechatMiniProgram();
-            $sessionData = $wechat->code2Session($code);
-            
-            $openid = $sessionData['openid'];
+            if (empty($jsCode)) {
+                $this->error('code 不能为空');
+            }
+            $sessionData = $wechat->code2Session($jsCode);
+            $openid     = $sessionData['openid'];
             $sessionKey = $sessionData['session_key'];
-            $unionid = $sessionData['unionid'] ?? '';
-            
-            // 2. 解密手机号
-            $phoneData = $wechat->decryptData($encryptedData, $iv, $sessionKey);
-            $mobile = $phoneData['phoneNumber'] ?? '';
+            $unionid    = $sessionData['unionid'] ?? '';
+
+            // 2) 获取手机号
+            if (!empty($phoneCode)) {
+                // 新推荐：通过一次性 code 走服务端接口换手机号
+                $phoneInfo = $wechat->getPhoneNumberByCode($phoneCode);
+                $mobile = $phoneInfo['phoneNumber'] ?? '';
+            } else {
+                // 兼容旧方式：解密 encryptedData
+                $phoneData = $wechat->decryptData($encryptedData, $iv, $sessionKey);
+                $mobile = $phoneData['phoneNumber'] ?? '';
+            }
             
             if (empty($mobile)) {
                 $this->error('获取手机号失败');
