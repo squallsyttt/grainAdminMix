@@ -1,0 +1,41 @@
+### WanlShop 商品同步规范商品 API 测试（Goods::syncStandardGoods）
+### 对应方法: application/index/controller/wanlshop/Goods.php::syncStandardGoods
+### 说明：此接口为前台（index 模块）商家后台使用，必须为 Ajax 请求且需要商家登录 token。
+
+### ========================================
+### 环境变量
+### ========================================
+@baseUrl = http://grain.local.com
+@apiPrefix = /wanlshop/goods
+@token = REPLACE_WITH_SHOP_LOGIN_TOKEN
+
+### ========================================
+### 1. 同步规范商品（成功/增量同步场景）
+### 条件：当前账户已登录且已开通店铺；系统中存在规范商品（shop_id=1）
+### 期望：返回成功消息，提示已同步的商品数量
+### 注意：必须携带 Ajax 头以通过 isAjax 校验
+### ========================================
+POST {{baseUrl}}{{apiPrefix}}/syncStandardGoods
+Content-Type: application/json
+token: {{token}}
+X-Requested-With: XMLHttpRequest
+
+{}
+
+### ========================================
+### 2. 未登录/缺少 token（应失败）
+### 期望：返回错误（如 Please login first 或 尚未开通店铺 等）
+### ========================================
+POST {{baseUrl}}{{apiPrefix}}/syncStandardGoods
+Content-Type: application/json
+X-Requested-With: XMLHttpRequest
+
+{}
+
+### ========================================
+### 3. 非 Ajax 请求（应失败）
+### 期望：返回错误：非法请求
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/syncStandardGoods
+Content-Type: application/json
+

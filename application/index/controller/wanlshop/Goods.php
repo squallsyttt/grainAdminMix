@@ -494,4 +494,180 @@ class Goods extends Wanlshop
         }
         $this->error(__('Parameter %s can not be empty', 'ids'));
     }
+
+    /**
+     * 同步规范商品
+     */
+    public function syncStandardGoods()
+    {
+        if ($this->request->isAjax()) {
+            $currentShopId = $this->shop->id;
+
+            // 检查当前商家是否已有商品
+            $existingCount = $this->model
+                ->where('shop_id', $currentShopId)
+                ->where('deletetime', 'null')
+                ->count();
+
+            $message = $existingCount > 0
+                ? '库存已经有商品，现在开始同步最新的规范商品到后台'
+                : '开始同步规范商品';
+
+            try {
+                // 获取规范商品（shop_id=1）
+                $standardGoods = $this->model
+                    ->where('shop_id', 1)
+                    ->where('deletetime', 'null')
+                    ->select();
+
+                if (empty($standardGoods)) {
+                    $this->error('暂无规范商品可同步');
+                }
+
+                $insertCount = 0;
+                $currentDateTime = date('Y-m-d H:i:s');
+
+                Db::startTrans();
+                try {
+                    foreach ($standardGoods as $goods) {
+                        // 源商品ID（用于复制关联SPU/SKU）
+                        $sourceGoodsId = is_object($goods) ? (isset($goods['id']) ? $goods['id'] : null) : (isset($goods['id']) ? $goods['id'] : null);
+
+                        // 复制商品数据
+                        $newGoods = is_object($goods) ? $goods->toArray() : $goods;
+                        unset($newGoods['id']); // 移除主键，让数据库自增
+
+                        // 修改必要字段
+                        $newGoods['shop_id'] = $currentShopId;
+                        $newGoods['status'] = 'hidden';
+                        $newGoods['title'] = $newGoods['title'] . ' [' . $currentDateTime . ']';
+                        $newGoods['createtime'] = time();
+                        $newGoods['updatetime'] = time();
+                        $newGoods['deletetime'] = null;
+
+                        // 插入新商品
+                        $newGoodsModel = new \app\index\model\wanlshop\Goods;
+                        if ($newGoodsModel->allowField(true)->save($newGoods)) {
+                            $insertCount++;
+
+                            // 复制SPU
+                            if ($sourceGoodsId) {
+                                $spuList = (new \app\index\model\wanlshop\GoodsSpu())
+                                    ->where('goods_id', $sourceGoodsId)
+                                    ->where('deletetime', 'null')
+                                    ->select();
+                                if ($spuList) {
+                                    $spuRows = [];
+                                    $nowTs = time();
+                                    foreach ($spuList as $spu) {
+                                        $spuRows[] = [
+                                            'goods_id'   => $newGoodsModel->id,
+                                            'name'       => $spu['name'],
+                                            'item'       => $spu['item'],
+                                            'createtime' => $nowTs,
+                                            'updatetime' => $nowTs,
+                                            'deletetime' => null,
+                                        ];
+                                    }
+                                    if ($spuRows) {
+                                        (new \app\index\model\wanlshop\GoodsSpu())->allowField(true)->saveAll($spuRows);
+                                    }
+                                }
+
+                                // 复制SKU（仅复制有效 state=0 的规格）
+                                $skuList = (new \app\index\model\wanlshop\GoodsSku())
+                                    ->where('goods_id', $sourceGoodsId)
+                                    ->where('deletetime', 'null')
+                                    ->where('state', 0)
+                                    ->select();
+                                if ($skuList) {
+                                    $skuRows = [];
+                                    $nowTs = time();
+                                    foreach ($skuList as $sku) {
+                                        $skuRows[] = [
+                                            'goods_id'     => $newGoodsModel->id,
+                                            'thumbnail'    => isset($sku['thumbnail']) ? $sku['thumbnail'] : null,
+                                            'difference'   => $sku['difference'],
+                                            'market_price' => $sku['market_price'],
+                                            'price'        => $sku['price'],
+                                            'stock'        => $sku['stock'],
+                                            'weigh'        => isset($sku['weigh']) ? $sku['weigh'] : 0,
+                                            'sn'           => isset($sku['sn']) ? $sku['sn'] : ('wanl_' . $nowTs),
+                                            'state'        => 0,
+                                            'createtime'   => $nowTs,
+                                            'updatetime'   => $nowTs,
+                                            'deletetime'   => null,
+                                        ];
+                                    }
+                                    if ($skuRows) {
+                                        (new \app\index\model\wanlshop\GoodsSku())->allowField(true)->saveAll($skuRows);
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Db::commit();
+                    $this->success($message . '，成功同步 ' . $insertCount . ' 个商品');
+                } catch (\Exception $e) {
+                    // 不拦截框架用于返回响应的异常
+                    if ($e instanceof \think\exception\HttpResponseException) {
+                        throw $e;
+                    }
+                    Db::rollback();
+                    $errMsg = '同步失败：' . ($e->getMessage() ?: get_class($e));
+                    $errData = [
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine(),
+                    ];
+                    // 调试模式下附带堆栈，便于定位
+                    if (function_exists('config') ? config('app_debug') : false) {
+                        $errData['trace'] = $e->getTraceAsString();
+                    }
+                    $this->error($errMsg, null, $errData);
+                } catch (\Throwable $e) {
+                    if ($e instanceof \think\exception\HttpResponseException) {
+                        throw $e;
+                    }
+                    Db::rollback();
+                    $errMsg = '同步失败：' . ($e->getMessage() ?: get_class($e));
+                    $errData = [
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine(),
+                    ];
+                    if (function_exists('config') ? config('app_debug') : false) {
+                        $errData['trace'] = $e->getTraceAsString();
+                    }
+                    $this->error($errMsg, null, $errData);
+                }
+            } catch (\Exception $e) {
+                if ($e instanceof \think\exception\HttpResponseException) {
+                    throw $e;
+                }
+                $errMsg = '获取规范商品失败：' . ($e->getMessage() ?: get_class($e));
+                $errData = [
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                ];
+                if (function_exists('config') ? config('app_debug') : false) {
+                    $errData['trace'] = $e->getTraceAsString();
+                }
+                $this->error($errMsg, null, $errData);
+            } catch (\Throwable $e) {
+                if ($e instanceof \think\exception\HttpResponseException) {
+                    throw $e;
+                }
+                $errMsg = '获取规范商品失败：' . ($e->getMessage() ?: get_class($e));
+                $errData = [
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                ];
+                if (function_exists('config') ? config('app_debug') : false) {
+                    $errData['trace'] = $e->getTraceAsString();
+                }
+                $this->error($errMsg, null, $errData);
+            }
+        }
+        $this->error('非法请求');
+    }
 }
