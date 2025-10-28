@@ -49,14 +49,14 @@
 						<div class="form-group">
 							<label class="control-label col-xs-12 col-sm-2">{:__('店铺类型')}:</label>
 							<div class="col-xs-12 col-sm-8">
-								<div class="radio">
-									<label for="state-0"><input id="state-0" name="state" type="radio" value="0" v-model="state"> 个人</label>
-									<label for="state-1"><input id="state-1" name="state" type="radio" value="1" v-model="state"> 企业</label>
-								</div>
+                            <div class="radio">
+                                <!-- 隐藏个人类型，仅保留企业/个体工商户 -->
+                                <label for="state-1"><input id="state-1" name="state" type="radio" value="1" v-model="state"> 企业/个体工商户</label>
+                            </div>
 							</div>
 						</div>
 						<div class="form-group">
-							<label class="control-label col-xs-12 col-sm-2"><span id="t-name">{{getName(state)}}</span>:</label>
+                            <label class="control-label col-xs-12 col-sm-2"><span id="t-name">企业名/商户名</span>:</label>
 							<div class="col-xs-12 col-sm-8">
 								
 								{:Form::text('name', is_array($entry) ? $entry.name : '', ['data-rule'=>'required'])}
