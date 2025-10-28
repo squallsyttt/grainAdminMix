@@ -1,4 +1,46 @@
 <link rel="stylesheet" href="__CDN__/assets/addons/wanlshop/css/entry.css">
+<style>
+  /* 入驻流程配色与用户中心一致 */
+  .wanl-entry .head .title p {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    font-weight: 700;
+  }
+  .wanl-entry .step-done .ui-step-cont-number,
+  .wanl-entry .step-active .ui-step-cont-number {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  }
+  .wanl-entry .step-done .ui-step-cont-text,
+  .wanl-entry .step-active .ui-step-cont-text { color: #667eea; }
+  .wanl-entry .step-done .ui-step-line { background-color: #667eea; }
+  .wanl-entry .form-control { border-radius: 8px; border-color: #e2e8f0; }
+  .wanl-entry .form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102,126,234,0.15);
+  }
+  .wanl-entry .btn-success,
+  .wanl-entry .btn-danger {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-color: #5a67d8;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(102,126,234,0.3);
+  }
+  .wanl-entry .btn-success:hover,
+  .wanl-entry .btn-danger:hover {
+    background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+    border-color: #4c51bf;
+    box-shadow: 0 4px 12px rgba(102,126,234,0.4);
+  }
+  .wanl-entry .btn-default { border-color: #cbd5e0; color: #4a5568; }
+  .wanl-entry .btn-default:hover { border-color: #a0aec0; color: #2d3748; background-color: #edf2f7; }
+  .wanl-entry input[type=radio] { accent-color: #667eea; }
+  .wanl-entry .title-container .title { border-left: 4px solid #667eea; }
+  .wanl-entry .info a { color: #667eea; }
+  .wanl-entry .info a:hover { color: #764ba2; }
+</style>
 <div id="content-container" class="container">
 	<div class="row">
 		<form class="form-horizontal" role="form" data-toggle="validator" method="POST">
