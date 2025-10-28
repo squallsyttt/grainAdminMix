@@ -81,12 +81,28 @@ class MiniProgramAuth extends Api
                     
                     // 检查用户是否存在
                     if ($userId == 0) {
-                        // 未绑定用户，需要进一步完善信息
+                        // 未绑定用户，自动注册并绑定
+                        $ret = $this->auth->register(
+                            'u_' . Random::alnum(8),
+                            Random::alnum(16),
+                            '',
+                            '',
+                            []
+                        );
+                        if (!$ret) {
+                            throw new Exception($this->auth->getError() ?: '注册失败');
+                        }
+                        $user = $this->auth->getUser();
+                        // 绑定第三方记录到新用户
+                        $third->user_id = $user->id;
+                        $third->save();
+                        
+                        $isNewUser = true;
                         Db::commit();
-                        $this->success('需要完善用户信息', [
-                            'is_new_user' => true,
-                            'need_register' => true,
-                            'third_token' => $third->token
+                        $this->success('登录成功', [
+                            'is_new_user' => $isNewUser,
+                            'need_register' => false,
+                            'userinfo' => $this->auth->getUserinfo()
                         ]);
                         return;
                     }
@@ -104,14 +120,28 @@ class MiniProgramAuth extends Api
                     $third->user_id = 0; // 暂未绑定用户
                     $third->save();
                     
+                    // 自动注册并绑定
+                    $ret = $this->auth->register(
+                        'u_' . Random::alnum(8),
+                        Random::alnum(16),
+                        '',
+                        '',
+                        []
+                    );
+                    if (!$ret) {
+                        throw new Exception($this->auth->getError() ?: '注册失败');
+                    }
+                    $user = $this->auth->getUser();
+                    $third->user_id = $user->id;
+                    $third->save();
+                    
                     $isNewUser = true;
                     
-                    // 返回需要完善信息
                     Db::commit();
-                    $this->success('需要完善用户信息', [
-                        'is_new_user' => true,
-                        'need_register' => true,
-                        'third_token' => $third->token
+                    $this->success('登录成功', [
+                        'is_new_user' => $isNewUser,
+                        'need_register' => false,
+                        'userinfo' => $this->auth->getUserinfo()
                     ]);
                     return;
                 }

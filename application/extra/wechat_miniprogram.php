@@ -16,11 +16,11 @@
 
 return [
     // 小程序 AppID
-    'app_id' => \think\Env::get('WECHAT_MINIPROGRAM_APPID', ''),
-    
+    'app_id' => \think\Env::get('wechat_miniprogram.app_id', ''),
+
     // 小程序 AppSecret
-    'app_secret' => \think\Env::get('WECHAT_MINIPROGRAM_SECRET', ''),
-    
+    'app_secret' => \think\Env::get('wechat_miniprogram.app_secret', ''),
+
     // session_key 有效期（秒）默认90天
     'session_expire' => 7776000,
 ];
