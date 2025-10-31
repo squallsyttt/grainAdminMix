@@ -377,20 +377,41 @@ class Wanlshop extends Controller
 	                break;
 	        }
 	    }
-    // 设置主模型别名(若已启用别名)
-    if (!empty($alias)) {
-        $this->model->alias($alias);
-    }
-    $where = function ($query) use ($where) {
-        foreach ($where as $k => $v) {
-            if (is_array($v)) {
-                call_user_func_array([$query, 'where'], $v);
-            } else {
-                $query->where($v);
+        // 设置主模型别名(若已启用别名)
+        if (!empty($alias)) {
+            // 同时设置映射与主表别名字符串，提升兼容性
+            $this->model->alias($alias);
+            $mainAlias = reset($alias); // 取到如 money_log、goods 等
+            if ($mainAlias) {
+                $this->model->alias($mainAlias);
             }
         }
-    };
-	    return [$where, $sort, $order, $offset, $limit];
+        // 兼容绑定参数结构（目前未使用，可扩展）
+        $bind = [];
+        $model = $this->model;
+        $where = function ($query) use ($where, $alias, $bind, &$model) {
+            if (!empty($model)) {
+                // 再次应用别名与绑定，确保在闭包执行阶段生效
+                if (!empty($alias)) {
+                    $model->alias($alias);
+                    $mainAlias = reset($alias);
+                    if ($mainAlias) {
+                        $model->alias($mainAlias);
+                    }
+                }
+                if (!empty($bind)) {
+                    $model->bind($bind);
+                }
+            }
+            foreach ($where as $k => $v) {
+                if (is_array($v)) {
+                    call_user_func_array([$query, 'where'], $v);
+                } else {
+                    $query->where($v);
+                }
+            }
+        };
+        return [$where, $sort, $order, $offset, $limit];
 	}
 	
 	/**
