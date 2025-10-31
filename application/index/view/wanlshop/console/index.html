@@ -146,7 +146,37 @@
         line-height: 2px;
         height: 2px;
     }
-
+    /* --- 轻量圆角增强（仅本页）--- */
+    .panel {
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .panel .panel-heading {
+        border-top-left-radius: 8px;
+        border-top-right-radius: 8px;
+    }
+    .nav-tabs > li > a {
+        border-radius: 8px;
+    }
+    .sm-st {
+        border-radius: 8px !important;
+    }
+    .sm-st-icon {
+        border-radius: 10px !important;
+    }
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .dropdown-menu {
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .btn,
+    .form-control,
+    .input-group .form-control {
+        border-radius: 6px;
+    }
 </style>
 <div class="panel panel-default panel-intro">
     <div class="panel-heading">
