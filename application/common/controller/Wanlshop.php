@@ -245,45 +245,47 @@ class Wanlshop extends Controller
 	    $order = $this->request->get("order", "DESC");
 	    $offset = $this->request->get("offset", 0);
 	    $limit = $this->request->get("limit", 0);
-	    $filter = (array)json_decode($filter, true);
-	    $op = (array)json_decode($op, true);
-	    $filter = $filter ? $filter : [];
-	    $where = [];
-	    $tableName = '';
-	    if ($relationSearch) {
-	        if (!empty($this->model)) {
-	            $name = \think\Loader::parseName(basename(str_replace('\\', '/', get_class($this->model))));
-	            $name = $this->model->getTable();
-	            $tableName = $name . '.';
-	        }
-	        $sortArr = explode(',', $sort);
-	        foreach ($sortArr as $index => & $item) {
-	            $item = stripos($item, ".") === false ? $tableName . trim($item) : $item;
-	        }
-	        unset($item);
-	        $sort = implode(',', $sortArr);
-	    }
+    $filter = (array)json_decode($filter, true);
+    $op = (array)json_decode($op, true);
+    $filter = $filter ? $filter : [];
+    $where = [];
+    // 采用别名，避免在关联查询(with)场景下因使用物理表名导致SQL错误
+    $alias = [];
+    $aliasName = '';
+    if ($relationSearch) {
+        if (!empty($this->model)) {
+            $name = $this->model->getTable(); // 物理表名(含前缀)
+            $alias[$name] = \think\Loader::parseName(basename(str_replace('\\', '/', get_class($this->model))));
+            $aliasName = $alias[$name] . '.'; // e.g. goods.
+        }
+        $sortArr = explode(',', $sort);
+        foreach ($sortArr as $index => & $item) {
+            $item = stripos($item, ".") === false ? $aliasName . trim($item) : $item;
+        }
+        unset($item);
+        $sort = implode(',', $sortArr);
+    }
 		// 过滤排除
 		switch (Loader::parseName($this->request->controller()))
 		{
-			case 'wanlshop.attachment':
-				$where[] = [$tableName . 'user_id', 'in', $this->auth->id];
-				break;  
-			case 'wanlshop.finance':
-				$where[] = [$tableName . 'user_id', 'in', $this->auth->id];
-				break;
+            case 'wanlshop.attachment':
+                $where[] = [$aliasName . 'user_id', 'in', $this->auth->id];
+                break;  
+            case 'wanlshop.finance':
+                $where[] = [$aliasName . 'user_id', 'in', $this->auth->id];
+                break;
 			case 'wanlshop.icon':
 				
 				break;
-			default:
-				$where[] = [$tableName . $this->dataLimitField, 'in', $this->shop->id];
+            default:
+                $where[] = [$aliasName . $this->dataLimitField, 'in', $this->shop->id];
 		}
 		
 	    if ($search) {
 	        $searcharr = is_array($searchfields) ? $searchfields : explode(',', $searchfields);
-	        foreach ($searcharr as $k => &$v) {
-	            $v = stripos($v, ".") === false ? $tableName . $v : $v;
-	        }
+        foreach ($searcharr as $k => &$v) {
+            $v = stripos($v, ".") === false ? $aliasName . $v : $v;
+        }
 	        unset($v);
 			$arrSearch = [];
 			foreach (explode(" ", $search) as $ko) {
@@ -294,9 +296,9 @@ class Wanlshop extends Controller
 		
 	    foreach ($filter as $k => $v) {
 	        $sym = isset($op[$k]) ? $op[$k] : '=';
-	        if (stripos($k, ".") === false) {
-	            $k = $tableName . $k;
-	        }
+        if (stripos($k, ".") === false) {
+            $k = $aliasName . $k;
+        }
 	        $v = !is_array($v) ? trim($v) : $v;
 	        $sym = strtoupper(isset($op[$k]) ? $op[$k] : $sym);
 	        switch ($sym) {
@@ -316,11 +318,12 @@ class Wanlshop extends Controller
 	            case '<=':
 	                $where[] = [$k, $sym, intval($v)];
 	                break;
-	            case 'FINDIN':
-	            case 'FINDINSET':
-	            case 'FIND_IN_SET':
-	                $where[] = "FIND_IN_SET('{$v}', " . ($relationSearch ? $k : '`' . str_replace('.', '`.`', $k) . '`') . ")";
-	                break;
+            case 'FINDIN':
+            case 'FINDINSET':
+            case 'FIND_IN_SET':
+                // 统一使用反引号包裹字段(含别名.字段)，避免别名/前缀差异导致的SQL错误
+                $where[] = "FIND_IN_SET('{$v}', `" . str_replace('.', '`.`', $k) . "`)";
+                break;
 	            case 'IN':
 	            case 'IN(...)':
 	            case 'NOT IN':
@@ -374,15 +377,19 @@ class Wanlshop extends Controller
 	                break;
 	        }
 	    }
-	    $where = function ($query) use ($where) {
-	        foreach ($where as $k => $v) {
-	            if (is_array($v)) {
-	                call_user_func_array([$query, 'where'], $v);
-	            } else {
-	                $query->where($v);
-	            }
-	        }
-	    };
+    // 设置主模型别名(若已启用别名)
+    if (!empty($alias)) {
+        $this->model->alias($alias);
+    }
+    $where = function ($query) use ($where) {
+        foreach ($where as $k => $v) {
+            if (is_array($v)) {
+                call_user_func_array([$query, 'where'], $v);
+            } else {
+                $query->where($v);
+            }
+        }
+    };
 	    return [$where, $sort, $order, $offset, $limit];
 	}
 	
