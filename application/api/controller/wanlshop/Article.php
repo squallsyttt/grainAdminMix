@@ -60,6 +60,13 @@ class Article extends Api
 	 */
 	public function getListGrainArticle()
 	{
+		// 临时调试代码 - 用于排查小程序 401 问题
+		\think\Log::write('[Article::getListGrainArticle] 调试信息:', 'debug');
+		\think\Log::write('  - Action: ' . $this->request->action(), 'debug');
+		\think\Log::write('  - Action(小写): ' . strtolower($this->request->action()), 'debug');
+		\think\Log::write('  - NoNeedLogin: ' . json_encode($this->noNeedLogin), 'debug');
+		\think\Log::write('  - URL: ' . $this->request->url(), 'debug');
+		
 		//设置过滤方法
 		$this->request->filter(['strip_tags']);
 		if ($this->request->isPost()) {
