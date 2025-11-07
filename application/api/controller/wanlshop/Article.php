@@ -49,6 +49,41 @@ class Article extends Api
 		$this->error(__('非法请求'));
         
     }
+
+	/**
+	 * 获取指定分类的文章列表
+	 *
+	 * @ApiSummary  (WanlShop 根据分类ID获取文章列表)
+	 * @ApiMethod   (POST)
+	 * @param int $category_id 文章分类ID（可选，不传则返回所有文章）
+	 * @param int $list_rows 每页数量（可选）
+	 */
+	public function getListGrainArticle()
+	{
+		//设置过滤方法
+		$this->request->filter(['strip_tags']);
+		if ($this->request->isPost()) {
+			$category_id = $this->request->post('category_id');
+			$list_rows   = $this->request->post('list_rows');
+
+			$where = [
+				'status' => 'normal'
+			];
+			if ($category_id) {
+				$where['category_id'] = $category_id;
+			}
+
+			$query = model('app\api\model\wanlshop\Article')
+				->where($where)
+				->field('id,title,description,image,images,flag,views,createtime')
+				->order('createtime desc');
+
+			$data = $list_rows ? $query->paginate((int)$list_rows) : $query->paginate();
+
+			$this->success('返回成功', $data);
+		}
+		$this->error(__('非法请求'));
+	}
     
 	
     /**
