@@ -9,7 +9,7 @@ use fast\Tree;
  */
 class Shop extends Api
 {
-    protected $noNeedLogin = ['getShopInfo', 'lists'];
+    protected $noNeedLogin = ['getShopInfo', 'lists','searchCity'];
     protected $noNeedRight = ['*'];
 	
 	public function _initialize()
@@ -67,6 +67,33 @@ class Shop extends Api
 
 			$this->success('返回成功', $list);
 		}
+
+	/**
+	 * 根据城市搜索店铺
+	 *
+	 * @ApiSummary  (WanlShop 根据城市搜索店铺)
+	 * @ApiMethod   (GET)
+	 *
+	 * 可选参数：
+	 * - search: 城市关键词（仅匹配 city）
+	 * - filter/op: 过滤与操作（JSON，参考商品列表用法）
+	 * - sort/order: 排序字段/方向
+	 */
+	public function searchCity()
+	{
+		// 设置过滤方法
+		$this->request->filter(['strip_tags']);
+		// 仅针对 city 字段做模糊搜索（LIKE %keyword%）
+		list($where, $sort, $order) = $this->buildparams('city', false);
+		// 查询数据，仅返回正常状态店铺
+		$list = $this->model
+			->where($where)
+			->where('status', 'normal')
+			->order($sort, $order)
+			->paginate();
+
+		$this->success('返回成功', $list);
+	}
 
 		/**
 		 * 复制自产品控制器的参数构建器，适配API查询

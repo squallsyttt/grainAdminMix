@@ -16,7 +16,7 @@ Content-Type: application/json
 ### ========================================
 ### 2. 关键字搜索（shopname/city 模糊匹配）
 ### ========================================
-GET {{baseUrl}}{{apiPrefix}}/lists?search=店
+GET {{baseUrl}}{{apiPrefix}}/lists?search=南通
 Content-Type: application/json
 
 ### ========================================
@@ -32,7 +32,13 @@ GET {{baseUrl}}{{apiPrefix}}/lists?sort=weigh&order=DESC
 Content-Type: application/json
 
 ### ========================================
-### 5. 获取单个店铺详情（getShopInfo）
+### 5. 城市搜索（仅匹配 city 字段）
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/searchCity?search=南通
+Content-Type: application/json
+
+### ========================================
+### 6. 获取单个店铺详情（getShopInfo）
 ### ========================================
 GET {{baseUrl}}{{apiPrefix}}/getShopInfo?id=1
 Content-Type: application/json
