@@ -39,3 +39,66 @@ X-Requested-With: XMLHttpRequest
 GET {{baseUrl}}{{apiPrefix}}/syncStandardGoods
 Content-Type: application/json
 
+
+### ========================================
+### WanlShop 商品接口 API 测试（Product 列表与详情）
+### 对应控制器: application/api/controller/wanlshop/Product.php
+### 说明：以下为商品列表与详情接口测试用例
+### 路由：/api/wanlshop/product/lists 与 /api/wanlshop/product/goods
+### ========================================
+
+### 环境变量（Product）
+@productPrefix = /api/wanlshop/product
+@goodsId = REPLACE_WITH_EXISTING_GOODS_ID
+
+### ========================================
+### 1. 获取所有商品列表（默认分页）
+### ========================================
+GET {{baseUrl}}{{productPrefix}}/lists
+Content-Type: application/json
+
+### ========================================
+### 2. 按 shop_id=1 筛选商品
+### ========================================
+GET {{baseUrl}}{{productPrefix}}/lists?shop_id__eq=1
+Content-Type: application/json
+
+### ========================================
+### 3. 按 shop_id 查询不存在的店铺（应返回空列表或相应提示）
+### ========================================
+GET {{baseUrl}}{{productPrefix}}/lists?shop_id__eq=999999
+Content-Type: application/json
+
+### ========================================
+### 4. 通过操作符后缀语法进行过滤（示例：精确匹配）
+###    支持复合过滤：如再加 brand_id、category_id、status 等
+### ========================================
+###    示例A：按 shop_id 精确匹配
+GET {{baseUrl}}{{productPrefix}}/lists?shop_id__eq=1
+Content-Type: application/json
+
+###    示例B：按 flag=recommend 过滤
+GET {{baseUrl}}{{productPrefix}}/lists?flag__eq=recommend
+Content-Type: application/json
+
+###    复合条件（注释示例）：?shop_id__eq=1&flag__eq=recommend
+
+### ========================================
+### 5. 筛选推荐商品（flag=recommend）
+###    获取 grain_wanlshop_goods 表中 flag 字段为 recommend 的商品
+### ========================================
+GET {{baseUrl}}{{productPrefix}}/lists?flag__eq=recommend
+Content-Type: application/json
+
+### ========================================
+### 6. 获取商品详情（需要传入商品 ID）
+###    将 {{goodsId}} 替换为实际存在的商品 ID
+### ========================================
+GET {{baseUrl}}{{productPrefix}}/goods?id={{goodsId}}
+Content-Type: application/json
+
+### ========================================
+### 7. 获取不存在的商品（测试错误处理）
+### ========================================
+GET {{baseUrl}}{{productPrefix}}/goods?id=999999
+Content-Type: application/json

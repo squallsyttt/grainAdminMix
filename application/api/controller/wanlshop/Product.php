@@ -26,13 +26,15 @@ class Product extends Api
 	 */
     public function lists($type = 'goods')
     {
-    	//设置过滤方法
-    	$this->request->filter(['strip_tags']);
+	    //设置过滤方法
+	    $this->request->filter(['strip_tags']);
 		// 判断业务类型
 		if($type === 'goods'){
 			$goodsModel  = model('app\api\model\wanlshop\Goods');
+			$this->model = $goodsModel; // 确保 buildparams() 能获取表名
 		}else if($type === 'groups'){
 			$goodsModel  = model('app\api\model\wanlshop\groups\Goods');
+			$this->model = $goodsModel; // 确保 buildparams() 能获取表名
 		}
 	    	// 生成搜索条件
 	    	list($where, $sort, $order) = $this->buildparams('title,category.name',false); // 查询标题 和类目字段
@@ -689,34 +691,30 @@ class Product extends Api
 	 * @param boolean $relationSearch 是否关联查询
 	 * @return array
 	 */
-	protected function buildparams($searchfields = null, $relationSearch = null)
-	{
-	    $searchfields = is_null($searchfields) ? $this->searchFields : $searchfields;
-	    $relationSearch = is_null($relationSearch) ? $this->relationSearch : $relationSearch;
-		// 获取传参
-	    $search = $this->request->get("search", '');
-	    $filter = $this->request->get("filter", '');
-	    $op = $this->request->get("op", '', 'trim');
-	    $sort = $this->request->get("sort", !empty($this->model) && $this->model->getPk() ? $this->model->getPk() : 'id');
-	    $order = $this->request->get("order", "DESC");
-	    $filter = (array)json_decode($filter, true);
-	    $op = (array)json_decode($op, true);
-	    $filter = $filter ? $filter : [];
-	    $where = [];
-	    $tableName = '';
-	    if ($relationSearch) {
-	        if (!empty($this->model)) {
-	            $name = \think\Loader::parseName(basename(str_replace('\\', '/', get_class($this->model))));
-	            $name = $this->model->getTable();
-	            $tableName = $name . '.';
-	        }
-	        $sortArr = explode(',', $sort);
-	        foreach ($sortArr as $index => & $item) {
-	            $item = stripos($item, ".") === false ? $tableName . trim($item) : $item;
-	        }
-	        unset($item);
-	        $sort = implode(',', $sortArr);
-	    }
+    protected function buildparams($searchfields = null, $relationSearch = null)
+    {
+        $searchfields = is_null($searchfields) ? $this->searchFields : $searchfields;
+        $relationSearch = is_null($relationSearch) ? $this->relationSearch : $relationSearch;
+        // 获取传参（保留 search/sort/order，但完全替换旧的 filter/op JSON 方案）
+        $search = $this->request->get("search", '');
+        $sort = $this->request->get("sort", !empty($this->model) && $this->model->getPk() ? $this->model->getPk() : 'id');
+        $order = $this->request->get("order", "DESC");
+
+        $where = [];
+        $tableName = '';
+        // 无论是否为关联查询，只要存在模型，则获取表名用于字段前缀，避免字段歧义
+        if (!empty($this->model)) {
+            $tableName = $this->model->getTable() . '.';
+        }
+        if ($relationSearch) {
+            // 仅在关联查询时，对排序字段进行表前缀补全
+            $sortArr = explode(',', $sort);
+            foreach ($sortArr as $index => & $item) {
+                $item = stripos($item, ".") === false ? $tableName . trim($item) : $item;
+            }
+            unset($item);
+            $sort = implode(',', $sortArr);
+        }
 		
 		
 		// 判断是否需要验证权限
@@ -724,114 +722,181 @@ class Product extends Api
 		//     $where[] = [$tableName . 'user_id', 'in', $this->auth->id];
 		// }
 		
-	    if ($search) {
-	        $searcharr = is_array($searchfields) ? $searchfields : explode(',', $searchfields);
-	        foreach ($searcharr as $k => &$v) {
-	            $v = stripos($v, ".") === false ? $tableName . $v : $v;
-	        }
-	        unset($v);
-	        $arrSearch = [];
-	        foreach (explode(" ", $search) as $ko) {
-	        	$arrSearch[] = '%'.$ko.'%';
-	        }
-	        $where[] = [implode("|", $searcharr), "LIKE", $arrSearch];
-	    }
-		// 历遍所有
-		if (array_key_exists('category_id', $filter)) {
-			$filter['category_id'] = implode(',', array_column(Tree::instance()->init(model('app\api\model\wanlshop\Category')->all())->getChildren($filter['category_id'], true), 'id'));
-		}
-	    foreach ($filter as $k => $v) {
-	        $sym = isset($op[$k]) ? $op[$k] : '=';
-	        if (stripos($k, ".") === false) {
-	            $k = $tableName . $k;
-	        }
-	        $v = !is_array($v) ? trim($v) : $v;
-	        $sym = strtoupper(isset($op[$k]) ? $op[$k] : $sym);
-	        switch ($sym) {
-	            case '=':
-	            case '<>':
-	                $where[] = [$k, $sym, (string)$v];
-	                break;
-	            case 'LIKE':
-	            case 'NOT LIKE':
-	            case 'LIKE %...%':
-	            case 'NOT LIKE %...%':
-	                $where[] = [$k, trim(str_replace('%...%', '', $sym)), "%{$v}%"];
-	                break;
-	            case '>':
-	            case '>=':
-	            case '<':
-	            case '<=':
-	                $where[] = [$k, $sym, intval($v)];
-	                break;
-	            case 'FINDIN':
-	            case 'FINDINSET':
-	            case 'FIND_IN_SET':
-	                $where[] = "FIND_IN_SET('{$v}', " . ($relationSearch ? $k : '`' . str_replace('.', '`.`', $k) . '`') . ")";
-	                break;
-	            case 'IN':
-	            case 'IN(...)':
-	            case 'NOT IN':
-	            case 'NOT IN(...)':
-	                $where[] = [$k, str_replace('(...)', '', $sym), is_array($v) ? $v : explode(',', $v)];
-	                break;
-	            case 'BETWEEN':
-	            case 'NOT BETWEEN':
-	                $arr = array_slice(explode(',', $v), 0, 2);
-	                if (stripos($v, ',') === false || !array_filter($arr)) {
-	                    continue 2;
-	                }
-	                //当出现一边为空时改变操作符
-	                if ($arr[0] === '') {
-	                    $sym = $sym == 'BETWEEN' ? '<=' : '>';
-	                    $arr = $arr[1];
-	                } elseif ($arr[1] === '') {
-	                    $sym = $sym == 'BETWEEN' ? '>=' : '<';
-	                    $arr = $arr[0];
-	                }
-	                $where[] = [$k, $sym, $arr];
-	                break;
-	            case 'RANGE':
-	            case 'NOT RANGE':
-	                $v = str_replace(' - ', ',', $v);
-	                $arr = array_slice(explode(',', $v), 0, 2);
-	                if (stripos($v, ',') === false || !array_filter($arr)) {
-	                    continue 2;
-	                }
-	                //当出现一边为空时改变操作符
-	                if ($arr[0] === '') {
-	                    $sym = $sym == 'RANGE' ? '<=' : '>';
-	                    $arr = $arr[1];
-	                } elseif ($arr[1] === '') {
-	                    $sym = $sym == 'RANGE' ? '>=' : '<';
-	                    $arr = $arr[0];
-	                }
-	                $where[] = [$k, str_replace('RANGE', 'BETWEEN', $sym) . ' time', $arr];
-	                break;
-	            case 'LIKE':
-	            case 'LIKE %...%':
-	                $where[] = [$k, 'LIKE', "%{$v}%"];
-	                break;
-	            case 'NULL':
-	            case 'IS NULL':
-	            case 'NOT NULL':
-	            case 'IS NOT NULL':
-	                $where[] = [$k, strtolower(str_replace('IS ', '', $sym))];
-	                break;
-	            default:
-	                break;
-	        }
-	    }
-	    $where = function ($query) use ($where) {
-	        foreach ($where as $k => $v) {
-	            if (is_array($v)) {
-	                call_user_func_array([$query, 'where'], $v);
-	            } else {
-	                $query->where($v);
-	            }
-	        }
-	    };
-	    return [$where, $sort, $order];
-	}
+        if ($search) {
+            $searcharr = is_array($searchfields) ? $searchfields : explode(',', $searchfields);
+            foreach ($searcharr as $k => &$v) {
+                $v = stripos($v, ".") === false ? $tableName . $v : $v;
+            }
+            unset($v);
+            $arrSearch = [];
+            foreach (explode(" ", $search) as $ko) {
+                $arrSearch[] = '%'.$ko.'%';
+            }
+            $where[] = [implode("|", $searcharr), "LIKE", $arrSearch];
+        }
+        // ===== 新的操作符后缀语法解析 =====
+        $params = $this->request->get();
+
+        // 需要忽略的常用参数（不参与条件构造）
+        $reservedKeys = [
+            'search','sort','order','page','limit','offset','pagesize','callback','token','_ajax'
+        ];
+
+        // 后缀映射
+        $suffixMap = [
+            '__eq' => '=',
+            '__ne' => '<>', '__neq' => '<>',
+            '__gt' => '>',
+            '__gte' => '>=', '__ge' => '>=',
+            '__lt' => '<',
+            '__lte' => '<=', '__le' => '<=',
+            '__like' => 'LIKE',
+            '__notlike' => 'NOT LIKE',
+            '__in' => 'IN',
+            '__notin' => 'NOT IN',
+            '__between' => 'BETWEEN',
+            '__notbetween' => 'NOT BETWEEN',
+            '__isnull' => 'IS NULL',
+            '__notnull' => 'IS NOT NULL',
+            '__findinset' => 'FIND_IN_SET',
+        ];
+
+        // 收集符合语法的过滤条件
+        $filters = [];
+        foreach ($params as $rawKey => $val) {
+            if (in_array($rawKey, $reservedKeys, true)) {
+                continue;
+            }
+            // 只处理 GET 里出现的键；保留非空字符串或数组，0 与 '0' 保留
+            if ($val === '' || $val === null) {
+                continue;
+            }
+
+            $field = $rawKey;
+            $op = '='; // 默认等于
+
+            // 解析后缀操作符
+            foreach ($suffixMap as $suffix => $mapped) {
+                $len = strlen($suffix);
+                if (strlen($rawKey) > $len && substr($rawKey, -$len) === $suffix) {
+                    $field = substr($rawKey, 0, -$len);
+                    $op = $mapped;
+                    break;
+                }
+            }
+
+            // 保留 category_id 特殊处理：将给定分类扩展为其所有子节点，统一用 IN
+            if ($field === 'category_id') {
+                // 支持传多个分类 id，以逗号分隔
+                $ids = [];
+                $catModel = model('app\\api\\model\\wanlshop\\Category');
+                $tree = Tree::instance()->init($catModel->all());
+                foreach (explode(',', (string)$val) as $cid) {
+                    $cid = trim($cid);
+                    if ($cid === '') continue;
+                    $children = $tree->getChildren($cid, true);
+                    foreach ($children as $c) {
+                        $ids[] = $c['id'];
+                    }
+                }
+                $ids = array_values(array_unique($ids));
+                if ($ids) {
+                    $val = implode(',', $ids);
+                    $op = 'IN'; // 归一为 IN 查询
+                } else {
+                    // 无有效分类，构造一个永不满足的条件
+                    $val = '-1';
+                    $op = 'IN';
+                }
+            }
+
+            $filters[] = [$field, $op, $val];
+        }
+
+        // 将过滤条件转为 where 表达式
+        foreach ($filters as $item) {
+            list($kField, $sym, $v) = $item;
+
+            // 处理表名前缀
+            $k = $kField;
+            if (stripos($k, '.') === false) {
+                $k = $tableName . $k;
+            }
+
+            // 统一值形态
+            if (!is_array($v)) {
+                $v = trim((string)$v);
+            }
+
+            switch (strtoupper($sym)) {
+                case '=':
+                case '<>':
+                    $where[] = [$k, $sym, (string)$v];
+                    break;
+                case 'LIKE':
+                case 'NOT LIKE':
+                    $where[] = [$k, $sym, "%{$v}%"];
+                    break;
+                case '>':
+                case '>=':
+                case '<':
+                case '<=':
+                    // 数值比较尽量转为数值
+                    $num = is_numeric($v) ? 0 + $v : $v;
+                    $where[] = [$k, $sym, $num];
+                    break;
+                case 'FIND_IN_SET':
+                    $fieldExpr = ($relationSearch ? $k : '`' . str_replace('.', '`.`', $k) . '`');
+                    $valEsc = str_replace("'", "\\'", (string)$v);
+                    $where[] = "FIND_IN_SET('{$valEsc}', " . $fieldExpr . ")";
+                    break;
+                case 'IN':
+                case 'NOT IN':
+                    $vals = is_array($v) ? $v : explode(',', (string)$v);
+                    $vals = array_values(array_filter(array_map('trim', $vals), function($it){ return $it !== '' && $it !== null; }));
+                    $where[] = [$k, $sym, $vals];
+                    break;
+                case 'BETWEEN':
+                case 'NOT BETWEEN':
+                    $arr = is_array($v) ? $v : array_slice(explode(',', (string)$v), 0, 2);
+                    if (count($arr) < 2) {
+                        continue 2;
+                    }
+                    $arr = [trim($arr[0]), trim($arr[1])];
+                    if (!array_filter($arr, function($it){ return $it !== '' && $it !== null; })) {
+                        continue 2;
+                    }
+                    // 出现一边为空时改变操作符
+                    if ($arr[0] === '') {
+                        $sym2 = strtoupper($sym) === 'BETWEEN' ? '<=' : '>';
+                        $where[] = [$k, $sym2, $arr[1]];
+                    } elseif ($arr[1] === '') {
+                        $sym2 = strtoupper($sym) === 'BETWEEN' ? '>=' : '<';
+                        $where[] = [$k, $sym2, $arr[0]];
+                    } else {
+                        $where[] = [$k, strtoupper($sym), $arr];
+                    }
+                    break;
+                case 'IS NULL':
+                case 'IS NOT NULL':
+                    $where[] = [$k, strtolower(str_replace('IS ', '', strtoupper($sym)))];
+                    break;
+                default:
+                    // 默认等值
+                    $where[] = [$k, '=', (string)$v];
+                    break;
+            }
+        }
+        $where = function ($query) use ($where) {
+            foreach ($where as $k => $v) {
+                if (is_array($v)) {
+                    call_user_func_array([$query, 'where'], $v);
+                } else {
+                    $query->where($v);
+                }
+            }
+        };
+        return [$where, $sort, $order];
+    }
 	
 }
