@@ -231,23 +231,23 @@ class Product extends Api
 			->field('id,category_id,shop_category_id,brand_id,freight_id,shop_id,title,image,images,flag,content,category_attribute,activity_type,price,sales,payment,comment,praise,moderate,negative,like,views,status')
 			->find();
 		// 浏览+1 & 报错
-		if($goods && $goods['status'] == 'normal'){
-			// 查询类目
-			$goods->category->visible(['id','pid','name']);
+        if($goods && $goods['status'] == 'normal'){
+            // 查询类目
+            $goods->category && $goods->category->visible(['id','pid','name']);
 			// 查询优惠券
 			$goods['coupon'] = $this->queryCoupon($goods['id'], $goods['shop_id'], $goods['shop_category_id'], $goods['price']);
 			// 查询是否关注
 			$goods['follow'] = $this->isfollow($id);
-			// 查询品牌
-			$goods->brand->visible(['name']);
+            // 查询品牌
+            $goods->brand && $goods->brand->visible(['name']);
 			// 查询SKU
 			$goods['sku'] = $goods->sku;
 			// 查询SPU
 			$goods['spu'] = $goods->spu;
 			// 查询评论
 			$goods['comment_list'] = $goods->comment_list;
-			// 获取店铺详情
-			$goods->shop->visible(['shopname','service_ids','avatar','city','like','score_describe','score_service','score_logistics']);
+            // 获取店铺详情
+            $goods->shop && $goods->shop->visible(['shopname','service_ids','avatar','city','like','score_describe','score_service','score_logistics']);
 			// 查询快递 运费ID 商品重量 邮递城市 商品数量
 			$goods['freight'] = $this->freight($goods['freight_id']);
 			// 查询促销
@@ -582,9 +582,10 @@ class Product extends Api
 	 */
 	private function freight($id = null, $weigh = 0, $city = '北京', $number = 1)
 	{
-		// 运费模板
-		$data = model('app\api\model\wanlshop\ShopFreight')->where('id', $id)->field('id,delivery,isdelivery,name,valuation')->find();
-		$data['price'] = 0;
+        // 运费模板
+        $data = model('app\api\model\wanlshop\ShopFreight')->where('id', $id)->field('id,delivery,isdelivery,name,valuation')->find();
+        if(!$data) return [];
+        $data['price'] = 0;
 		// 是否包邮:0=自定义运费,1=卖家包邮
 		if($data['isdelivery'] == 0){
 			// 获取地址编码 1.1.0升级
@@ -629,7 +630,7 @@ class Product extends Api
 	 */
 	private function queryCoupon($goods_id = null, $shop_id = null, $shop_category_id = null, $price = null)
 	{
-		$user_coupon = [];
+			return [];
 		if ($this->auth->isLogin()) {
 			foreach (model('app\api\model\wanlshop\CouponReceive')->where([
 				'user_id' => $this->auth->id, 

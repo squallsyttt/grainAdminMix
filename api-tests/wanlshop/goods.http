@@ -94,7 +94,7 @@ Content-Type: application/json
 ### 6. 获取商品详情（需要传入商品 ID）
 ###    将 {{goodsId}} 替换为实际存在的商品 ID
 ### ========================================
-GET {{baseUrl}}{{productPrefix}}/goods?id={{goodsId}}
+GET {{baseUrl}}{{productPrefix}}/goods?id=1
 Content-Type: application/json
 
 ### ========================================
