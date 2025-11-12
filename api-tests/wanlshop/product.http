@@ -61,3 +61,32 @@ Content-Type: application/json
 ### ========================================
 GET {{baseUrl}}{{apiPrefix}}/goods?id=999999
 Content-Type: application/json
+
+### ========================================
+### 8. 按单个分类筛选商品（category_id=1）
+###    功能：只返回分类ID为 1 的分类及其商品；若 1 为父分类，将自动包含其所有子分类的商品
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/lists?category_id=106
+Content-Type: application/json
+
+### ========================================
+### 9. 按父分类筛选（自动包含所有子分类商品）
+###    说明：当传入父级类目ID时，后台会递归匹配该父类目下所有子类目的商品
+###    示例：假设 ID=1 为顶级/父分类，则会包含其所有子类目商品
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/lists?category_id=1
+Content-Type: application/json
+
+### ========================================
+### 10. 按多个分类筛选（category_id=1,2）
+###     说明：多个分类ID使用英文逗号分隔；将返回属于任一指定分类（及其子分类）的商品
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/lists?category_id=1,2
+Content-Type: application/json
+
+### ========================================
+### 11. 与其他筛选条件组合（category_id=1 & shop_id=1）
+###     说明：在分类筛选基础上叠加店铺筛选；常用于店铺内按类目查看商品
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/lists?category_id=1&shop_id=1
+Content-Type: application/json
