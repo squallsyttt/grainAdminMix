@@ -90,3 +90,33 @@ Content-Type: application/json
 ### ========================================
 GET {{baseUrl}}{{apiPrefix}}/lists?category_id=1&shop_id=1
 Content-Type: application/json
+
+### ========================================
+### 12. 按商品名称快速搜索（search 参数）
+###     说明：使用 search 参数会在 title 和 category.name 字段中进行模糊搜索
+###     示例：搜索商品名称包含"大米"的商品
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/lists?search=大米
+Content-Type: application/json
+
+### ========================================
+### 13. 按商品名称精确模糊搜索（title__like 操作符）
+###     说明：使用 title__like 后缀仅在 title 字段中进行模糊搜索
+###     示例：搜索商品标题包含"有机"的商品
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/lists?title__like=推荐
+Content-Type: application/json
+
+### ========================================
+### 14. 组合搜索：按名称搜索+店铺筛选
+###     说明：在特定店铺内搜索包含关键词的商品
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/lists?search=大米&shop_id=1
+Content-Type: application/json
+
+### ========================================
+### 15. 组合搜索：按名称搜索+分类筛选
+###     说明：在特定分类下搜索包含关键词的商品
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/lists?title__like=有机&category_id=106
+Content-Type: application/json
