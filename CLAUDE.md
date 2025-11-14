@@ -1,6 +1,6 @@
 # GrainAdminMix 开发指南
 
-最后更新时间：2025-10-24
+最后更新时间：2025-11-14
 
 ## ⚠️ 重要：语言要求
 
@@ -13,6 +13,49 @@
 - ✅ 对话回复：中文
 
 **例外情况**：代码本身（变量名、函数名、类名等）仍使用英文，遵循 PSR-2 规范。
+
+## ⚠️ CRITICAL: Codex Skill 使用规则
+
+**强制要求**：所有代码编写、修改、重构任务必须调用 Codex Skill，禁止 Claude Code 直接编写代码。
+
+### 适用场景
+
+以下任务**必须**通过 Codex Skill 执行：
+- ✅ 编写新函数、类、模块
+- ✅ 修改现有代码逻辑
+- ✅ 重构代码结构
+- ✅ 生成数据库迁移文件
+- ✅ 实现业务功能
+
+### 例外情况
+
+仅以下场景允许 Claude Code 直接操作：
+- ❌ 简单的配置文件修改（JSON、YAML、.env 等）
+- ❌ 文档更新（README.md、CLAUDE.md 等）
+- ❌ Git 操作（commit、branch 等）
+- ❌ 命令行工具调用（npm、composer、grunt 等）
+
+### 执行模式
+
+1. **分析阶段**（Claude Code）：理解需求、探索代码、制定计划
+2. **执行阶段**（Codex Skill）：调用 codex 完成代码编写/修改
+3. **验证阶段**（Claude Code）：测试验证、人工检查
+
+### 调用示例
+
+```bash
+# 通过 Bash 工具调用（推荐）
+uv run ~/.claude/skills/codex/scripts/codex.py "<任务描述> @file" "gpt-5-codex" "/Users/griffith/IdeaProjects/money/grainAdminMix"
+
+# 带 timeout 保护
+# timeout: 7200000
+```
+
+### 违规处理
+
+如果 Claude Code 直接编写代码而非调用 Codex Skill：
+- 立即停止，回滚所有直接编写的代码
+- 重新通过 Codex Skill 执行任务
 
 ## 项目概述
 
@@ -171,6 +214,7 @@ php think install \
 
 ## 最近更新
 
+- 2025-11-14：添加 Codex Skill 强制使用规则
 - 2025-10-24：澄清前端编译规则，仅修改模板/HTML 不需要构建，只有修改 JS/Less 源文件才需编译
 - 2025-10-15：添加文档和测试脚本生成规则（默认不生成，需用户主动要求）
 - 2025-10-02：更新宪章 v1.1.0（原则三改为 MVP 快速交付，移除强制测试要求）
