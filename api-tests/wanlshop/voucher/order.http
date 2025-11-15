@@ -1,0 +1,103 @@
+### 核销券订单接口测试
+### 基础配置
+@baseUrl = http://localhost:8000
+@token = YOUR_USER_TOKEN_HERE
+
+### 1. 创建订单 - 正常流程
+POST {{baseUrl}}/api/wanlshop/voucher/order/create
+Content-Type: application/json
+token: {{token}}
+
+{
+  "goods_id": 1,
+  "quantity": 2
+}
+
+### 2. 创建订单 - 商品不存在
+POST {{baseUrl}}/api/wanlshop/voucher/order/create
+Content-Type: application/json
+token: {{token}}
+
+{
+  "goods_id": 99999,
+  "quantity": 1
+}
+
+### 3. 创建订单 - 数量为0
+POST {{baseUrl}}/api/wanlshop/voucher/order/create
+Content-Type: application/json
+token: {{token}}
+
+{
+  "goods_id": 1,
+  "quantity": 0
+}
+
+### 4. 订单详情 - 正常查询
+GET {{baseUrl}}/api/wanlshop/voucher/order/detail?id=1
+token: {{token}}
+
+### 5. 订单详情 - 订单不存在
+GET {{baseUrl}}/api/wanlshop/voucher/order/detail?id=99999
+token: {{token}}
+
+### 6. 订单列表 - 全部订单
+GET {{baseUrl}}/api/wanlshop/voucher/order/lists
+token: {{token}}
+
+### 7. 订单列表 - 待支付订单
+GET {{baseUrl}}/api/wanlshop/voucher/order/lists?state=1
+token: {{token}}
+
+### 8. 订单列表 - 已支付订单
+GET {{baseUrl}}/api/wanlshop/voucher/order/lists?state=2
+token: {{token}}
+
+### 9. 订单列表 - 已取消订单
+GET {{baseUrl}}/api/wanlshop/voucher/order/lists?state=3
+token: {{token}}
+
+### 10. 取消订单 - 正常流程
+POST {{baseUrl}}/api/wanlshop/voucher/order/cancel
+Content-Type: application/json
+token: {{token}}
+
+{
+  "id": 1
+}
+
+### 11. 取消订单 - 订单不存在
+POST {{baseUrl}}/api/wanlshop/voucher/order/cancel
+Content-Type: application/json
+token: {{token}}
+
+{
+  "id": 99999
+}
+
+### 12. 取消订单 - 已支付订单(应失败)
+POST {{baseUrl}}/api/wanlshop/voucher/order/cancel
+Content-Type: application/json
+token: {{token}}
+
+{
+  "id": 2
+}
+
+### 13. 微信支付回调 - 模拟测试(内部测试用)
+### 注意: 生产环境此接口必须有签名验证
+POST {{baseUrl}}/api/wanlshop/voucher/order/notify
+Content-Type: application/json
+
+{
+  "out_trade_no": "ORD202511140001"
+}
+
+### 14. 预下单 - 正常流程（需要已登录小程序用户并绑定 openid）
+POST {{baseUrl}}/api/wanlshop/voucher/order/prepay
+Content-Type: application/json
+token: {{token}}
+
+{
+  "order_id": 1
+}

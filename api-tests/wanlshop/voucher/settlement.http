@@ -1,0 +1,37 @@
+### 核销券结算接口测试(商家端)
+### 基础配置
+@baseUrl = http://localhost:8000
+@token = YOUR_SHOP_TOKEN_HERE
+@shopId = 1
+
+### 1. 结算列表 - 全部
+GET {{baseUrl}}/api/wanlshop/voucher/settlement/lists?shop_id={{shopId}}
+token: {{token}}
+
+### 2. 结算列表 - 待结算
+GET {{baseUrl}}/api/wanlshop/voucher/settlement/lists?shop_id={{shopId}}&state=1
+token: {{token}}
+
+### 3. 结算列表 - 已结算
+GET {{baseUrl}}/api/wanlshop/voucher/settlement/lists?shop_id={{shopId}}&state=2
+token: {{token}}
+
+### 4. 结算列表 - 分页查询
+GET {{baseUrl}}/api/wanlshop/voucher/settlement/lists?shop_id={{shopId}}&page=1
+token: {{token}}
+
+### 5. 结算列表 - 店铺ID为空(应失败)
+GET {{baseUrl}}/api/wanlshop/voucher/settlement/lists
+token: {{token}}
+
+### 6. 结算详情 - 正常查询
+GET {{baseUrl}}/api/wanlshop/voucher/settlement/detail?id=1
+token: {{token}}
+
+### 7. 结算详情 - 结算记录不存在
+GET {{baseUrl}}/api/wanlshop/voucher/settlement/detail?id=99999
+token: {{token}}
+
+### 8. 结算详情 - ID为空(应失败)
+GET {{baseUrl}}/api/wanlshop/voucher/settlement/detail
+token: {{token}}

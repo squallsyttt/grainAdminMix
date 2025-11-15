@@ -1,0 +1,76 @@
+### 核销券核销接口测试(商家端)
+### 基础配置
+@baseUrl = http://localhost:8000
+@token = YOUR_SHOP_TOKEN_HERE
+@shopId = 1
+
+### 1. 验证码核销 - 使用券号
+POST {{baseUrl}}/api/wanlshop/voucher/verify/code
+Content-Type: application/json
+token: {{token}}
+
+{
+  "voucher_no": "VCH202511140001",
+  "shop_id": {{shopId}}
+}
+
+### 2. 验证码核销 - 使用验证码
+POST {{baseUrl}}/api/wanlshop/voucher/verify/code
+Content-Type: application/json
+token: {{token}}
+
+{
+  "verify_code": "123456",
+  "shop_id": {{shopId}}
+}
+
+### 3. 验证码核销 - 券号和验证码都不提供(应失败)
+POST {{baseUrl}}/api/wanlshop/voucher/verify/code
+Content-Type: application/json
+token: {{token}}
+
+{
+  "shop_id": {{shopId}}
+}
+
+### 4. 验证码核销 - 券不存在
+POST {{baseUrl}}/api/wanlshop/voucher/verify/code
+Content-Type: application/json
+token: {{token}}
+
+{
+  "voucher_no": "VCH999999999999",
+  "shop_id": {{shopId}}
+}
+
+### 5. 验证码核销 - 已使用的券(应失败)
+POST {{baseUrl}}/api/wanlshop/voucher/verify/code
+Content-Type: application/json
+token: {{token}}
+
+{
+  "voucher_no": "VCH202511140002",
+  "shop_id": {{shopId}}
+}
+
+### 6. 验证码核销 - 重复核销(应失败)
+POST {{baseUrl}}/api/wanlshop/voucher/verify/code
+Content-Type: application/json
+token: {{token}}
+
+{
+  "voucher_no": "VCH202511140001",
+  "shop_id": {{shopId}}
+}
+
+### 7. 核销记录列表
+GET {{baseUrl}}/api/wanlshop/voucher/verify/records?shop_id={{shopId}}
+token: {{token}}
+
+### 8. 核销记录列表 - 分页查询
+GET {{baseUrl}}/api/wanlshop/voucher/verify/records?shop_id={{shopId}}&page=1
+token: {{token}}
+
+### 9. 核销记录列表 - 店铺ID为空(应失败)
+GET {{baseUrl}}/api/wanlshop/voucher/verify/records
+token: {{token}}

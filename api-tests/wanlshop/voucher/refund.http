@@ -1,0 +1,72 @@
+### 核销券退款接口测试
+### 基础配置
+@baseUrl = http://localhost:8000
+@token = YOUR_USER_TOKEN_HERE
+
+### 1. 申请退款 - 正常流程
+POST {{baseUrl}}/api/wanlshop/voucher/refund/apply
+Content-Type: application/json
+token: {{token}}
+
+{
+  "voucher_id": 1,
+  "refund_reason": "不想要了"
+}
+
+### 2. 申请退款 - 券不存在
+POST {{baseUrl}}/api/wanlshop/voucher/refund/apply
+Content-Type: application/json
+token: {{token}}
+
+{
+  "voucher_id": 99999,
+  "refund_reason": "测试"
+}
+
+### 3. 申请退款 - 已使用的券(应失败)
+POST {{baseUrl}}/api/wanlshop/voucher/refund/apply
+Content-Type: application/json
+token: {{token}}
+
+{
+  "voucher_id": 2,
+  "refund_reason": "已经使用了"
+}
+
+### 4. 申请退款 - 重复申请(应失败)
+POST {{baseUrl}}/api/wanlshop/voucher/refund/apply
+Content-Type: application/json
+token: {{token}}
+
+{
+  "voucher_id": 1,
+  "refund_reason": "再次申请"
+}
+
+### 5. 退款详情 - 正常查询
+GET {{baseUrl}}/api/wanlshop/voucher/refund/detail?id=1
+token: {{token}}
+
+### 6. 退款详情 - 退款记录不存在
+GET {{baseUrl}}/api/wanlshop/voucher/refund/detail?id=99999
+token: {{token}}
+
+### 7. 退款列表 - 全部
+GET {{baseUrl}}/api/wanlshop/voucher/refund/lists
+token: {{token}}
+
+### 8. 退款列表 - 申请中
+GET {{baseUrl}}/api/wanlshop/voucher/refund/lists?state=0
+token: {{token}}
+
+### 9. 退款列表 - 同意退款
+GET {{baseUrl}}/api/wanlshop/voucher/refund/lists?state=1
+token: {{token}}
+
+### 10. 退款列表 - 拒绝退款
+GET {{baseUrl}}/api/wanlshop/voucher/refund/lists?state=2
+token: {{token}}
+
+### 11. 退款列表 - 退款成功
+GET {{baseUrl}}/api/wanlshop/voucher/refund/lists?state=3
+token: {{token}}

@@ -1,0 +1,67 @@
+<div class="panel panel-default panel-intro">
+    <div class="panel-heading">
+        {:build_heading()}
+    </div>
+    <div class="panel-body">
+        <div class="row">
+            <div class="col-md-12">
+                <table class="table table-bordered">
+                    <tr>
+                        <th width="15%">订单号</th>
+                        <td>{$row.order_no}</td>
+                        <th width="15%">用户</th>
+                        <td>{$row.user.username|default=''}</td>
+                    </tr>
+                    <tr>
+                        <th>商品</th>
+                        <td>{$row.goods.title|default=''}</td>
+                        <th>分类</th>
+                        <td>{$row.category.name|default=''}</td>
+                    </tr>
+                    <tr>
+                        <th>数量</th>
+                        <td>{$row.quantity}</td>
+                        <th>供货价</th>
+                        <td>¥{$row.supply_price}</td>
+                    </tr>
+                    <tr>
+                        <th>零售价</th>
+                        <td>¥{$row.retail_price}</td>
+                        <th>实付金额</th>
+                        <td>¥{$row.actual_payment}</td>
+                    </tr>
+                    <tr>
+                        <th>状态</th>
+                        <td>{$row.state_text}</td>
+                        <th>创建时间</th>
+                        <td>{$row.createtime|date='Y-m-d H:i:s'}</td>
+                    </tr>
+                </table>
+
+                {if condition="$row.vouchers"}
+                <h4>生成的核销券</h4>
+                <table class="table table-bordered table-striped">
+                    <thead>
+                        <tr>
+                            <th>券号</th>
+                            <th>验证码</th>
+                            <th>面值</th>
+                            <th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {foreach name="row.vouchers" item="voucher"}
+                        <tr>
+                            <td>{$voucher.voucher_no}</td>
+                            <td>{$voucher.verify_code}</td>
+                            <td>¥{$voucher.face_value}</td>
+                            <td>{$voucher.state_text}</td>
+                        </tr>
+                        {/foreach}
+                    </tbody>
+                </table>
+                {/if}
+            </div>
+        </div>
+    </div>
+</div>

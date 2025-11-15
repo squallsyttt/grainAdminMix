@@ -1,0 +1,40 @@
+### 核销券接口测试
+### 基础配置
+@baseUrl = http://localhost:8000
+@token = YOUR_USER_TOKEN_HERE
+
+### 1. 我的券列表 - 全部
+GET {{baseUrl}}/api/wanlshop/voucher/voucher/lists
+token: {{token}}
+
+### 2. 我的券列表 - 未使用
+GET {{baseUrl}}/api/wanlshop/voucher/voucher/lists?state=1
+token: {{token}}
+
+### 3. 我的券列表 - 已核销
+GET {{baseUrl}}/api/wanlshop/voucher/voucher/lists?state=2
+token: {{token}}
+
+### 4. 我的券列表 - 已过期
+GET {{baseUrl}}/api/wanlshop/voucher/voucher/lists?state=3
+token: {{token}}
+
+### 5. 我的券列表 - 已退款
+GET {{baseUrl}}/api/wanlshop/voucher/voucher/lists?state=4
+token: {{token}}
+
+### 6. 券详情 - 正常查询
+GET {{baseUrl}}/api/wanlshop/voucher/voucher/detail?id=1
+token: {{token}}
+
+### 7. 券详情 - 券不存在
+GET {{baseUrl}}/api/wanlshop/voucher/voucher/detail?id=99999
+token: {{token}}
+
+### 8. 券详情 - 已核销的券(应显示核销信息)
+GET {{baseUrl}}/api/wanlshop/voucher/voucher/detail?id=2
+token: {{token}}
+
+### 9. 券详情 - 已退款的券(应显示退款信息)
+GET {{baseUrl}}/api/wanlshop/voucher/voucher/detail?id=3
+token: {{token}}
