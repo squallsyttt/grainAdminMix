@@ -31,8 +31,14 @@ return [
         // 证书序列号
         'serial_no'  => \think\Env::get('wechat_payment.serial_no', ''),
 
-        // 微信支付平台证书路径（用于回调验签）
+        // 微信支付平台证书路径（用于回调验签）- 旧模式，已废弃
         'platform_cert_path' => \think\Env::get('wechat_payment.platform_cert_path', ''),
+        
+        // 微信支付公钥文件路径（用于回调验签）- 新模式
+        'platform_public_key_path' => \think\Env::get('wechat_payment.platform_public_key_path', ''),
+        
+        // 微信支付公钥ID（在商户平台查看）
+        'platform_public_key_id' => \think\Env::get('wechat_payment.platform_public_key_id', ''),
 
         // 支付回调地址（必须 HTTPS，可通过 .env 覆盖）
         'notify_url' => \think\Env::get(

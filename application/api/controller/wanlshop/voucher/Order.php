@@ -5,7 +5,7 @@ use app\common\controller\Api;
 use app\admin\model\wanlshop\VoucherOrder;
 use app\admin\model\wanlshop\Voucher;
 use app\api\model\wanlshop\Third;
-use app\common\library\WechatPayV3;
+use app\common\library\WechatPayment;
 use app\admin\model\wanlshop\Goods;
 use think\Db;
 use think\Exception;
@@ -149,7 +149,7 @@ class Order extends Api
 
         try {
             // 调用微信 JSAPI 下单
-            $resp = WechatPayV3::jsapiPrepay([
+            $resp = WechatPayment::jsapiPrepay([
                 'description'     => $description,
                 'out_trade_no'    => $order->order_no,
                 'amount_total'    => $totalAmount,
@@ -158,7 +158,7 @@ class Order extends Api
             ]);
 
             // 生成前端 wx.requestPayment 所需参数
-            $payParams = WechatPayV3::buildJsapiPayParams($resp['prepay_id']);
+            $payParams = WechatPayment::buildJsapiPayParams($resp['prepay_id']);
 
             $this->success('ok', [
                 'order_no'  => $order->order_no,
@@ -321,7 +321,7 @@ class Order extends Api
             ];
 
             // 验证签名
-            if (!WechatPayV3::verifyCallbackSignature($headers, $body)) {
+            if (!WechatPayment::verifyCallbackSignature($headers, $body)) {
                 \think\facade\Log::error('微信支付回调：签名验证失败');
                 return json(['code' => 'FAIL', 'message' => '签名验证失败']);
             }
@@ -333,7 +333,7 @@ class Order extends Api
             }
 
             // 解密资源数据
-            $resource = WechatPayV3::decryptCallbackResource($data['resource']);
+            $resource = WechatPayment::decryptCallbackResource($data['resource']);
 
             // 仅处理支付成功通知
             if (!isset($resource['trade_state']) || $resource['trade_state'] !== 'SUCCESS') {
