@@ -8,7 +8,6 @@
 /public/uploads/*
 .DS_Store
 .idea
-composer.lock
 *.log
 *.css.map
 !.gitkeep
