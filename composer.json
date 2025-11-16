@@ -29,7 +29,8 @@
         "ext-json": "*",
         "ext-curl": "*",
         "ext-pdo": "*",
-        "ext-bcmath": "*"
+        "ext-bcmath": "*",
+        "wechatpay/wechatpay": "^1.4"
     },
     "config": {
         "preferred-install": "dist",
