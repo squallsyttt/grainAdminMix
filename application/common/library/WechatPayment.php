@@ -49,6 +49,23 @@ class WechatPayment
                 throw new Exception('微信支付配置不完整：mch_id/serial_no/key_path 不能为空');
             }
             
+            // 处理证书路径：确保使用绝对路径
+            if (!empty($keyPath)) {
+                // 如果不是绝对路径，转换为绝对路径
+                if (substr($keyPath, 0, 1) !== '/' && substr($keyPath, 1, 1) !== ':') {
+                    // 相对路径，转换为绝对路径
+                    $keyPath = ROOT_PATH . $keyPath;
+                }
+                
+                // 验证文件是否存在
+                if (!is_file($keyPath)) {
+                    Log::error('商户私钥文件不存在：' . $keyPath);
+                    throw new Exception('商户私钥文件不存在：' . $keyPath);
+                }
+                
+                Log::info('使用商户私钥文件：' . $keyPath);
+            }
+            
             // 加载商户私钥
             $merchantPrivateKeyInstance = Rsa::from('file://' . $keyPath, Rsa::KEY_TYPE_PRIVATE);
             
@@ -61,9 +78,18 @@ class WechatPayment
             ];
             
             // 如果配置了微信支付公钥，则添加到配置中
-            if ($publicKeyPath !== '' && $publicKeyId !== '' && is_file($publicKeyPath)) {
-                $platformPublicKeyInstance = Rsa::from('file://' . $publicKeyPath, Rsa::KEY_TYPE_PUBLIC);
-                $buildConfig['certs'][$publicKeyId] = $platformPublicKeyInstance;
+            if ($publicKeyPath !== '' && $publicKeyId !== '') {
+                // 处理公钥路径：确保使用绝对路径
+                if (substr($publicKeyPath, 0, 1) !== '/' && substr($publicKeyPath, 1, 1) !== ':') {
+                    // 相对路径，转换为绝对路径
+                    $publicKeyPath = ROOT_PATH . $publicKeyPath;
+                }
+                
+                if (is_file($publicKeyPath)) {
+                    $platformPublicKeyInstance = Rsa::from('file://' . $publicKeyPath, Rsa::KEY_TYPE_PUBLIC);
+                    $buildConfig['certs'][$publicKeyId] = $platformPublicKeyInstance;
+                    Log::info('使用微信支付公钥文件：' . $publicKeyPath);
+                }
             }
             
             // 构造 APIv3 客户端实例
@@ -190,6 +216,18 @@ class WechatPayment
             $nonceStr . "\n" .
             $package . "\n";
         
+        // 处理证书路径：确保使用绝对路径
+        if (!empty($keyPath)) {
+            if (substr($keyPath, 0, 1) !== '/' && substr($keyPath, 1, 1) !== ':') {
+                // 相对路径，转换为绝对路径
+                $keyPath = ROOT_PATH . $keyPath;
+            }
+            
+            if (!is_file($keyPath)) {
+                throw new Exception('商户私钥文件不存在：' . $keyPath);
+            }
+        }
+        
         // 加载私钥并签名
         $merchantPrivateKeyInstance = Rsa::from('file://' . $keyPath, Rsa::KEY_TYPE_PRIVATE);
         $paySign = Rsa::sign($message, $merchantPrivateKeyInstance);
@@ -222,8 +260,16 @@ class WechatPayment
         $publicKeyPath = isset($config['platform_public_key_path']) ? trim($config['platform_public_key_path']) : '';
         $publicKeyId = isset($config['platform_public_key_id']) ? trim($config['platform_public_key_id']) : '';
         
+        // 处理公钥路径：确保使用绝对路径
+        if (!empty($publicKeyPath)) {
+            if (substr($publicKeyPath, 0, 1) !== '/' && substr($publicKeyPath, 1, 1) !== ':') {
+                // 相对路径，转换为绝对路径
+                $publicKeyPath = ROOT_PATH . $publicKeyPath;
+            }
+        }
+        
         if ($publicKeyPath === '' || !is_file($publicKeyPath)) {
-            Log::error('微信支付回调：微信支付公钥未配置或文件不存在');
+            Log::error('微信支付回调：微信支付公钥未配置或文件不存在，路径：' . $publicKeyPath);
             return false;
         }
         
@@ -246,7 +292,7 @@ class WechatPayment
         // 构造验签名串
         $message = Formatter::joinedByLineFeed($timestamp, $nonce, $body);
         
-        // 加载微信支付公钥
+        // 加载微信支付公钥（路径已经在前面处理过）
         $platformPublicKeyInstance = Rsa::from('file://' . $publicKeyPath, Rsa::KEY_TYPE_PUBLIC);
         
         // 验证签名
