@@ -16,18 +16,21 @@ use WeChatPay\Formatter;
  *
  * **核心特性**：
  * - JSAPI 下单（小程序支付）
- * - 回调签名验证（使用平台公钥）
+ * - 回调签名验证（使用平台公钥或平台证书）
  * - 回调报文解密（AES-GCM）
  *
  * **验签方式**：
  * - 请求签名：使用商户私钥（apiclient_key.pem）
- * - 响应验签：使用微信支付平台公钥（pub_key.pem）
- * - 回调验签：使用微信支付平台公钥（pub_key.pem）
+ * - 响应验签：优先使用平台证书，备用平台公钥
+ * - 回调验签：优先使用平台证书，备用平台公钥
  *
  * **配置要求**：
  * - platform_public_key_id: 平台公钥ID（必需）
  * - platform_public_key_path: 平台公钥文件路径（必需）
- * - 不再支持平台证书模式（platform_cert_*）
+ * - platform_public_cert_serial_no: 平台证书序列号（可选，推荐配置）
+ * - platform_public_cert_path: 平台证书文件路径（可选，推荐配置）
+ *
+ * **验签机制**：SDK 会自动选择最合适的验签方式（证书优先，公钥备用）
  *
  * @see https://pay.weixin.qq.com/wiki/doc/apiv3/wechatpay/wechatpay6_0.shtml 公钥验签说明
  */
@@ -39,7 +42,7 @@ class WechatPayment
     private static $instance;
     
     /**
-     * 获取 SDK 实例
+     * 获取 SDK 实例（简化重构版，参考官方示范代码）
      *
      * @return \WeChatPay\BuilderChainable
      * @throws Exception
@@ -53,79 +56,89 @@ class WechatPayment
                 throw new Exception('微信支付配置未设置（wechat.payment）');
             }
 
-            $mchId = isset($config['mch_id']) ? trim($config['mch_id']) : '';
-            $serialNo = isset($config['serial_no']) ? trim($config['serial_no']) : '';
-            $keyPath = isset($config['key_path']) ? trim($config['key_path']) : '';
-
-            if ($mchId === '' || $serialNo === '' || $keyPath === '') {
-                throw new Exception('微信支付配置不完整：mch_id/serial_no/key_path 不能为空');
+            // 1. 验证必需配置
+            $requiredKeys = ['mch_id', 'serial_no', 'key_path', 'platform_public_key_id', 'platform_public_key_path'];
+            foreach ($requiredKeys as $key) {
+                if (empty($config[$key])) {
+                    throw new Exception("微信支付配置不完整：{$key} 不能为空");
+                }
             }
 
-            // 处理商户私钥路径：确保使用绝对路径
-            if (!empty($keyPath)) {
-                // 如果不是绝对路径，转换为绝对路径
-                if (substr($keyPath, 0, 1) !== '/' && substr($keyPath, 1, 1) !== ':') {
-                    // 相对路径，转换为绝对路径
-                    $keyPath = ROOT_PATH . $keyPath;
-                }
+            // 2. 加载商户私钥（用于生成请求签名）
+            $merchantPrivateKeyPath = self::resolveFilePath($config['key_path'], '商户私钥');
+            $merchantPrivateKeyInstance = Rsa::from('file://' . $merchantPrivateKeyPath, Rsa::KEY_TYPE_PRIVATE);
 
-                // 验证文件是否存在
-                if (!is_file($keyPath)) {
-                    Log::error('商户私钥文件不存在：' . $keyPath);
-                    throw new Exception('商户私钥文件不存在：' . $keyPath);
-                }
-
-                Log::info('使用商户私钥文件：' . $keyPath);
-            }
-
-            // 加载商户私钥
-            $merchantPrivateKeyInstance = Rsa::from('file://' . $keyPath, Rsa::KEY_TYPE_PRIVATE);
-
-            // 构建配置数组
+            // 3. 初始化构建配置
             $buildConfig = [
-                'mchid' => $mchId,
-                'serial' => $serialNo,
+                'mchid'      => trim($config['mch_id']),
+                'serial'     => trim($config['serial_no']),
                 'privateKey' => $merchantPrivateKeyInstance,
+                'certs'      => [],
             ];
 
-            // 微信支付公钥验签模式：加载平台公钥
-            $platformPublicKeyId = isset($config['platform_public_key_id']) ? trim($config['platform_public_key_id']) : '';
-            $platformPublicKeyPath = isset($config['platform_public_key_path']) ? trim($config['platform_public_key_path']) : '';
+            // 4. 加载平台公钥（必需，用于验签）
+            $platformPublicKeyId = trim($config['platform_public_key_id']);
+            $platformPublicKeyPath = self::resolveFilePath($config['platform_public_key_path'], '平台公钥');
+            $platformPublicKeyInstance = Rsa::from('file://' . $platformPublicKeyPath, Rsa::KEY_TYPE_PUBLIC);
+            $buildConfig['certs'][$platformPublicKeyId] = $platformPublicKeyInstance;
 
-            if ($platformPublicKeyId === '' || $platformPublicKeyPath === '') {
-                throw new Exception('微信支付配置不完整：必须配置 platform_public_key_id 和 platform_public_key_path（公钥验签模式）');
+            Log::info('微信支付初始化：公钥ID = ' . $platformPublicKeyId);
+
+            // 5. 可选：加载平台证书（推荐配置，SDK 优先使用证书验签）
+            if (!empty($config['platform_public_cert_serial_no']) && !empty($config['platform_public_cert_path'])) {
+                $platformCertSerialNo = trim($config['platform_public_cert_serial_no']);
+                $platformCertPath = self::resolveFilePath($config['platform_public_cert_path'], '平台证书', false);
+
+                if ($platformCertPath !== null) {
+                    try {
+                        $platformCertInstance = Rsa::from('file://' . $platformCertPath, Rsa::KEY_TYPE_PUBLIC);
+                        $buildConfig['certs'][$platformCertSerialNo] = $platformCertInstance;
+                        Log::info('微信支付初始化：已加载平台证书，序列号 = ' . $platformCertSerialNo);
+                    } catch (\Throwable $e) {
+                        Log::warning('平台证书加载失败（将使用公钥验签）：' . $e->getMessage());
+                    }
+                }
             }
 
-            // 处理平台公钥路径
-            if (substr($platformPublicKeyPath, 0, 1) !== '/' && substr($platformPublicKeyPath, 1, 1) !== ':') {
-                $platformPublicKeyPath = ROOT_PATH . $platformPublicKeyPath;
-            }
-
-            if (!is_file($platformPublicKeyPath)) {
-                Log::error('微信支付平台公钥文件不存在：' . $platformPublicKeyPath);
-                throw new Exception('微信支付平台公钥文件不存在：' . $platformPublicKeyPath);
-            }
-
-            // 加载平台公钥
-            try {
-                $platformPublicKeyInstance = Rsa::from('file://' . $platformPublicKeyPath, Rsa::KEY_TYPE_PUBLIC);
-            } catch (\Throwable $e) {
-                Log::error('加载微信支付平台公钥失败：' . $e->getMessage());
-                throw new Exception('加载微信支付平台公钥失败：' . $e->getMessage());
-            }
-
-            // 配置平台公钥到 certs（使用公钥ID作为标识符）
-            $buildConfig['certs'] = [
-                $platformPublicKeyId => $platformPublicKeyInstance,
-            ];
-
-            Log::info('微信支付：使用公钥验签模式，公钥ID：' . $platformPublicKeyId);
-
-            // 构造 APIv3 客户端实例
+            // 6. 构造 APIv3 客户端实例
             self::$instance = Builder::factory($buildConfig);
         }
 
         return self::$instance;
+    }
+
+    /**
+     * 统一处理文件路径：相对路径转绝对路径，验证文件存在
+     *
+     * @param string $path         配置的路径（可能是相对路径或绝对路径）
+     * @param string $description  文件描述（用于日志）
+     * @param bool   $required     是否必需（必需文件不存在时抛出异常，可选文件返回 null）
+     * @return string|null         绝对路径（文件存在时）或 null（可选文件不存在时）
+     * @throws Exception
+     */
+    private static function resolveFilePath($path, $description, $required = true)
+    {
+        $path = trim($path);
+
+        // 如果不是绝对路径，转换为绝对路径
+        if (substr($path, 0, 1) !== '/' && substr($path, 1, 1) !== ':') {
+            $path = ROOT_PATH . $path;
+        }
+
+        // 验证文件是否存在
+        if (!is_file($path)) {
+            $message = "{$description}文件不存在：{$path}";
+            if ($required) {
+                Log::error($message);
+                throw new Exception($message);
+            } else {
+                Log::warning($message);
+                return null;
+            }
+        }
+
+        Log::info("{$description}文件：{$path}");
+        return $path;
     }
 
     /**
