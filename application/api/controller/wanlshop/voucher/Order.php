@@ -53,9 +53,9 @@ class Order extends Api
         $orderNo = 'ORD' . date('Ymd') . mt_rand(100000, 999999);
 
         // 计算订单金额
-        $supplyPrice = $goods->supply_price * $quantity;  // 供货价总额
-        $retailPrice = $goods->price * $quantity;         // 零售价总额
-        $actualPayment = $retailPrice;                    // 实际支付(暂不考虑优惠)
+        $supplyPrice = $goods->price * $quantity;              // 供货价总额（商家设置的价格）
+        $retailPrice = $goods->price * 1.20 * $quantity;       // 零售价总额（供货价 + 20%）
+        $actualPayment = $retailPrice;                         // 实际支付(暂不考虑优惠)
 
         Db::startTrans();
         try {
