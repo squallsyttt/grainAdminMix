@@ -14,48 +14,36 @@
 
 **例外情况**：代码本身（变量名、函数名、类名等）仍使用英文，遵循 PSR-2 规范。
 
-## ⚠️ CRITICAL: Codex Skill 使用规则
+## Codex Skill 使用规则
 
-**强制要求**：所有代码编写、修改、重构任务必须调用 Codex Skill，禁止 Claude Code 直接编写代码。
+**默认行为**：Claude Code 可以直接进行代码编写、修改和重构。
+
+**按需使用**：仅当用户明确要求使用 Codex Skill 时，才通过 Codex Skill 执行代码修改任务。
 
 ### 适用场景
 
-以下任务**必须**通过 Codex Skill 执行：
-- ✅ 编写新函数、类、模块
-- ✅ 修改现有代码逻辑
-- ✅ 重构代码结构
-- ✅ 生成数据库迁移文件
-- ✅ 实现业务功能
-
-### 例外情况
-
-仅以下场景允许 Claude Code 直接操作：
-- ❌ 简单的配置文件修改（JSON、YAML、.env 等）
-- ❌ 文档更新（README.md、CLAUDE.md 等）
-- ❌ Git 操作（commit、branch 等）
-- ❌ 命令行工具调用（npm、composer、grunt 等）
-
-### 执行模式
-
-1. **分析阶段**（Claude Code）：理解需求、探索代码、制定计划
-2. **执行阶段**（Codex Skill）：调用 codex 完成代码编写/修改
-3. **验证阶段**（Claude Code）：测试验证、人工检查
+用户明确要求时，可通过 Codex Skill 执行：
+- 编写新函数、类、模块
+- 修改现有代码逻辑
+- 重构代码结构
+- 生成数据库迁移文件
+- 实现业务功能
 
 ### 调用示例
 
 ```bash
-# 通过 Bash 工具调用（推荐）
+# 通过 Bash 工具调用
 uv run ~/.claude/skills/codex/scripts/codex.py "<任务描述> @file" "gpt-5-codex" "/Users/griffith/IdeaProjects/money/grainAdminMix"
 
 # 带 timeout 保护
 # timeout: 7200000
 ```
 
-### 违规处理
+### 使用建议
 
-如果 Claude Code 直接编写代码而非调用 Codex Skill：
-- 立即停止，回滚所有直接编写的代码
-- 重新通过 Codex Skill 执行任务
+- **默认方式**：Claude Code 直接修改代码（快速、高效）
+- **Codex Skill**：适用于复杂重构或用户明确要求的场景
+- **选择权在用户**：在请求时明确指定是否使用 Codex Skill
 
 ## 项目概述
 
@@ -214,6 +202,7 @@ php think install \
 
 ## 最近更新
 
+- 2025-11-17：调整 Codex Skill 使用策略，从强制使用改为按需使用（仅在用户明确要求时使用）
 - 2025-11-14：添加 Codex Skill 强制使用规则
 - 2025-10-24：澄清前端编译规则，仅修改模板/HTML 不需要构建，只有修改 JS/Less 源文件才需编译
 - 2025-10-15：添加文档和测试脚本生成规则（默认不生成，需用户主动要求）
