@@ -1,7 +1,7 @@
 ### 核销券订单接口测试
 ### 基础配置
-@baseUrl = http://localhost:8000
-@token = YOUR_USER_TOKEN_HERE
+@baseUrl = http://grain.local.com
+@token = 3e04a9b1-c5c2-4d74-b809-aae89d3b46b3
 
 ### 1. 创建订单 - 正常流程
 POST {{baseUrl}}/api/wanlshop/voucher/order/create
@@ -99,5 +99,5 @@ Content-Type: application/json
 token: {{token}}
 
 {
-  "order_id": 1
+  "order_id": 1050
 }

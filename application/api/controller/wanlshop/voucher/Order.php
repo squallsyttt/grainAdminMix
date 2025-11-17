@@ -49,8 +49,8 @@ class Order extends Api
             $this->error(__('商品不存在'));
         }
 
-        // 生成订单号
-        $orderNo = 'ORD' . date('Ymd') . mt_rand(100000, 999999);
+        // 生成订单号（到秒 + 随机6位，降低重复概率）
+        $orderNo = 'ORD' . date('YmdHis') . mt_rand(100000, 999999);
 
         // 计算订单金额
         $supplyPrice = $goods->price * $quantity;              // 供货价总额（商家设置的价格）
@@ -147,28 +147,50 @@ class Order extends Api
         $goods = Goods::find($order->goods_id);
         $description = $goods && $goods->title ? $goods->title : ('核销券订单-' . $order->order_no);
 
-        try {
-            // 调用微信 JSAPI 下单
-            $resp = WechatPayment::jsapiPrepay([
-                'description'     => $description,
-                'out_trade_no'    => $order->order_no,
-                'amount_total'    => $totalAmount,
-                'payer_openid'    => $third->openid,
-                'payer_client_ip' => $this->request->ip(),
-            ]);
+        // 支付请求可能遇到探测流量，增加重试机制
+        $maxRetries = 0;
+        $lastError = null;
+        $attemptErrors = [];
+        
+        for ($i = 0; $i <= $maxRetries; $i++) {
+            try {
+                // 调用微信 JSAPI 下单
+                $resp = WechatPayment::jsapiPrepay([
+                    'description'     => $description,
+                    'out_trade_no'    => $order->order_no,
+                    'amount_total'    => $totalAmount,
+                    'payer_openid'    => $third->openid,
+                    'payer_client_ip' => $this->request->ip(),
+                ]);
 
-            // 生成前端 wx.requestPayment 所需参数
-            $payParams = WechatPayment::buildJsapiPayParams($resp['prepay_id']);
+                // 生成前端 wx.requestPayment 所需参数
+                $payParams = WechatPayment::buildJsapiPayParams($resp['prepay_id']);
 
-            $this->success('ok', [
-                'order_no'  => $order->order_no,
-                'prepay_id' => $resp['prepay_id'],
-                'payparams' => $payParams,
-            ]);
-        } catch (Exception $e) {
-            \think\Log::error('核销券订单预下单失败：' . $e->getMessage());
-            $this->error(__('微信预下单失败：') . $e->getMessage());
+
+                $this->success('ok', [
+                    'order_no'  => $order->order_no,
+                    'prepay_id' => $resp['prepay_id'],
+                    'payparams' => $payParams,
+                ]);
+                return; // 成功则直接返回
+                
+            } catch (Exception $e) {
+                $lastError = trim($e->getMessage());
+                $attemptErrors[] = '尝试' . ($i + 1) . '失败：' . $lastError;
+                
+                $isSignatureProbe = strpos($lastError, '签名验证失败') !== false ||
+                    strpos($lastError, 'Verify the response') !== false;
+                if ($i < $maxRetries && $isSignatureProbe) {
+                    sleep(1); // 等待1秒后重试
+                    continue;
+                }
+                break; // 其他错误直接退出
+            }
         }
+        
+        // 所有重试都失败了
+        $errorMessage = $lastError ?: __('微信预下单失败');
+        $this->error($errorMessage);
     }
 
     /**
