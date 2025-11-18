@@ -261,12 +261,116 @@ class Order extends Api
             ->each(function($order) {
                 // 关联商品信息
                 $order->goods;
-                // 关联券信息
-                $order->vouchers;
+                // 关联券信息（含门店信息）
+                $order->vouchers()->with('shop')->select();
+
+                // 构建前端需要的 items 结构
+                $order->items = $this->buildOrderItems($order);
+
+                // 补充金额明细
+                $order->total_quantity = $order->quantity;
+                $order->original_amount = $order->retail_price;
+                $order->discount_amount = $order->retail_price - $order->actual_payment;
+                $order->final_amount = $order->actual_payment;
+
                 return $order;
             });
 
         $this->success('ok', $list);
+    }
+
+    /**
+     * 构建订单明细项（用于前端展示）
+     *
+     * @param VoucherOrder $order 订单对象
+     * @return array
+     */
+    private function buildOrderItems($order)
+    {
+        $items = [];
+        $vouchers = $order->vouchers;
+
+        // 如果有核销券，每张券对应一个 item
+        if ($vouchers && count($vouchers) > 0) {
+            foreach ($vouchers as $voucher) {
+                $items[] = [
+                    'id' => $voucher->id,
+                    'product_name' => $voucher->goods_title,
+                    'weight' => $this->extractWeight($voucher->goods_title),
+                    'quantity' => 1,
+                    'unit_price' => (float)$voucher->supply_price,
+                    'subtotal' => (float)$voucher->face_value,
+
+                    // 核销券信息
+                    'voucher_id' => $voucher->id,
+                    'voucher_code' => $voucher->voucher_no,
+                    'voucher_status' => $this->mapVoucherStatus($voucher->state),
+                    'voucher_expire_at' => (int)$voucher->valid_end,
+
+                    // 配送信息（暂时为空，因为未开发配送功能）
+                    'delivery_method' => null,
+                    'store_id' => $voucher->shop_id > 0 ? $voucher->shop_id : null,
+                    'store_name' => $voucher->shop_name ?: null,
+                    'store_address' => null,
+                ];
+            }
+        } else {
+            // 如果没有核销券（待支付状态），返回基础订单信息
+            $items[] = [
+                'id' => $order->id,
+                'product_name' => $order->goods ? $order->goods->title : '未知商品',
+                'weight' => null,
+                'quantity' => $order->quantity,
+                'unit_price' => (float)($order->supply_price / $order->quantity),
+                'subtotal' => (float)$order->actual_payment,
+
+                'voucher_id' => null,
+                'voucher_code' => null,
+                'voucher_status' => null,
+                'voucher_expire_at' => null,
+
+                'delivery_method' => null,
+                'store_id' => null,
+                'store_name' => null,
+                'store_address' => null,
+            ];
+        }
+
+        return $items;
+    }
+
+    /**
+     * 从商品名称提取重量（kg）
+     *
+     * @param string $title 商品标题
+     * @return float|null
+     */
+    private function extractWeight($title)
+    {
+        // 尝试匹配 "XXkg" 或 "XX公斤"
+        if (preg_match('/(\d+(?:\.\d+)?)\s*(?:kg|公斤)/i', $title, $matches)) {
+            return (float)$matches[1];
+        }
+
+        return null;
+    }
+
+    /**
+     * 映射核销券状态到前端格式
+     *
+     * @param string $dbState 数据库状态 (1,2,3,4)
+     * @return string|null
+     */
+    private function mapVoucherStatus($dbState)
+    {
+        $map = [
+            '1' => 'unused',    // 未使用
+            '2' => 'used',      // 已核销
+            '3' => 'expired',   // 已过期
+            '4' => 'refunded',  // 已退款
+        ];
+
+        return isset($map[$dbState]) ? $map[$dbState] : null;
     }
 
     /**
