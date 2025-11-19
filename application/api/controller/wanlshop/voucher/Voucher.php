@@ -36,19 +36,10 @@ class Voucher extends Api
         }
 
         // 分页查询
-        $list = VoucherModel::where($where)
-            ->field('id,voucher_no,verify_code,order_id,goods_id,category_id,goods_title,goods_image,supply_price,face_value,state,valid_start,valid_end,createtime,verifytime')
+        $list = VoucherModel::with(['goods', 'shop', 'voucherOrder'])
+            ->where($where)
             ->order('createtime desc')
-            ->paginate(10)
-            ->each(function($voucher) {
-                // 添加状态文本
-                $voucher->state_text;
-                // 关联订单信息
-                $voucher->voucherOrder;
-                // 关联商品信息
-                $voucher->goods;
-                return $voucher;
-            });
+            ->paginate(10);
 
         $this->success('ok', $list);
     }

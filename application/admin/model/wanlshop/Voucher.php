@@ -23,9 +23,18 @@ class Voucher extends Model
     protected $updateTime = 'updatetime';
     protected $deleteTime = 'deletetime';
 
-    // 追加属性：状态文本
+    // 追加属性：状态文本 + 前端所需计算属性
     protected $append = [
-        'state_text'
+        'state_text',
+        'code',
+        'type',
+        'productName',
+        'weight',
+        'deliveryMethod',
+        'description',
+        'status',
+        'expire_at',
+        'store_address',
     ];
 
     /**
@@ -126,5 +135,128 @@ class Voucher extends Model
     public function voucherRefund()
     {
         return $this->hasOne('VoucherRefund', 'voucher_id', 'id');
+    }
+
+    /**
+     * 计算属性：券码
+     * @param mixed $value
+     * @param array $data
+     * @return string
+     */
+    public function getCodeAttr($value, $data)
+    {
+        return isset($data['voucher_no']) ? (string)$data['voucher_no'] : '';
+    }
+
+    /**
+     * 计算属性：券类型（固定 GRAIN）
+     * @return string
+     */
+    public function getTypeAttr()
+    {
+        return 'GRAIN';
+    }
+
+    /**
+     * 计算属性：商品名称
+     * @param mixed $value
+     * @param array $data
+     * @return string
+     */
+    public function getProductNameAttr($value, $data)
+    {
+        return isset($data['goods_title']) ? (string)$data['goods_title'] : '';
+    }
+
+    /**
+     * 计算属性：重量（临时用券面值代替）
+     * @param mixed $value
+     * @param array $data
+     * @return mixed
+     */
+    public function getWeightAttr($value, $data)
+    {
+        return isset($data['face_value']) ? $data['face_value'] : '';
+    }
+
+    /**
+     * 计算属性：配送方式（固定 PICKUP）
+     * @return string
+     */
+    public function getDeliveryMethodAttr()
+    {
+        return 'PICKUP';
+    }
+
+    /**
+     * 计算属性：商品描述（来自关联 goods）
+     * @param mixed $value
+     * @param array $data
+     * @return string
+     */
+    public function getDescriptionAttr($value, $data)
+    {
+        try {
+            $goods = $this->goods;
+            if ($goods) {
+                return isset($goods['description']) ? (string)$goods['description'] : '';
+            }
+        } catch (\Exception $e) {
+            // 忽略关联异常，返回空字符串
+        }
+        return '';
+    }
+
+    /**
+     * 计算属性：前端状态值
+     * 将 state 映射为：1→UNUSED, 2→USED, 3→EXPIRED, 4→REFUNDED
+     * @param mixed $value
+     * @param array $data
+     * @return string
+     */
+    public function getStatusAttr($value, $data)
+    {
+        $state = isset($data['state']) ? (string)$data['state'] : '';
+        $map = [
+            '1' => 'UNUSED',
+            '2' => 'USED',
+            '3' => 'EXPIRED',
+            '4' => 'REFUNDED',
+        ];
+        return isset($map[$state]) ? $map[$state] : '';
+    }
+
+    /**
+     * 计算属性：过期时间（valid_end）
+     * @param mixed $value
+     * @param array $data
+     * @return mixed
+     */
+    public function getExpireAtAttr($value, $data)
+    {
+        return isset($data['valid_end']) ? $data['valid_end'] : '';
+    }
+
+    /**
+     * 计算属性：门店地址（仅 state=2 已核销时返回关联 shop.return）
+     * @param mixed $value
+     * @param array $data
+     * @return string
+     */
+    public function getStoreAddressAttr($value, $data)
+    {
+        $state = isset($data['state']) ? (int)$data['state'] : 0;
+        if ($state !== 2) {
+            return '';
+        }
+        try {
+            $shop = $this->shop;
+            if ($shop) {
+                return isset($shop['return']) ? (string)$shop['return'] : '';
+            }
+        } catch (\Exception $e) {
+            // 忽略关联异常，返回空字符串
+        }
+        return '';
     }
 }
