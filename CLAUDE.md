@@ -16,34 +16,22 @@
 
 ## Codex Skill 使用规则
 
-**默认行为**：Claude Code 可以直接进行代码编写、修改和重构。
+**默认行为**：遵循全局 `~/.claude/CLAUDE.md` 配置文件中定义的 Codex Skill 使用规则。
 
-**按需使用**：仅当用户明确要求使用 Codex Skill 时，才通过 Codex Skill 执行代码修改任务。
+**强制禁用**：仅当用户明确要求"完全使用 Claude"或"不使用 Codex Skill"时，才禁用 Codex Skill，强制 Claude Code 直接执行所有代码修改任务。
 
-### 适用场景
+### 全局配置优先
 
-用户明确要求时，可通过 Codex Skill 执行：
-- 编写新函数、类、模块
-- 修改现有代码逻辑
-- 重构代码结构
-- 生成数据库迁移文件
-- 实现业务功能
+- 项目级配置不覆盖全局 Codex Skill 使用策略
+- 默认情况下，遵循全局配置的工作流程和执行模式
+- 全局配置会自动决定何时使用 Codex Skill 进行代码编辑
 
-### 调用示例
+### 用户强制控制
 
-```bash
-# 通过 Bash 工具调用
-uv run ~/.claude/skills/codex/scripts/codex.py "<任务描述> @file" "gpt-5-codex" "/Users/griffith/IdeaProjects/money/grainAdminMix"
-
-# 带 timeout 保护
-# timeout: 7200000
-```
-
-### 使用建议
-
-- **默认方式**：Claude Code 直接修改代码（快速、高效）
-- **Codex Skill**：适用于复杂重构或用户明确要求的场景
-- **选择权在用户**：在请求时明确指定是否使用 Codex Skill
+用户可以通过明确指令覆盖全局配置：
+- **"完全使用 Claude"** → 禁用 Codex Skill，所有任务由 Claude Code 直接执行
+- **"不使用 Codex Skill"** → 同上，强制 Claude 直接修改代码
+- 未明确指定时 → 遵循全局配置规则
 
 ## 项目概述
 
@@ -252,6 +240,7 @@ php think install \
 
 ## 最近更新
 
+- 2025-11-19：**调整 Codex Skill 使用策略**：项目级配置改为遵循全局配置，只有用户明确要求"完全使用 Claude"时才禁用 Codex Skill
 - 2025-11-17：**添加严格的错误处理原则（原则六）**：绝对禁止使用容错机制掩盖错误，必须彻底解决问题
 - 2025-11-17：调整 Codex Skill 使用策略，从强制使用改为按需使用（仅在用户明确要求时使用）
 - 2025-11-14：添加 Codex Skill 强制使用规则
