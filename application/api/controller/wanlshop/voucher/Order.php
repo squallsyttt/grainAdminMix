@@ -495,7 +495,7 @@ class Order extends Api
             $body = file_get_contents('php://input');
 
             // 记录回调日志
-            \think\facade\Log::info('微信支付回调原始报文: ' . $body);
+            \think\Log::info('微信支付回调原始报文: ' . $body);
 
             // 读取回调头部
             $timestamp = $this->request->header('Wechatpay-Timestamp');
@@ -512,7 +512,7 @@ class Order extends Api
 
             // 验证签名
             if (!WechatPayment::verifyCallbackSignature($headers, $body)) {
-                \think\facade\Log::error('微信支付回调：签名验证失败');
+                \think\Log::error('微信支付回调：签名验证失败');
                 try {
                     PaymentCallbackLog::recordCallback([
                         'order_type'       => 'voucher',
@@ -524,14 +524,14 @@ class Order extends Api
                         'verify_result'    => 'fail',
                     ])->markProcessed('fail', ['error' => '签名验证失败']);
                 } catch (Exception $logEx) {
-                    \think\facade\Log::error('回调日志记录失败: ' . $logEx->getMessage());
+                    \think\Log::error('回调日志记录失败: ' . $logEx->getMessage());
                 }
                 return json(['code' => 'FAIL', 'message' => '签名验证失败']);
             }
 
             $data = json_decode($body, true);
             if (!is_array($data) || empty($data['resource'])) {
-                \think\facade\Log::error('微信支付回调：报文格式错误');
+                \think\Log::error('微信支付回调：报文格式错误');
                 return json(['code' => 'FAIL', 'message' => '报文格式错误']);
             }
 
@@ -541,25 +541,25 @@ class Order extends Api
 
             // 仅处理支付成功通知
             if (!isset($resource['trade_state']) || $resource['trade_state'] !== 'SUCCESS') {
-                \think\facade\Log::info('微信支付回调：非成功交易状态，忽略');
+                \think\Log::info('微信支付回调：非成功交易状态，忽略');
                 return json(['code' => 'SUCCESS', 'message' => '']);
             }
 
             $outTradeNo = $resource['out_trade_no'] ?? '';
             if (!$outTradeNo) {
-                \think\facade\Log::error('微信支付回调：out_trade_no 缺失');
+                \think\Log::error('微信支付回调：out_trade_no 缺失');
                 return json(['code' => 'FAIL', 'message' => '订单号缺失']);
             }
 
             if ($transactionId && PaymentCallbackLog::isProcessed($transactionId)) {
-                \think\facade\Log::info('微信支付回调:重复通知,已处理 - ' . $transactionId);
+                \think\Log::info('微信支付回调:重复通知,已处理 - ' . $transactionId);
                 return json(['code' => 'SUCCESS', 'message' => '']);
             }
 
             // 金额校验
             $order = VoucherOrder::where('order_no', $outTradeNo)->find();
             if (!$order) {
-                \think\facade\Log::error('微信支付回调：订单不存在 - ' . $outTradeNo);
+                \think\Log::error('微信支付回调：订单不存在 - ' . $outTradeNo);
                 return json(['code' => 'FAIL', 'message' => '订单不存在']);
             }
 
@@ -567,7 +567,7 @@ class Order extends Api
                 $total = (int)$resource['amount']['total'];
                 $orderAmount = (int)bcmul($order->actual_payment, 100, 0);
                 if ($total !== $orderAmount) {
-                    \think\facade\Log::error(sprintf(
+                    \think\Log::error(sprintf(
                         '微信支付回调：金额不匹配，订单号=%s, 回调金额=%s, 订单金额=%s',
                         $outTradeNo,
                         $total,
@@ -584,7 +584,7 @@ class Order extends Api
             return json(['code' => 'SUCCESS', 'message' => '']);
 
         } catch (Exception $e) {
-            \think\facade\Log::error('微信支付回调处理失败: ' . $e->getMessage());
+            \think\Log::error('微信支付回调处理失败: ' . $e->getMessage());
             try {
                 PaymentCallbackLog::recordCallback([
                     'order_type'       => 'voucher',
@@ -596,7 +596,7 @@ class Order extends Api
                     'verify_result'    => 'fail',
                 ])->markProcessed('fail', ['error' => $e->getMessage()]);
             } catch (Exception $logEx) {
-                \think\facade\Log::error('回调日志记录失败: ' . $logEx->getMessage());
+                \think\Log::error('回调日志记录失败: ' . $logEx->getMessage());
             }
             return json(['code' => 'FAIL', 'message' => $e->getMessage()]);
         }
@@ -690,7 +690,7 @@ class Order extends Api
                 ])->markProcessed('success', ['vouchers_created' => $order->quantity]);
             } catch (Exception $logEx) {
                 // 日志记录失败不影响业务
-                \think\facade\Log::error('回调日志记录失败: ' . $logEx->getMessage());
+                \think\Log::error('回调日志记录失败: ' . $logEx->getMessage());
             }
 
         } catch (Exception $e) {
