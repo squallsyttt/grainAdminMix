@@ -16,7 +16,7 @@ use think\Exception;
  */
 class Order extends Api
 {
-    protected $noNeedLogin = [];
+    protected $noNeedLogin = ['notify'];
     protected $noNeedRight = ['*'];
 
     /**
