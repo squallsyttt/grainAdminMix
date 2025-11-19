@@ -101,3 +101,8 @@ token: {{token}}
 {
   "order_id": 1050
 }
+
+### 15. 订单统计 - 获取当前用户订单统计信息
+GET {{baseUrl}}/api/wanlshop/voucher/order/statistics
+token: {{token}}
+

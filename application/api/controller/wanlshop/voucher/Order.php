@@ -280,6 +280,63 @@ class Order extends Api
     }
 
     /**
+     * 订单统计
+     *
+     * @ApiSummary  (获取订单统计信息)
+     * @ApiMethod   (GET)
+     *
+     * @return void
+     */
+    public function statistics()
+    {
+        $this->request->filter(['strip_tags']);
+
+        // 基础查询条件：当前用户且未软删除
+        $baseWhere = [
+            'user_id' => $this->auth->id,
+            'status' => 'normal'
+        ];
+
+        // 统计总订单数量
+        $totalCount = VoucherOrder::where($baseWhere)->count();
+
+        // 统计待支付订单数量（state = 1）
+        $pendingCount = VoucherOrder::where($baseWhere)
+            ->where('state', 1)
+            ->count();
+
+        // 统计已支付订单数量（state = 2）
+        $paidCount = VoucherOrder::where($baseWhere)
+            ->where('state', 2)
+            ->count();
+
+        // 统计已取消订单数量（state = 3）
+        $cancelledCount = VoucherOrder::where($baseWhere)
+            ->where('state', 3)
+            ->count();
+
+        // 统计总金额（已支付订单的实际支付金额总和）
+        $totalAmount = VoucherOrder::where($baseWhere)
+            ->where('state', 2)
+            ->sum('actual_payment');
+
+        // 统计待支付订单的总金额
+        $pendingAmount = VoucherOrder::where($baseWhere)
+            ->where('state', 1)
+            ->sum('actual_payment');
+
+        // 返回统计结果
+        $this->success('ok', [
+            'total_count' => (int)$totalCount,
+            'pending_count' => (int)$pendingCount,
+            'paid_count' => (int)$paidCount,
+            'cancelled_count' => (int)$cancelledCount,
+            'total_amount' => (float)$totalAmount,
+            'pending_amount' => (float)$pendingAmount,
+        ]);
+    }
+
+    /**
      * 构建订单明细项（用于前端展示）
      *
      * @param VoucherOrder $order 订单对象
