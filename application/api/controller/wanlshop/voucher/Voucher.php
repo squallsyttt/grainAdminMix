@@ -91,4 +91,60 @@ class Voucher extends Api
 
         $this->success('ok', $voucher);
     }
+
+    /**
+     * 券统计
+     *
+     * @ApiSummary  (获取我的核销券统计信息)
+     * @ApiMethod   (GET)
+     *
+     * 统计维度说明：
+     * - total: 总核销券数（status='normal'）
+     * - unused: 待核销数（state=1 且 valid_end > 当前时间）
+     * - used: 已核销数（state=2）
+     * - expiring_soon: 即将过期数（state=1 且 当前时间 < valid_end <= 当前时间+30天）
+     * - expired: 已过期数（state=3）
+     *
+     * 性能优化：通过单条聚合查询使用条件求和（SUM + CASE WHEN），避免多次数据库查询。
+     */
+    public function statistics()
+    {
+        $this->request->filter(['strip_tags']);
+
+        // 基础查询条件：当前用户 + 未软删除/正常状态
+        $baseWhere = [
+            'user_id' => $this->auth->id,
+            'status'  => 'normal',
+        ];
+
+        // 时间边界：当前时间与未来30天（30 * 86400 秒）
+        $now  = time();
+        $soon = $now + 30 * 86400;
+
+        // 使用条件聚合一次性统计各维度
+        // 说明：
+        // - total           = COUNT(1)
+        // - unused          = state=1 AND valid_end > now
+        // - used            = state=2
+        // - expiring_soon   = state=1 AND valid_end > now AND valid_end <= soon
+        // - expired         = state=3
+        $row = VoucherModel::where($baseWhere)
+            ->field("COUNT(1) AS total,
+                     SUM(CASE WHEN state = 1 AND valid_end > {$now} THEN 1 ELSE 0 END) AS unused,
+                     SUM(CASE WHEN state = 2 THEN 1 ELSE 0 END) AS used,
+                     SUM(CASE WHEN state = 1 AND valid_end > {$now} AND valid_end <= {$soon} THEN 1 ELSE 0 END) AS expiring_soon,
+                     SUM(CASE WHEN state = 3 THEN 1 ELSE 0 END) AS expired")
+            ->find();
+
+        // 取原始数据，避免触发模型的追加属性计算
+        $data = $row ? $row->getData() : [];
+
+        $this->success('ok', [
+            'total'          => (int)($data['total'] ?? 0),
+            'unused'         => (int)($data['unused'] ?? 0),
+            'used'           => (int)($data['used'] ?? 0),
+            'expiring_soon'  => (int)($data['expiring_soon'] ?? 0),
+            'expired'        => (int)($data['expired'] ?? 0),
+        ]);
+    }
 }

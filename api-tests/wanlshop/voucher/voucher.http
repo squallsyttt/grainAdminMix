@@ -38,3 +38,7 @@ token: {{token}}
 ### 9. 券详情 - 已退款的券(应显示退款信息)
 GET {{baseUrl}}/api/wanlshop/voucher/voucher/detail?id=3
 token: {{token}}
+
+### 10. 券统计 - 获取当前用户核销券统计信息
+GET {{baseUrl}}/api/wanlshop/voucher/voucher/statistics
+token: {{token}}

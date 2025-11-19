@@ -7,6 +7,7 @@ use app\admin\model\wanlshop\Voucher;
 use app\api\model\wanlshop\Third;
 use app\common\library\WechatPayment;
 use app\admin\model\wanlshop\Goods;
+use app\common\model\PaymentCallbackLog;
 use think\Db;
 use think\Exception;
 
@@ -483,6 +484,12 @@ class Order extends Api
      */
     public function notify()
     {
+        $body = '';
+        $headers = [];
+        $resource = [];
+        $outTradeNo = '';
+        $transactionId = '';
+
         try {
             // 原始报文
             $body = file_get_contents('php://input');
@@ -506,6 +513,19 @@ class Order extends Api
             // 验证签名
             if (!WechatPayment::verifyCallbackSignature($headers, $body)) {
                 \think\facade\Log::error('微信支付回调：签名验证失败');
+                try {
+                    PaymentCallbackLog::recordCallback([
+                        'order_type'       => 'voucher',
+                        'order_no'         => $outTradeNo ?? '',
+                        'transaction_id'   => $transactionId ?? '',
+                        'trade_state'      => $resource['trade_state'] ?? '',
+                        'callback_body'    => $body,
+                        'callback_headers' => json_encode($headers, JSON_UNESCAPED_UNICODE),
+                        'verify_result'    => 'fail',
+                    ])->markProcessed('fail', ['error' => '签名验证失败']);
+                } catch (Exception $logEx) {
+                    \think\facade\Log::error('回调日志记录失败: ' . $logEx->getMessage());
+                }
                 return json(['code' => 'FAIL', 'message' => '签名验证失败']);
             }
 
@@ -517,6 +537,7 @@ class Order extends Api
 
             // 解密资源数据
             $resource = WechatPayment::decryptCallbackResource($data['resource']);
+            $transactionId = $resource['transaction_id'] ?? '';
 
             // 仅处理支付成功通知
             if (!isset($resource['trade_state']) || $resource['trade_state'] !== 'SUCCESS') {
@@ -528,6 +549,11 @@ class Order extends Api
             if (!$outTradeNo) {
                 \think\facade\Log::error('微信支付回调：out_trade_no 缺失');
                 return json(['code' => 'FAIL', 'message' => '订单号缺失']);
+            }
+
+            if ($transactionId && PaymentCallbackLog::isProcessed($transactionId)) {
+                \think\facade\Log::info('微信支付回调:重复通知,已处理 - ' . $transactionId);
+                return json(['code' => 'SUCCESS', 'message' => '']);
             }
 
             // 金额校验
@@ -552,13 +578,26 @@ class Order extends Api
             }
 
             // 处理支付成功逻辑
-            $this->handlePaymentSuccess($outTradeNo);
+            $this->handlePaymentSuccess($outTradeNo, $resource);
 
             // 必须在5秒内返回成功响应
             return json(['code' => 'SUCCESS', 'message' => '']);
 
         } catch (Exception $e) {
             \think\facade\Log::error('微信支付回调处理失败: ' . $e->getMessage());
+            try {
+                PaymentCallbackLog::recordCallback([
+                    'order_type'       => 'voucher',
+                    'order_no'         => $outTradeNo ?? '',
+                    'transaction_id'   => $transactionId ?? '',
+                    'trade_state'      => $resource['trade_state'] ?? '',
+                    'callback_body'    => $body,
+                    'callback_headers' => json_encode($headers, JSON_UNESCAPED_UNICODE),
+                    'verify_result'    => 'fail',
+                ])->markProcessed('fail', ['error' => $e->getMessage()]);
+            } catch (Exception $logEx) {
+                \think\facade\Log::error('回调日志记录失败: ' . $logEx->getMessage());
+            }
             return json(['code' => 'FAIL', 'message' => $e->getMessage()]);
         }
     }
@@ -567,10 +606,13 @@ class Order extends Api
      * 处理支付成功逻辑
      *
      * @param string $orderNo 订单号
+     * @param array  $resource 回调资源数据
      * @throws Exception
      */
-    private function handlePaymentSuccess($orderNo)
+    private function handlePaymentSuccess($orderNo, array $resource)
     {
+        $transactionId = $resource['transaction_id'] ?? '';
+
         Db::startTrans();
         try {
             // 查询订单(加行锁)
@@ -596,6 +638,7 @@ class Order extends Api
             // 更新订单状态
             $order->state = 2;  // 已支付
             $order->paymenttime = time();
+            $order->transaction_id = $transactionId;
             $order->save();
 
             // 查询商品信息
@@ -632,8 +675,23 @@ class Order extends Api
                 $voucher->createtime = $now;
                 $voucher->save();
             }
-
             Db::commit();
+
+            // 事务成功后记录回调处理成功
+            try {
+                PaymentCallbackLog::recordCallback([
+                    'order_type'       => 'voucher',
+                    'order_no'         => $orderNo,
+                    'transaction_id'   => $transactionId,
+                    'trade_state'      => $resource['trade_state'] ?? '',
+                    'callback_body'    => json_encode($resource),
+                    'callback_headers' => json_encode([]),  // 由 notify 方法传入
+                    'verify_result'    => 'success',
+                ])->markProcessed('success', ['vouchers_created' => $order->quantity]);
+            } catch (Exception $logEx) {
+                // 日志记录失败不影响业务
+                \think\facade\Log::error('回调日志记录失败: ' . $logEx->getMessage());
+            }
 
         } catch (Exception $e) {
             Db::rollback();
