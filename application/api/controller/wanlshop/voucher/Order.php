@@ -513,19 +513,7 @@ class Order extends Api
             // 验证签名
             if (!WechatPayment::verifyCallbackSignature($headers, $body)) {
                 \think\Log::error('微信支付回调：签名验证失败');
-                try {
-                    PaymentCallbackLog::recordCallback([
-                        'order_type'       => 'voucher',
-                        'order_no'         => $outTradeNo ?? '',
-                        'transaction_id'   => $transactionId ?? '',
-                        'trade_state'      => $resource['trade_state'] ?? '',
-                        'callback_body'    => $body,
-                        'callback_headers' => json_encode($headers, JSON_UNESCAPED_UNICODE),
-                        'verify_result'    => 'fail',
-                    ])->markProcessed('fail', ['error' => '签名验证失败']);
-                } catch (Exception $logEx) {
-                    \think\Log::error('回调日志记录失败: ' . $logEx->getMessage());
-                }
+                // 签名验证失败时不记录到数据库，避免transaction_id为空导致的唯一键冲突
                 return json(['code' => 'FAIL', 'message' => '签名验证失败']);
             }
 

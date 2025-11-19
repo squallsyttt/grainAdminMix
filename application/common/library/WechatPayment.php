@@ -299,15 +299,6 @@ class WechatPayment
      */
     public static function verifyCallbackSignature(array $headers, $body)
     {
-        $config = config('wechat.payment');
-        $platformPublicKeyId = isset($config['platform_public_key_id']) ? trim($config['platform_public_key_id']) : '';
-        $platformPublicKeyPath = isset($config['platform_public_key_path']) ? trim($config['platform_public_key_path']) : '';
-
-        if ($platformPublicKeyId === '' || $platformPublicKeyPath === '') {
-            Log::error('微信支付回调：未配置平台公钥（platform_public_key_id 和 platform_public_key_path）');
-            return false;
-        }
-
         $timestamp = isset($headers['timestamp']) ? (string)$headers['timestamp'] : '';
         $nonce = isset($headers['nonce']) ? (string)$headers['nonce'] : '';
         $signature = isset($headers['signature']) ? (string)$headers['signature'] : '';
@@ -324,6 +315,11 @@ class WechatPayment
             return false;
         }
 
+        if ($serialHeader === '') {
+            Log::error('微信支付回调：缺少证书序列号');
+            return false;
+        }
+
         // 检查时间偏移量，允许5分钟之内的偏移
         $timeOffsetStatus = 300 >= abs(Formatter::timestamp() - (int)$timestamp);
         if (!$timeOffsetStatus) {
@@ -331,29 +327,22 @@ class WechatPayment
             return false;
         }
 
-        // 验证公钥ID是否匹配
-        if ($serialHeader !== '' && $serialHeader !== $platformPublicKeyId) {
-            Log::error('微信支付回调：公钥ID不匹配，期望：' . $platformPublicKeyId . '，实际：' . $serialHeader);
-            return false;
-        }
-
         // 构造验签名串
         $message = Formatter::joinedByLineFeed($timestamp, $nonce, $body);
 
-        // 加载平台公钥
-        if (substr($platformPublicKeyPath, 0, 1) !== '/' && substr($platformPublicKeyPath, 1, 1) !== ':') {
-            $platformPublicKeyPath = ROOT_PATH . $platformPublicKeyPath;
-        }
-
-        if (!is_file($platformPublicKeyPath)) {
-            Log::error('微信支付回调：平台公钥文件不存在：' . $platformPublicKeyPath);
+        // 根据证书序列号加载对应的平台证书
+        $platformCertPath = ROOT_PATH . 'cert/wechat/wechatpay_' . $serialHeader . '.pem';
+        
+        if (!is_file($platformCertPath)) {
+            Log::error('微信支付回调：平台证书文件不存在：' . $platformCertPath);
+            Log::info('提示：请确保已下载对应的平台证书，序列号：' . $serialHeader);
             return false;
         }
 
         try {
-            $platformPublicKeyInstance = Rsa::from('file://' . $platformPublicKeyPath, Rsa::KEY_TYPE_PUBLIC);
+            $platformPublicKeyInstance = Rsa::from('file://' . $platformCertPath, Rsa::KEY_TYPE_PUBLIC);
         } catch (\Throwable $e) {
-            Log::error('微信支付回调：加载平台公钥失败：' . $e->getMessage());
+            Log::error('微信支付回调：加载平台证书失败：' . $e->getMessage());
             return false;
         }
 
