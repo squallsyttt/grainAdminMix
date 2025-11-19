@@ -1,7 +1,7 @@
 ### 核销券接口测试
 ### 基础配置
-@baseUrl = http://localhost:8000
-@token = YOUR_USER_TOKEN_HERE
+@baseUrl = http://grain.local.com
+@token = eb32c8ea-2230-4a78-b77e-b3d5c08a2cb0
 
 ### 1. 我的券列表 - 全部
 GET {{baseUrl}}/api/wanlshop/voucher/voucher/lists

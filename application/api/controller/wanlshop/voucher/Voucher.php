@@ -37,7 +37,7 @@ class Voucher extends Api
 
         // 分页查询
         $list = VoucherModel::where($where)
-            ->field('id,voucher_no,verify_code,goods_title,goods_image,supply_price,face_value,state,valid_start,valid_end,createtime,verifytime')
+            ->field('id,voucher_no,verify_code,order_id,goods_id,category_id,goods_title,goods_image,supply_price,face_value,state,valid_start,valid_end,createtime,verifytime')
             ->order('createtime desc')
             ->paginate(10)
             ->each(function($voucher) {
