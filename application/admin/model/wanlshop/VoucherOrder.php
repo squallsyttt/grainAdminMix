@@ -65,6 +65,15 @@ class VoucherOrder extends Model
     }
 
     /**
+     * 关联：订单明细（多商品）
+     * @return \think\model\relation\HasMany
+     */
+    public function items()
+    {
+        return $this->hasMany('VoucherOrderItem', 'order_id', 'id');
+    }
+
+    /**
      * 关联：所属用户
      * @return \think\model\relation\BelongsTo
      */

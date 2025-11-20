@@ -1,7 +1,7 @@
 ### 核销券订单接口测试
 ### 基础配置
-@baseUrl = http://grain.local.com
-@token = 3e04a9b1-c5c2-4d74-b809-aae89d3b46b3
+@baseUrl = https://grain.griffithres.top
+@token = da5f4209-bbb6-4232-87e1-ba8dcf09e323
 
 ### 1. 创建订单 - 正常流程
 POST {{baseUrl}}/api/wanlshop/voucher/order/create
@@ -30,7 +30,7 @@ token: {{token}}
 
 {
   "goods_id": 1,
-  "quantity": 0
+  "quantity": 1
 }
 
 ### 4. 订单详情 - 正常查询
@@ -106,3 +106,25 @@ token: {{token}}
 GET {{baseUrl}}/api/wanlshop/voucher/order/statistics
 token: {{token}}
 
+### 16. 批量创建订单 - 多商品正常流程
+POST {{baseUrl}}/api/wanlshop/voucher/order/createBatch
+Content-Type: application/json
+token: {{token}}
+
+{
+  "items": [
+    { "goods_id": 1, "quantity": 2 },
+    { "goods_id": 2, "quantity": 1 }
+  ]
+}
+
+### 17. 批量创建订单 - 参数异常（数量为0）
+POST {{baseUrl}}/api/wanlshop/voucher/order/createBatch
+Content-Type: application/json
+token: {{token}}
+
+{
+  "items": [
+    { "goods_id": 1, "quantity": 0 }
+  ]
+}

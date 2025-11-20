@@ -4,6 +4,7 @@ namespace app\api\controller\wanlshop\voucher;
 use app\common\controller\Api;
 use app\admin\model\wanlshop\VoucherOrder;
 use app\admin\model\wanlshop\Voucher;
+use app\admin\model\wanlshop\VoucherOrderItem;
 use app\api\model\wanlshop\Third;
 use app\common\library\WechatPayment;
 use app\admin\model\wanlshop\Goods;
@@ -57,6 +58,7 @@ class Order extends Api
         $supplyPrice = $goods->price * $quantity;              // 供货价总额（商家设置的价格）
         $retailPrice = $goods->price * 1.20 * $quantity;       // 零售价总额（供货价 + 20%）
         $actualPayment = $retailPrice;                         // 实际支付(暂不考虑优惠)
+        $now = time();
 
         Db::startTrans();
         try {
@@ -71,8 +73,22 @@ class Order extends Api
             $order->retail_price = $retailPrice;
             $order->actual_payment = $actualPayment;
             $order->state = 1;  // 待支付
-            $order->createtime = time();
+            $order->createtime = $now;
             $order->save();
+
+            // 创建订单明细（单商品场景也记录，兼容多商品）
+            VoucherOrderItem::create([
+                'order_id' => $order->id,
+                'goods_id' => $goods->id,
+                'category_id' => $goods->category_id,
+                'goods_title' => $goods->title,
+                'goods_image' => $goods->image,
+                'quantity' => $quantity,
+                'supply_price' => $supplyPrice,
+                'retail_price' => $retailPrice,
+                'actual_payment' => $actualPayment,
+                'createtime' => $now,
+            ]);
 
             Db::commit();
 
@@ -80,6 +96,124 @@ class Order extends Api
                 'order_id' => $order->id,
                 'order_no' => $orderNo,
                 'amount' => $actualPayment,
+            ]);
+        } catch (Exception $e) {
+            Db::rollback();
+            $this->error(__('订单创建失败：') . $e->getMessage());
+        }
+    }
+
+    /**
+     * 批量创建订单（多商品）
+     *
+     * @ApiSummary  (创建多商品核销券订单)
+     * @ApiMethod   (POST)
+     *
+     * @param array $items 商品列表 [{goods_id, quantity}]
+     */
+    public function createBatch()
+    {
+        $this->request->filter(['strip_tags']);
+
+        if (!$this->request->isPost()) {
+            $this->error(__('非法请求'));
+        }
+
+        $itemsInput = $this->request->post('items/a', []);
+        if (!$itemsInput || !is_array($itemsInput)) {
+            $this->error(__('参数错误'));
+        }
+
+        // 合并同一商品的数量
+        $normalized = [];
+        foreach ($itemsInput as $item) {
+            $goodsId = isset($item['goods_id']) ? (int)$item['goods_id'] : 0;
+            $quantity = isset($item['quantity']) ? (int)$item['quantity'] : 0;
+            if ($goodsId <= 0 || $quantity < 1) {
+                $this->error(__('参数错误'));
+            }
+            if (!isset($normalized[$goodsId])) {
+                $normalized[$goodsId] = ['goods_id' => $goodsId, 'quantity' => 0];
+            }
+            $normalized[$goodsId]['quantity'] += $quantity;
+        }
+
+        $goodsIds = array_keys($normalized);
+        $goodsList = Goods::where('status', 'normal')
+            ->where('id', 'in', $goodsIds)
+            ->select();
+
+        if (!$goodsList || count($goodsList) != count($goodsIds)) {
+            $this->error(__('部分商品不存在或已下架'));
+        }
+
+        // 生成订单号
+        $orderNo = 'ORD' . date('YmdHis') . mt_rand(100000, 999999);
+
+        $totalQuantity = 0;
+        $totalSupplyPrice = 0;
+        $totalRetailPrice = 0;
+        $orderItemsData = [];
+        $now = time();
+
+        foreach ($goodsList as $goods) {
+            $qty = $normalized[$goods->id]['quantity'];
+
+            $supplyPrice = $goods->price * $qty;
+            $retailPrice = $goods->price * 1.20 * $qty;
+
+            $orderItemsData[] = [
+                'order_id' => 0, // 保存后填充
+                'goods_id' => $goods->id,
+                'category_id' => $goods->category_id,
+                'goods_title' => $goods->title,
+                'goods_image' => $goods->image,
+                'quantity' => $qty,
+                'supply_price' => $supplyPrice,
+                'retail_price' => $retailPrice,
+                'actual_payment' => $retailPrice,
+                'createtime' => $now,
+            ];
+
+            $totalQuantity += $qty;
+            $totalSupplyPrice += $supplyPrice;
+            $totalRetailPrice += $retailPrice;
+        }
+
+        $actualPayment = $totalRetailPrice;
+        if ($actualPayment <= 0 || $totalQuantity <= 0) {
+            $this->error(__('订单金额异常'));
+        }
+
+        Db::startTrans();
+        try {
+            $order = new VoucherOrder();
+            $order->user_id = $this->auth->id;
+            $order->order_no = $orderNo;
+            $order->goods_id = $orderItemsData[0]['goods_id'];      // 兼容旧字段
+            $order->category_id = $orderItemsData[0]['category_id']; // 兼容旧字段
+            $order->quantity = $totalQuantity;
+            $order->supply_price = $totalSupplyPrice;
+            $order->retail_price = $totalRetailPrice;
+            $order->actual_payment = $actualPayment;
+            $order->state = 1;  // 待支付
+            $order->createtime = $now;
+            $order->save();
+
+            foreach ($orderItemsData as &$item) {
+                $item['order_id'] = $order->id;
+            }
+
+            (new VoucherOrderItem())->saveAll($orderItemsData);
+
+            Db::commit();
+
+            $this->success('订单创建成功', [
+                'order_id' => $order->id,
+                'order_no' => $orderNo,
+                'amount' => $actualPayment,
+                'total_quantity' => $totalQuantity,
+                'items' => $orderItemsData
             ]);
         } catch (Exception $e) {
             Db::rollback();
@@ -128,6 +262,9 @@ class Order extends Api
             $this->error(__('订单金额异常'));
         }
 
+        // 订单明细（兼容多商品）
+        $orderItems = $order->items;
+
         // 获取当前用户的小程序 openid（通过第三方绑定表）
         $third = Third::where([
             'platform' => 'miniprogram',
@@ -145,8 +282,16 @@ class Order extends Api
         }
 
         // 订单描述
-        $goods = Goods::find($order->goods_id);
-        $description = $goods && $goods->title ? $goods->title : ('核销券订单-' . $order->order_no);
+        $description = '核销券订单-' . $order->order_no;
+        if ($orderItems && count($orderItems) > 0) {
+            $firstTitle = $orderItems[0]->goods_title ?: '';
+            $description = count($orderItems) > 1
+                ? ($firstTitle ?: '多商品订单') . '等' . count($orderItems) . '件商品'
+                : ($firstTitle ?: $description);
+        } else {
+            $goods = Goods::find($order->goods_id);
+            $description = $goods && $goods->title ? $goods->title : $description;
+        }
 
         // 支付请求可能遇到探测流量，增加重试机制
         $maxRetries = 0;
@@ -228,6 +373,12 @@ class Order extends Api
 
         // 关联查询生成的核销券
         $order->vouchers;
+        // 关联查询订单明细（多商品）
+        $order->items;
+
+        $itemCount = $order->items ? count($order->items) : 0;
+        $order->is_multi_item = $itemCount > 1;
+        $order->item_count = $itemCount ?: 1;
 
         $this->success('ok', $order);
     }
@@ -264,6 +415,12 @@ class Order extends Api
                 $order->goods;
                 // 关联券信息（含门店信息）
                 $order->vouchers()->with('shop')->select();
+                // 预加载明细（多商品）
+                $order->items;
+
+                $itemCount = $order->items ? count($order->items) : 0;
+                $order->is_multi_item = $itemCount > 1;
+                $order->item_count = $itemCount ?: 1;
 
                 // 构建前端需要的 items 结构
                 $order->items = $this->buildOrderItems($order);
@@ -372,6 +529,27 @@ class Order extends Api
                     'store_address' => null,
                 ];
             }
+        } elseif ($order->items && count($order->items) > 0) {
+            foreach ($order->items as $item) {
+                $items[] = [
+                    'id' => $item->id,
+                    'product_name' => $item->goods_title ?: '未知商品',
+                    'weight' => $this->extractWeight($item->goods_title),
+                    'quantity' => $item->quantity,
+                    'unit_price' => $item->quantity > 0 ? (float)($item->supply_price / $item->quantity) : 0.0,
+                    'subtotal' => (float)$item->actual_payment,
+
+                    'voucher_id' => null,
+                    'voucher_code' => null,
+                    'voucher_status' => null,
+                    'voucher_expire_at' => null,
+
+                    'delivery_method' => null,
+                    'store_id' => null,
+                    'store_name' => null,
+                    'store_address' => null,
+                ];
+            }
         } else {
             // 如果没有核销券（待支付状态），返回基础订单信息
             $items[] = [
@@ -379,7 +557,7 @@ class Order extends Api
                 'product_name' => $order->goods ? $order->goods->title : '未知商品',
                 'weight' => null,
                 'quantity' => $order->quantity,
-                'unit_price' => (float)($order->supply_price / $order->quantity),
+                'unit_price' => $order->quantity > 0 ? (float)($order->supply_price / $order->quantity) : 0.0,
                 'subtotal' => (float)$order->actual_payment,
 
                 'voucher_id' => null,
@@ -612,6 +790,9 @@ class Order extends Api
                 throw new Exception('订单不存在');
             }
 
+            // 订单明细（兼容多商品）
+            $orderItems = $order->items;
+
             // 防止重复处理
             if ($order->state == 2) {
                 Db::commit();
@@ -623,17 +804,18 @@ class Order extends Api
                 throw new Exception('订单状态异常');
             }
 
+            // 同步订单数量（以明细为准）
+            if ($orderItems && count($orderItems) > 0) {
+                $order->quantity = array_sum(array_map(function ($item) {
+                    return isset($item['quantity']) ? (int)$item['quantity'] : 0;
+                }, $orderItems->toArray()));
+            }
+
             // 更新订单状态
             $order->state = 2;  // 已支付
             $order->paymenttime = time();
             $order->transaction_id = $transactionId;
             $order->save();
-
-            // 查询商品信息
-            $goods = Goods::find($order->goods_id);
-            if (!$goods) {
-                throw new Exception('商品不存在');
-            }
 
             // 读取券有效期配置（单位：天）
             $voucherConfig = config('voucher');
@@ -644,24 +826,74 @@ class Order extends Api
             $now = time();
             $validEnd = $now + $validDays * 86400;
 
-            // 生成核销券
-            for ($i = 0; $i < $order->quantity; $i++) {
-                $voucher = new Voucher();
-                $voucher->voucher_no = $this->generateVoucherNo();
-                $voucher->verify_code = $this->generateVerifyCode();
-                $voucher->order_id = $order->id;
-                $voucher->user_id = $order->user_id;
-                $voucher->category_id = $order->category_id;
-                $voucher->goods_id = $order->goods_id;
-                $voucher->goods_title = $goods->title;
-                $voucher->goods_image = $goods->image;
-                $voucher->supply_price = $order->supply_price / $order->quantity;
-                $voucher->face_value = $order->actual_payment / $order->quantity;
-                $voucher->valid_start = $now;
-                $voucher->valid_end = $validEnd;
-                $voucher->state = 1;  // 未使用
-                $voucher->createtime = $now;
-                $voucher->save();
+            $totalVouchers = 0;
+
+            if ($orderItems && count($orderItems) > 0) {
+                foreach ($orderItems as $item) {
+                    $itemQuantity = (int)$item->quantity;
+                    if ($itemQuantity < 1) {
+                        continue;
+                    }
+
+                    // 补充商品信息
+                    $goodsTitle = $item->goods_title;
+                    $goodsImage = $item->goods_image;
+                    if (!$goodsTitle || !$goodsImage) {
+                        $goods = Goods::find($item->goods_id);
+                        if ($goods) {
+                            $goodsTitle = $goodsTitle ?: $goods->title;
+                            $goodsImage = $goodsImage ?: $goods->image;
+                        }
+                    }
+
+                    $supplyPerUnit = $itemQuantity > 0 ? $item->supply_price / $itemQuantity : 0;
+                    $facePerUnit = $itemQuantity > 0 ? $item->actual_payment / $itemQuantity : 0;
+
+                    for ($i = 0; $i < $itemQuantity; $i++) {
+                        $voucher = new Voucher();
+                        $voucher->voucher_no = $this->generateVoucherNo();
+                        $voucher->verify_code = $this->generateVerifyCode();
+                        $voucher->order_id = $order->id;
+                        $voucher->user_id = $order->user_id;
+                        $voucher->category_id = $item->category_id;
+                        $voucher->goods_id = $item->goods_id;
+                        $voucher->goods_title = $goodsTitle;
+                        $voucher->goods_image = $goodsImage;
+                        $voucher->supply_price = $supplyPerUnit;
+                        $voucher->face_value = $facePerUnit;
+                        $voucher->valid_start = $now;
+                        $voucher->valid_end = $validEnd;
+                        $voucher->state = 1;  // 未使用
+                        $voucher->createtime = $now;
+                        $voucher->save();
+                        $totalVouchers++;
+                    }
+                }
+            } else {
+                // 兼容单商品旧路径
+                $goods = Goods::find($order->goods_id);
+                if (!$goods) {
+                    throw new Exception('商品不存在');
+                }
+                for ($i = 0; $i < $order->quantity; $i++) {
+                    $voucher = new Voucher();
+                    $voucher->voucher_no = $this->generateVoucherNo();
+                    $voucher->verify_code = $this->generateVerifyCode();
+                    $voucher->order_id = $order->id;
+                    $voucher->user_id = $order->user_id;
+                    $voucher->category_id = $order->category_id;
+                    $voucher->goods_id = $order->goods_id;
+                    $voucher->goods_title = $goods->title;
+                    $voucher->goods_image = $goods->image;
+                    $voucher->supply_price = $order->supply_price / $order->quantity;
+                    $voucher->face_value = $order->actual_payment / $order->quantity;
+                    $voucher->valid_start = $now;
+                    $voucher->valid_end = $validEnd;
+                    $voucher->state = 1;  // 未使用
+                    $voucher->createtime = $now;
+                    $voucher->save();
+                    $totalVouchers++;
+                }
             }
             Db::commit();
 
@@ -675,7 +907,7 @@ class Order extends Api
                     'callback_body'    => json_encode($resource),
                     'callback_headers' => json_encode([]),  // 由 notify 方法传入
                     'verify_result'    => 'success',
-                ])->markProcessed('success', ['vouchers_created' => $order->quantity]);
+                ])->markProcessed('success', ['vouchers_created' => $totalVouchers ?: $order->quantity]);
             } catch (Exception $logEx) {
                 // 日志记录失败不影响业务
                 \think\Log::error('回调日志记录失败: ' . $logEx->getMessage());
