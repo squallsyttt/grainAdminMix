@@ -24,7 +24,7 @@ GET {{baseUrl}}/api/wanlshop/voucher/voucher/lists?state=4
 token: {{token}}
 
 ### 6. 券详情 - 正常查询
-GET {{baseUrl}}/api/wanlshop/voucher/voucher/detail?id=1
+GET {{baseUrl}}/api/wanlshop/voucher/voucher/detail?id=30
 token: {{token}}
 
 ### 7. 券详情 - 券不存在
