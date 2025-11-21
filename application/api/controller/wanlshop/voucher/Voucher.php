@@ -41,6 +41,27 @@ class Voucher extends Api
             ->order('createtime desc')
             ->paginate(10);
 
+        $list->setCollection(
+            $list->getCollection()->transform(function ($voucher) {
+                $data = $voucher->toArray();
+
+                // 统一券本身的金额/数值类型
+                $this->castPriceFields($data, ['supply_price', 'face_value', 'retail_price', 'coupon_price', 'discount_price', 'actual_payment', 'weight']);
+
+                // 关联商品价格字段
+                if (!empty($data['goods']) && is_array($data['goods'])) {
+                    $this->castPriceFields($data['goods'], ['price', 'supply_price', 'retail_price', 'coupon_price', 'discount_price', 'actual_payment']);
+                }
+
+                // 关联订单的金额字段
+                if (!empty($data['voucher_order']) && is_array($data['voucher_order'])) {
+                    $this->castPriceFields($data['voucher_order'], ['supply_price', 'retail_price', 'coupon_price', 'discount_price', 'actual_payment']);
+                }
+
+                return $data;
+            })
+        );
+
         $this->success('ok', $list);
     }
 
@@ -146,5 +167,21 @@ class Voucher extends Api
             'expiring_soon'  => (int)($data['expiring_soon'] ?? 0),
             'expired'        => (int)($data['expired'] ?? 0),
         ]);
+    }
+
+    /**
+     * 将金额字段统一转换为数字类型，避免出现字符串/数字混用
+     *
+     * @param array $data   引用的数组数据
+     * @param array $fields 需要转换的字段列表
+     * @return void
+     */
+    private function castPriceFields(array &$data, array $fields)
+    {
+        foreach ($fields as $field) {
+            if (array_key_exists($field, $data) && $data[$field] !== null && $data[$field] !== '') {
+                $data[$field] = (float)$data[$field];
+            }
+        }
     }
 }
