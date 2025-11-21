@@ -263,7 +263,8 @@ class Order extends Api
         }
 
         // 订单明细（兼容多商品）
-        $orderItems = $order->items;
+        // 注意：确保 items 关联被正确加载为集合
+        $orderItems = $order->items()->select();
 
         // 获取当前用户的小程序 openid（通过第三方绑定表）
         $third = Third::where([
@@ -791,7 +792,8 @@ class Order extends Api
             }
 
             // 订单明细（兼容多商品）
-            $orderItems = $order->items;
+            // 注意：确保 items 关联被正确加载为集合
+            $orderItems = $order->items()->select();
 
             // 防止重复处理
             if ($order->state == 2) {
@@ -806,9 +808,16 @@ class Order extends Api
 
             // 同步订单数量（以明细为准）
             if ($orderItems && count($orderItems) > 0) {
+                // 兼容处理：确保可以调用 toArray()
+                $itemsArray = is_object($orderItems) && method_exists($orderItems, 'toArray')
+                    ? $orderItems->toArray()
+                    : (array)$orderItems;
+
                 $order->quantity = array_sum(array_map(function ($item) {
-                    return isset($item['quantity']) ? (int)$item['quantity'] : 0;
-                }, $orderItems->toArray()));
+                    // 兼容数组和对象
+                    $quantity = is_array($item) ? ($item['quantity'] ?? 0) : ($item->quantity ?? 0);
+                    return (int)$quantity;
+                }, $itemsArray));
             }
 
             // 更新订单状态
