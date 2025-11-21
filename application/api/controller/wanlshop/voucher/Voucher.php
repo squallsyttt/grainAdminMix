@@ -41,10 +41,10 @@ class Voucher extends Api
             ->order('createtime desc')
             ->paginate(10);
 
-        $list->setCollection(
-            $list->getCollection()->transform(function ($voucher) {
-                $data = $voucher->toArray();
+        $payload = $list->toArray();
 
+        if (!empty($payload['data']) && is_array($payload['data'])) {
+            foreach ($payload['data'] as &$data) {
                 // 统一券本身的金额/数值类型
                 $this->castPriceFields($data, ['supply_price', 'face_value', 'retail_price', 'coupon_price', 'discount_price', 'actual_payment', 'weight']);
 
@@ -57,12 +57,11 @@ class Voucher extends Api
                 if (!empty($data['voucher_order']) && is_array($data['voucher_order'])) {
                     $this->castPriceFields($data['voucher_order'], ['supply_price', 'retail_price', 'coupon_price', 'discount_price', 'actual_payment']);
                 }
+            }
+            unset($data);
+        }
 
-                return $data;
-            })
-        );
-
-        $this->success('ok', $list);
+        $this->success('ok', $payload);
     }
 
     /**
