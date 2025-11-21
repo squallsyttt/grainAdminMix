@@ -6,6 +6,7 @@ use app\admin\model\wanlshop\VoucherOrder;
 use app\admin\model\wanlshop\Voucher;
 use app\admin\model\wanlshop\VoucherOrderItem;
 use app\api\model\wanlshop\Third;
+use app\api\model\wanlshop\GoodsSku;
 use app\common\library\WechatPayment;
 use app\admin\model\wanlshop\Goods;
 use app\common\model\PaymentCallbackLog;
@@ -39,6 +40,7 @@ class Order extends Api
         }
 
         $goodsId = $this->request->post('goods_id/d');
+        $goodsSkuId = $this->request->post('goods_sku_id/d', 0);
         $quantity = $this->request->post('quantity/d', 1);
 
         if (!$goodsId || $quantity < 1) {
@@ -51,12 +53,28 @@ class Order extends Api
             $this->error(__('商品不存在'));
         }
 
+        // 查询商品SKU信息（可选）
+        $sku = null;
+        $skuDifference = '';
+        $skuWeight = 0.0;
+        $unitPrice = $goods->price;
+        if ($goodsSkuId) {
+            $sku = GoodsSku::where(['id' => $goodsSkuId, 'goods_id' => $goodsId])->find();
+            if (!$sku) {
+                $this->error(__('商品规格不存在'));
+            }
+            // difference 可能是数组（通过获取器），统一存字符串快照
+            $skuDifference = is_array($sku->difference) ? implode(',', $sku->difference) : (string)$sku->difference;
+            $skuWeight = isset($sku->weigh) ? (float)$sku->weigh : 0.0;
+            $unitPrice = isset($sku->price) ? $sku->price : $unitPrice;
+        }
+
         // 生成订单号（到秒 + 随机6位，降低重复概率）
         $orderNo = 'ORD' . date('YmdHis') . mt_rand(100000, 999999);
 
         // 计算订单金额
-        $supplyPrice = $goods->price * $quantity;              // 供货价总额（商家设置的价格）
-        $retailPrice = $goods->price * 1.20 * $quantity;       // 零售价总额（供货价 + 20%）
+        $supplyPrice = $unitPrice * $quantity;                 // 供货价总额（基于SKU或商品价）
+        $retailPrice = $unitPrice * 1.20 * $quantity;          // 零售价总额（供货价 + 20%）
         $actualPayment = $retailPrice;                         // 实际支付(暂不考虑优惠)
         $now = time();
 
@@ -67,7 +85,10 @@ class Order extends Api
             $order->user_id = $this->auth->id;
             $order->order_no = $orderNo;
             $order->goods_id = $goods->id;
+            $order->goods_sku_id = $goodsSkuId;
             $order->category_id = $goods->category_id;
+            $order->sku_difference = $skuDifference;
+            $order->sku_weight = $skuWeight;
             $order->quantity = $quantity;
             $order->supply_price = $supplyPrice;
             $order->retail_price = $retailPrice;
@@ -80,9 +101,12 @@ class Order extends Api
             VoucherOrderItem::create([
                 'order_id' => $order->id,
                 'goods_id' => $goods->id,
+                'goods_sku_id' => $goodsSkuId,
                 'category_id' => $goods->category_id,
                 'goods_title' => $goods->title,
                 'goods_image' => $goods->image,
+                'sku_difference' => $skuDifference,
+                'sku_weight' => $skuWeight,
                 'quantity' => $quantity,
                 'supply_price' => $supplyPrice,
                 'retail_price' => $retailPrice,
@@ -124,27 +148,50 @@ class Order extends Api
             $this->error(__('参数错误'));
         }
 
-        // 合并同一商品的数量
+        // 合并同一商品+SKU的数量
         $normalized = [];
         foreach ($itemsInput as $item) {
             $goodsId = isset($item['goods_id']) ? (int)$item['goods_id'] : 0;
+            $goodsSkuId = isset($item['goods_sku_id']) ? (int)$item['goods_sku_id'] : 0;
             $quantity = isset($item['quantity']) ? (int)$item['quantity'] : 0;
             if ($goodsId <= 0 || $quantity < 1) {
                 $this->error(__('参数错误'));
             }
-            if (!isset($normalized[$goodsId])) {
-                $normalized[$goodsId] = ['goods_id' => $goodsId, 'quantity' => 0];
+            $key = $goodsId . '-' . $goodsSkuId;
+            if (!isset($normalized[$key])) {
+                $normalized[$key] = [
+                    'goods_id' => $goodsId,
+                    'goods_sku_id' => $goodsSkuId,
+                    'quantity' => 0
+                ];
             }
-            $normalized[$goodsId]['quantity'] += $quantity;
+            $normalized[$key]['quantity'] += $quantity;
         }
 
-        $goodsIds = array_keys($normalized);
+        $normalizedItems = array_values($normalized);
+        $goodsIds = array_values(array_unique(array_column($normalizedItems, 'goods_id')));
+        $skuIds = array_values(array_unique(array_filter(array_column($normalizedItems, 'goods_sku_id'))));
         $goodsList = Goods::where('status', 'normal')
             ->where('id', 'in', $goodsIds)
             ->select();
 
         if (!$goodsList || count($goodsList) != count($goodsIds)) {
             $this->error(__('部分商品不存在或已下架'));
+        }
+
+        // 关联商品映射
+        $goodsMap = [];
+        foreach ($goodsList as $g) {
+            $goodsMap[$g->id] = $g;
+        }
+
+        // 查询相关SKU信息（仅对传入的 goods_sku_id）
+        $skuMap = [];
+        if (!empty($skuIds)) {
+            $skuList = GoodsSku::where('id', 'in', $skuIds)->select();
+            foreach ($skuList as $sku) {
+                $skuMap[$sku->id] = $sku;
+            }
         }
 
         // 生成订单号
@@ -156,18 +203,33 @@ class Order extends Api
         $orderItemsData = [];
         $now = time();
 
-        foreach ($goodsList as $goods) {
-            $qty = $normalized[$goods->id]['quantity'];
+        foreach ($normalizedItems as $itemRow) {
+            $goodsId = $itemRow['goods_id'];
+            $skuId = $itemRow['goods_sku_id'];
+            $qty = $itemRow['quantity'];
 
-            $supplyPrice = $goods->price * $qty;
-            $retailPrice = $goods->price * 1.20 * $qty;
+            $goods = $goodsMap[$goodsId];
+            $sku = $skuId ? ($skuMap[$skuId] ?? null) : null;
+            if ($skuId && (!$sku || $sku->goods_id != $goodsId)) {
+                $this->error(__('商品规格不存在'));
+            }
+
+            $skuDifference = $sku ? (is_array($sku->difference) ? implode(',', $sku->difference) : (string)$sku->difference) : '';
+            $skuWeight = $sku ? (float)$sku->weigh : 0.0;
+            $unitPrice = $sku && isset($sku->price) ? $sku->price : $goods->price;
+
+            $supplyPrice = $unitPrice * $qty;
+            $retailPrice = $unitPrice * 1.20 * $qty;
 
             $orderItemsData[] = [
                 'order_id' => 0, // 保存后填充
                 'goods_id' => $goods->id,
+                'goods_sku_id' => $skuId,
                 'category_id' => $goods->category_id,
                 'goods_title' => $goods->title,
                 'goods_image' => $goods->image,
+                'sku_difference' => $skuDifference,
+                'sku_weight' => $skuWeight,
                 'quantity' => $qty,
                 'supply_price' => $supplyPrice,
                 'retail_price' => $retailPrice,
@@ -192,6 +254,9 @@ class Order extends Api
             $order->order_no = $orderNo;
             $order->goods_id = $orderItemsData[0]['goods_id'];      // 兼容旧字段
             $order->category_id = $orderItemsData[0]['category_id']; // 兼容旧字段
+            $order->goods_sku_id = $orderItemsData[0]['goods_sku_id']; // 兼容旧字段
+            $order->sku_difference = $orderItemsData[0]['sku_difference'] ?? '';
+            $order->sku_weight = $orderItemsData[0]['sku_weight'] ?? 0;
             $order->quantity = $totalQuantity;
             $order->supply_price = $totalSupplyPrice;
             $order->retail_price = $totalRetailPrice;
@@ -534,10 +599,13 @@ class Order extends Api
                 $items[] = [
                     'id' => $voucher->id,
                     'product_name' => $voucher->goods_title,
-                    'weight' => $this->extractWeight($voucher->goods_title),
+                    'weight' => isset($voucher->sku_weight) ? (float)$voucher->sku_weight : $this->extractWeight($voucher->goods_title),
                     'quantity' => 1,
                     'unit_price' => (float)$voucher->supply_price,
                     'subtotal' => (float)$voucher->face_value,
+                    'goods_sku_id' => isset($voucher->goods_sku_id) ? (int)$voucher->goods_sku_id : 0,
+                    'sku_difference' => isset($voucher->sku_difference) ? (string)$voucher->sku_difference : '',
+                    'sku_weight' => isset($voucher->sku_weight) ? (float)$voucher->sku_weight : null,
 
                     // 核销券信息
                     'voucher_id' => $voucher->id,
@@ -557,10 +625,13 @@ class Order extends Api
                 $items[] = [
                     'id' => $item->id,
                     'product_name' => $item->goods_title ?: '未知商品',
-                    'weight' => $this->extractWeight($item->goods_title),
+                    'weight' => isset($item->sku_weight) ? (float)$item->sku_weight : $this->extractWeight($item->goods_title),
                     'quantity' => $item->quantity,
                     'unit_price' => $item->quantity > 0 ? (float)($item->supply_price / $item->quantity) : 0.0,
                     'subtotal' => (float)$item->actual_payment,
+                    'goods_sku_id' => isset($item->goods_sku_id) ? (int)$item->goods_sku_id : 0,
+                    'sku_difference' => isset($item->sku_difference) ? (string)$item->sku_difference : '',
+                    'sku_weight' => isset($item->sku_weight) ? (float)$item->sku_weight : null,
 
                     'voucher_id' => null,
                     'voucher_code' => null,
@@ -578,10 +649,13 @@ class Order extends Api
             $items[] = [
                 'id' => $order->id,
                 'product_name' => $order->goods ? $order->goods->title : '未知商品',
-                'weight' => null,
+                'weight' => isset($order->sku_weight) ? (float)$order->sku_weight : null,
                 'quantity' => $order->quantity,
                 'unit_price' => $order->quantity > 0 ? (float)($order->supply_price / $order->quantity) : 0.0,
                 'subtotal' => (float)$order->actual_payment,
+                'goods_sku_id' => isset($order->goods_sku_id) ? (int)$order->goods_sku_id : 0,
+                'sku_difference' => isset($order->sku_difference) ? (string)$order->sku_difference : '',
+                'sku_weight' => isset($order->sku_weight) ? (float)$order->sku_weight : null,
 
                 'voucher_id' => null,
                 'voucher_code' => null,
@@ -895,6 +969,9 @@ class Order extends Api
 
                     $supplyPerUnit = $itemQuantity > 0 ? $item->supply_price / $itemQuantity : 0;
                     $facePerUnit = $itemQuantity > 0 ? $item->actual_payment / $itemQuantity : 0;
+                    $goodsSkuId = isset($item->goods_sku_id) ? (int)$item->goods_sku_id : 0;
+                    $skuDifference = isset($item->sku_difference) ? (string)$item->sku_difference : '';
+                    $skuWeight = isset($item->sku_weight) ? (float)$item->sku_weight : 0;
 
                     for ($i = 0; $i < $itemQuantity; $i++) {
                         $voucher = new Voucher();
@@ -904,8 +981,11 @@ class Order extends Api
                         $voucher->user_id = $order->user_id;
                         $voucher->category_id = $item->category_id;
                         $voucher->goods_id = $item->goods_id;
+                        $voucher->goods_sku_id = $goodsSkuId;
                         $voucher->goods_title = $goodsTitle;
                         $voucher->goods_image = $goodsImage;
+                        $voucher->sku_difference = $skuDifference;
+                        $voucher->sku_weight = $skuWeight;
                         $voucher->supply_price = $supplyPerUnit;
                         $voucher->face_value = $facePerUnit;
                         $voucher->valid_start = $now;
@@ -930,8 +1010,11 @@ class Order extends Api
                     $voucher->user_id = $order->user_id;
                     $voucher->category_id = $order->category_id;
                     $voucher->goods_id = $order->goods_id;
+                    $voucher->goods_sku_id = isset($order->goods_sku_id) ? (int)$order->goods_sku_id : 0;
                     $voucher->goods_title = $goods->title;
                     $voucher->goods_image = $goods->image;
+                    $voucher->sku_difference = isset($order->sku_difference) ? (string)$order->sku_difference : '';
+                    $voucher->sku_weight = isset($order->sku_weight) ? (float)$order->sku_weight : 0;
                     $voucher->supply_price = $order->supply_price / $order->quantity;
                     $voucher->face_value = $order->actual_payment / $order->quantity;
                     $voucher->valid_start = $now;

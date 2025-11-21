@@ -176,6 +176,9 @@ class Voucher extends Model
      */
     public function getWeightAttr($value, $data)
     {
+        if (isset($data['sku_weight']) && $data['sku_weight'] !== null) {
+            return (float)$data['sku_weight'];
+        }
         return isset($data['face_value']) ? $data['face_value'] : '';
     }
 
