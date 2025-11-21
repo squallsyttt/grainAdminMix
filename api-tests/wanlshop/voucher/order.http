@@ -34,7 +34,7 @@ token: {{token}}
 }
 
 ### 4. 订单详情 - 正常查询
-GET {{baseUrl}}/api/wanlshop/voucher/order/detail?id=45
+GET {{baseUrl}}/api/wanlshop/voucher/order/detail?id=47
 token: {{token}}
 
 ### 5. 订单详情 - 订单不存在

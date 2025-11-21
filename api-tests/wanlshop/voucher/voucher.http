@@ -1,7 +1,7 @@
 ### 核销券接口测试
 ### 基础配置
-@baseUrl = http://grain.local.com
-@token = eb32c8ea-2230-4a78-b77e-b3d5c08a2cb0
+@baseUrl = https://grain.griffithres.top
+@token = da5f4209-bbb6-4232-87e1-ba8dcf09e323
 
 ### 1. 我的券列表 - 全部
 GET {{baseUrl}}/api/wanlshop/voucher/voucher/lists

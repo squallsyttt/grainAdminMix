@@ -381,7 +381,29 @@ class Order extends Api
         $order->is_multi_item = $itemCount > 1;
         $order->item_count = $itemCount ?: 1;
 
-        $this->success('ok', $order);
+        // 统一价格字段为数字类型，避免前端出现字符串/数字混用
+        $orderData = $order->toArray();
+        $this->castPriceFields($orderData, ['supply_price', 'retail_price', 'coupon_price', 'discount_price', 'actual_payment']);
+
+        if (!empty($orderData['goods']) && is_array($orderData['goods'])) {
+            $this->castPriceFields($orderData['goods'], ['price', 'supply_price', 'retail_price', 'coupon_price', 'discount_price', 'actual_payment']);
+        }
+
+        if (!empty($orderData['vouchers']) && is_array($orderData['vouchers'])) {
+            foreach ($orderData['vouchers'] as &$voucher) {
+                $this->castPriceFields($voucher, ['supply_price', 'face_value', 'retail_price', 'actual_payment']);
+            }
+            unset($voucher);
+        }
+
+        if (!empty($orderData['items']) && is_array($orderData['items'])) {
+            foreach ($orderData['items'] as &$item) {
+                $this->castPriceFields($item, ['supply_price', 'retail_price', 'coupon_price', 'discount_price', 'actual_payment']);
+            }
+            unset($item);
+        }
+
+        $this->success('ok', $orderData);
     }
 
     /**
@@ -608,6 +630,22 @@ class Order extends Api
         ];
 
         return isset($map[$dbState]) ? $map[$dbState] : null;
+    }
+
+    /**
+     * 将金额字段统一转换为数字类型，避免出现字符串/数字混用
+     *
+     * @param array $data   引用的数组数据
+     * @param array $fields 需要转换的字段列表
+     * @return void
+     */
+    private function castPriceFields(array &$data, array $fields)
+    {
+        foreach ($fields as $field) {
+            if (array_key_exists($field, $data) && $data[$field] !== null && $data[$field] !== '') {
+                $data[$field] = (float)$data[$field];
+            }
+        }
     }
 
     /**
