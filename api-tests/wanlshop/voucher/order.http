@@ -57,6 +57,10 @@ token: {{token}}
 GET {{baseUrl}}/api/wanlshop/voucher/order/lists?state=3
 token: {{token}}
 
+### 9-2. 订单列表 - 存在退款订单
+GET {{baseUrl}}/api/wanlshop/voucher/order/lists?state=4
+token: {{token}}
+
 ### 10. 取消订单 - 正常流程
 POST {{baseUrl}}/api/wanlshop/voucher/order/cancel
 Content-Type: application/json

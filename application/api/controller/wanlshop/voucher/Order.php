@@ -490,7 +490,7 @@ class Order extends Api
             'status' => 'normal'
         ];
 
-        if ($state && in_array($state, ['1', '2', '3'])) {
+        if ($state && in_array($state, ['1', '2', '3', '4'])) {
             $where['state'] = $state;
         }
 
