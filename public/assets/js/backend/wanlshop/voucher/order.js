@@ -27,6 +27,7 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
                         {field: 'id', title: 'ID'},
                         {field: 'user.username', title: '用户', align: 'left', formatter: Table.api.formatter.search},
                         {field: 'goods.title', title: '商品', align: 'left', formatter: Table.api.formatter.search},
+                        {field: 'region_city_name', title: '发布城市', formatter: Table.api.formatter.search},
                         {field: 'category.name', title: '分类', align: 'left'},
                         {field: 'order_no', title: '订单号'},
                         {field: 'quantity', title: '数量'},
@@ -83,4 +84,3 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
     };
     return Controller;
 });
-

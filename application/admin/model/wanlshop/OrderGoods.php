@@ -47,12 +47,20 @@ class OrderGoods extends Model
 	    return [0 => '', 1 => __('退款中'), 2 => __('待退货'), 3 => __('退款完成'), 4 => __('退款关闭'), 5 => __('退款被拒')];
 	}
 	
-	public function getRefundStatusTextAttr($value, $data)
-	{
-	    $value = $value ? $value : (isset($data['refund_status']) ? $data['refund_status'] : '');
-	    $list = $this->getRefundStatusList();
-	    return isset($list[$value]) ? $list[$value] : '';
-	}
+    public function getRefundStatusTextAttr($value, $data)
+    {
+        $value = $value ? $value : (isset($data['refund_status']) ? $data['refund_status'] : '');
+        $list = $this->getRefundStatusList();
+        return isset($list[$value]) ? $list[$value] : '';
+    }
 
+
+    /**
+     * 关联：所属商品
+     */
+    public function goods()
+    {
+        return $this->belongsTo('app\\admin\\model\\wanlshop\\Goods', 'goods_id', 'id', [], 'LEFT')->setEagerlyType(0);
+    }
 
 }

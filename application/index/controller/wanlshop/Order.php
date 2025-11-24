@@ -52,13 +52,13 @@ class Order extends Wanlshop
             }
             list($where, $sort, $order, $offset, $limit) = $this->buildparams();
             $total = $this->model
-                    ->with(['user','ordergoods'])
+                    ->with(['user','ordergoods' => function($query){ $query->with(['goods']); }])
                     ->where($where)
                     ->order($sort, $order)
                     ->count();
 
             $list = $this->model
-                    ->with(['user','ordergoods'])
+                    ->with(['user','ordergoods' => function($query){ $query->with(['goods']); }])
                     ->where($where)
                     ->order($sort, $order)
                     ->limit($offset, $limit)
@@ -70,6 +70,13 @@ class Order extends Wanlshop
 					->where(['order_id' => $row['id'], 'type' => 'goods'])
 					->field('pay_no, price, order_price, freight_price, discount_price, actual_payment')
 					->find();
+                $cities = [];
+                foreach ($row['ordergoods'] as $og) {
+                    if (isset($og['goods']) && $og['goods']['region_city_name']) {
+                        $cities[] = $og['goods']['region_city_name'];
+                    }
+                }
+                $row['region_city_name'] = $cities ? implode('/', array_unique($cities)) : '';
             }
             $list = collection($list)->toArray();
 			
@@ -88,6 +95,7 @@ class Order extends Wanlshop
     {
     	$where = $order_no ? ['order_no' => $order_no] : ['id' => $id];
         $row = $this->model
+    		->with(['ordergoods' => function($query){ $query->with(['goods']); }])
     		->where($where)
     		->find();
         if (!$row) {
@@ -106,6 +114,15 @@ class Order extends Wanlshop
 		$row['pay'] = model('app\index\model\wanlshop\Pay')
 			->where(['order_id' => $row['id'], 'type' => 'goods'])
 			->find();
+		
+		// 汇总订单商品的城市信息（去重）
+		$cities = [];
+		foreach ($row['ordergoods'] as $og) {
+			if (isset($og['goods']) && $og['goods']['region_city_name']) {
+				$cities[] = $og['goods']['region_city_name'];
+			}
+		}
+		$row['region_city_name'] = $cities ? implode('/', array_unique($cities)) : '';
 			
 		// 查询快递状态
 		switch ($row['state']) {

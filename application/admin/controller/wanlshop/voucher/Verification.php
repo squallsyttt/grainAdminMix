@@ -42,13 +42,13 @@ class Verification extends Backend
             list($where, $sort, $order, $offset, $limit) = $this->buildparams();
 
             $total = $this->model
-                ->with(['voucher', 'user'])
+                ->with(['voucher' => function($query){ $query->with(['goods']); }, 'user'])
                 ->where($where)
                 ->order($sort, $order)
                 ->count();
 
             $list = $this->model
-                ->with(['voucher', 'user'])
+                ->with(['voucher' => function($query){ $query->with(['goods']); }, 'user'])
                 ->where($where)
                 ->order($sort, $order)
                 ->limit($offset, $limit)
@@ -56,7 +56,8 @@ class Verification extends Backend
 
             foreach ($list as $row) {
                 $row->getRelation('user')->visible(['username', 'nickname']);
-                $row->getRelation('voucher')->visible(['voucher_no', 'goods_title', 'state']);
+                $row->getRelation('voucher')->visible(['voucher_no', 'goods_title', 'state', 'goods']);
+                $row['region_city_name'] = (isset($row->voucher->goods) && $row->voucher->goods->region_city_name) ? $row->voucher->goods->region_city_name : '';
             }
 
             $list = collection($list)->toArray();

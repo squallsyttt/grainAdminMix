@@ -212,7 +212,7 @@
 		<div class="panel panel-default">
 			<div class="panel-heading">商品信息</div>
 			<div class="panel-body">
-				<p><span>订单号：</span><small>{$row.order_no}</small> <span style="margin-left: 30px;">买家：</span><small>{$row.user.nickname}</small><strong></strong></p>
+				<p><span>订单号：</span><small>{$row.order_no}</small> <span style="margin-left: 30px;">买家：</span><small>{$row.user.nickname}</small><strong></strong><span style="margin-left: 30px;">发布城市：</span><small>{$row.region_city_name|default='-'}</small></p>
 				<table class="table table-bordered">
 					<thead>
 						<tr>

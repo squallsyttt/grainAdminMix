@@ -60,7 +60,10 @@ class Order extends Backend
                     $row->getRelation('user')->visible(['username', 'nickname']);
                 }
                 if ($row->goods) {
-                    $row->getRelation('goods')->visible(['title', 'image']);
+                    $row->getRelation('goods')->visible(['title', 'image', 'region_city_name']);
+                    $row['region_city_name'] = $row->goods->region_city_name ?: '';
+                } else {
+                    $row['region_city_name'] = '';
                 }
                 if ($row->category) {
                     $row->getRelation('category')->visible(['name']);

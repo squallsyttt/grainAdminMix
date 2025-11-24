@@ -44,13 +44,13 @@ class Order extends Backend
             }
             list($where, $sort, $order, $offset, $limit) = $this->buildparams();
             $total = $this->model
-                    ->with(['user','shop','ordergoods'])
+                    ->with(['user','shop','ordergoods' => function($query){ $query->with(['goods']); }])
                     ->where($where)
                     ->order($sort, $order)
                     ->count();
 
             $list = $this->model
-                    ->with(['user','shop','ordergoods'])
+                    ->with(['user','shop','ordergoods' => function($query){ $query->with(['goods']); }])
                     ->where($where)
                     ->order($sort, $order)
                     ->limit($offset, $limit)
@@ -63,6 +63,14 @@ class Order extends Backend
 					->where(['order_id' => $row['id'], 'type' => 'goods'])
 					->field('pay_no, price, order_price, freight_price, discount_price, actual_payment')
 					->find();
+                // 汇总订单商品的城市信息（去重）
+                $cities = [];
+                foreach ($row['ordergoods'] as $og) {
+                    if (isset($og['goods']) && $og['goods']['region_city_name']) {
+                        $cities[] = $og['goods']['region_city_name'];
+                    }
+                }
+                $row['region_city_name'] = $cities ? implode('/', array_unique($cities)) : '';
             }
             $list = collection($list)->toArray();
             $result = array("total" => $total, "rows" => $list);
@@ -75,22 +83,31 @@ class Order extends Backend
 	/**
 	 * 详情
 	 */
-	public function detail($id = null)
-	{
-		$row = $this->model->get($id);
-		if (!$row) {
-			$this->error(__('No Results were found'));
-		}
-		
-		$row['address'] = model('app\api\model\wanlshop\OrderAddress')
+		public function detail($id = null)
+		{
+			$row = $this->model->with(['ordergoods' => function($query){ $query->with(['goods']); }])->get($id);
+			if (!$row) {
+				$this->error(__('No Results were found'));
+			}
+			
+			$row['address'] = model('app\api\model\wanlshop\OrderAddress')
 			->where(['order_id' => $id])
 			->order('isaddress desc')
 			->field('id,name,mobile,address,address_name')
 			->find();
 			
-		$row['pay'] = model('app\admin\model\wanlshop\Pay')
-			->where(['order_id' => $row['id'], 'type' => 'goods'])
-			->find();
+			$row['pay'] = model('app\admin\model\wanlshop\Pay')
+				->where(['order_id' => $row['id'], 'type' => 'goods'])
+				->find();
+			
+			// 汇总订单商品的城市信息（去重）
+			$cities = [];
+			foreach ($row['ordergoods'] as $og) {
+				if (isset($og['goods']) && $og['goods']['region_city_name']) {
+					$cities[] = $og['goods']['region_city_name'];
+				}
+			}
+			$row['region_city_name'] = $cities ? implode('/', array_unique($cities)) : '';
 			
 		// 查询快递状态
 		switch ($row['state']) {

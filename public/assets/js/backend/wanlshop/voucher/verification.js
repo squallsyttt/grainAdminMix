@@ -27,6 +27,7 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
                         {field: 'id', title: 'ID'},
                         {field: 'voucher.voucher_no', title: '券号'},
                         {field: 'voucher.goods_title', title: '商品'},
+                        {field: 'region_city_name', title: '发布城市', formatter: Table.api.formatter.search},
                         {field: 'user.username', title: '用户', align: 'left', formatter: Table.api.formatter.search},
                         {field: 'shop_name', title: '店铺', align: 'left'},
                         {field: 'supply_price', title: '供货价', operate: 'BETWEEN'},
@@ -67,4 +68,3 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
     };
     return Controller;
 });
-

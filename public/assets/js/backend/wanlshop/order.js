@@ -32,6 +32,7 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'template'], function
                         {field: 'id', title: __('Id')},
                         {field: 'user.nickname', title: __('User.nickname'), align: 'left', formatter: Table.api.formatter.search},
                         {field: 'shop.shopname', title: __('Shop_id'), align: 'left', formatter: Table.api.formatter.search},
+                        {field: 'region_city_name', title: '发布城市', formatter: Table.api.formatter.search},
                         {field: 'order_no', title: __('Order_no')},
                         {field: 'express_no', title: __('Express_no')},
                         {field: 'state', title: __('State'), searchList: {"1":__('State 1'),"2":__('State 2'),"3":__('State 3'),"4":__('State 4'),"6":__('State 6'),"7":__('State 7')}, formatter: Table.api.formatter.normal},
