@@ -159,6 +159,29 @@
 													</div>
 											    </div>
 											</div>
+											<div class="form-group">
+												<label class="control-label col-xs-12 col-sm-2">发布城市:</label>
+												<div class="col-xs-12 col-sm-8" v-if="isPlatform">
+													<div class="form-inline">
+														<select class="form-control" v-model="provinceCode" @change="onProvinceChange">
+															<option value="">请选择省份</option>
+															<option :value="item.id" v-for="item in provinceList" :key="item.id">{{item.name}}</option>
+														</select>
+														<select class="form-control" data-rule="required" v-model="regionCityCode" @change="onCityChange" style="margin-top:6px;">
+															<option value="">请选择地级市</option>
+															<option :value="item.id" v-for="item in cityList" :key="item.id">{{item.name}}</option>
+														</select>
+														<input type="hidden" name="row[region_city_code]" :value="regionCityCode">
+														<input type="hidden" name="row[region_city_name]" :value="regionCityName">
+													</div>
+													<p class="help-block">仅 shop_id=1 可选择发布城市，按地级市投放。</p>
+												</div>
+												<div class="col-xs-12 col-sm-8" v-else>
+													<p class="form-control-static">{{regionCityName}}</p>
+													<input type="hidden" name="row[region_city_code]" :value="regionCityCode">
+													<input type="hidden" name="row[region_city_name]" :value="regionCityName">
+												</div>
+											</div>
 											
 											
 											

@@ -36,6 +36,8 @@ class Goods extends Wanlshop
         $this->view->assign("distributionList", $this->model->getDistributionList());
         $this->view->assign("activityList", $this->model->getActivityList());
         $this->view->assign("statusList", $this->model->getStatusList());
+        $this->assignconfig('isPlatformShop', $this->shop ? $this->shop->id == 1 : false);
+        $this->assignconfig('shopCityName', $this->shop ? $this->shop->city : '');
     }
     
     /**
@@ -53,24 +55,39 @@ class Goods extends Wanlshop
                 return $this->selectpage();
             }
             list($where, $sort, $order, $offset, $limit) = $this->buildparams();
-            $total = $this->model
+            // 计数与列表使用独立查询，避免绑定参数复用导致错误
+            $countQuery = (clone $this->model)
+                ->where($where)
+                ->where('shop_id', $this->shop->id);
+            $listQuery = (clone $this->model)
                 ->with(['category'])
                 ->where($where)
-                ->order($sort, $order)
-                ->count();
+                ->where('shop_id', $this->shop->id);
+            // 平台店铺可以查看全量，普通店铺仅看自身城市或未设置城市的商品
+            if ($this->shop && $this->shop->id != 1) {
+                $shopCityName = $this->shop->city;
+                $filterClosure = function ($query) use ($shopCityName) {
+                    $query->where('region_city_name', '=', $shopCityName)
+                        ->whereOr('region_city_name', '')
+                        ->whereOr('region_city_name', null);
+                };
+                $countQuery = $countQuery->where($filterClosure);
+                $listQuery = $listQuery->where($filterClosure);
+            }
+            $total = $countQuery->count();
 
-            $list = $this->model
-                ->with(['category'])
-                ->where($where)
+            $list = $listQuery
                 ->order($sort, $order)
                 ->limit($offset, $limit)
                 ->select();
             foreach ($list as $row) {
-                $row->getRelation('category')->visible(['name']);
+                if (isset($row->category)) {
+                    $row->getRelation('category')->visible(['name']);
+                }
             }
             $list = collection($list)->toArray();
             $result = array("total" => $total, "rows" => $list);
-    
+
             return json($result);
         }
         return $this->view->fetch();
@@ -120,15 +137,28 @@ class Goods extends Wanlshop
 					}
 	                $this->model->title = $params['title'];
 	                $this->model->image = $params['image'];
-	                $this->model->images = $params['images'];
-	                $this->model->description = $params['description'];
-	                $this->model->stock = $params['stock'];
-	                $this->model->status = $params['status'];
-	                $this->model->content = $params['content'];
-	                $this->model->price = min($params['price']);
-	                if($this->model->save()){
-	                	$result = true;
-	                }
+                $this->model->images = $params['images'];
+                $this->model->description = $params['description'];
+                $this->model->stock = $params['stock'];
+                $this->model->status = $params['status'];
+                // 平台店铺可选择城市，其他店铺绑定自身城市
+                if ($this->shop->id == 1) {
+                    $regionCode = isset($params['region_city_code']) ? $params['region_city_code'] : '';
+                    $regionName = isset($params['region_city_name']) ? $params['region_city_name'] : '';
+                    if (!$regionCode || !$regionName) {
+                        $this->error(__('请选择发布的地级市'));
+                    }
+                    $this->model->region_city_code = $regionCode;
+                    $this->model->region_city_name = $regionName;
+                } else {
+                    $this->model->region_city_code = null;
+                    $this->model->region_city_name = $this->shop->city;
+                }
+                $this->model->content = $params['content'];
+                $this->model->price = min($params['price']);
+                if($this->model->save()){
+                	$result = true;
+                }
 					// 写入SPU
 					$spu = [];
 					foreach (explode(",", $spudata) as $key => $value) {
@@ -181,6 +211,8 @@ class Goods extends Wanlshop
 	    $shop_id = $this->shop->id;
 		// 打开方式
 		$this->assignconfig("isdialog", IS_DIALOG);
+		$this->assignconfig('regionCityCode', $this->shop->id == 1 ? '' : '');
+		$this->assignconfig('regionCityName', $this->shop->id == 1 ? '' : $this->shop->city);
 		$this->view->assign("row", $row);
 		return $this->view->fetch();
 	}
@@ -218,6 +250,18 @@ class Goods extends Wanlshop
 					$data = $params;
 					if(isset($data['attribute'])){
 						$data['category_attribute'] = json_encode($data['attribute'], JSON_UNESCAPED_UNICODE);
+					}
+					if ($this->shop->id == 1) {
+						$regionCode = isset($params['region_city_code']) ? $params['region_city_code'] : '';
+						$regionName = isset($params['region_city_name']) ? $params['region_city_name'] : '';
+						if (!$regionCode || !$regionName) {
+							$this->error(__('请选择发布的地级市'));
+						}
+						$data['region_city_code'] = $regionCode;
+						$data['region_city_name'] = $regionName;
+					} else {
+						$data['region_city_code'] = $row['region_city_code'];
+						$data['region_city_name'] = $this->shop->city;
 					}
 					$data['price'] = min($data['price']);
                     $result = $row->allowField(true)->save($data);
@@ -307,6 +351,8 @@ class Goods extends Wanlshop
         $this->assignconfig('categoryId', $row['category_id']);
         $this->assignconfig('attribute', json_decode($row['category_attribute']));
         $this->view->assign("row", $row);
+        $this->assignconfig('regionCityCode', $row['region_city_code'] ? $row['region_city_code'] : '');
+        $this->assignconfig('regionCityName', $row['region_city_name'] ? $row['region_city_name'] : $this->shop->city);
         return $this->view->fetch();
     }
     

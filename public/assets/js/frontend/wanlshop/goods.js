@@ -1,5 +1,11 @@
-define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'vue'], function($, undefined, Backend,Table, Form, Vue) {
-	var Controller = {
+define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'vue', 'common/region-data'], function($, undefined, Backend,Table, Form, Vue, RegionLib) {
+    var cityMap = RegionLib.cityMap || {};
+    var citySearchList = {};
+    Object.keys(cityMap).forEach(function (code) {
+        citySearchList[code] = cityMap[code].fullName;
+    });
+
+    var Controller = {
 		index: function() {
 			// 初始化表格参数配置
 			Table.api.init({
@@ -30,9 +36,31 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'vue'], function($, u
 					[
 						{checkbox: true},
 						{field: 'id',title: __('Id')},
-						{field: 'shop_category_id', title: __('Shop_category_id'), operate:'RANGE', visible: false},
-						{field: 'category.name', title: __('Category.name'), formatter: Table.api.formatter.search},
-						{field: 'title',title: __('Title')},
+                        {field: 'shop_category_id', title: __('Shop_category_id'), operate:'RANGE', visible: false},
+                        {
+                            field: 'category.name',
+                            title: __('Category.name'),
+                            formatter: function (value, row) {
+                                if (value) return value;
+                                if (row.category && row.category.name) return row.category.name;
+                                return '';
+                            }
+                        },
+                        {
+                            field: 'region_city_code',
+                            title: '发布城市',
+                            operate: Config.isPlatformShop ? 'IN' : false,
+                            searchList: Config.isPlatformShop ? citySearchList : null,
+                            formatter: function (value, row) {
+                                if (row.region_city_name) {
+                                    return row.region_city_name;
+                                }
+                                var city = cityMap[value];
+                                return city ? city.fullName : '-';
+                            },
+                            visible: true
+                        },
+                        {field: 'title',title: __('Title')},
 						{field: 'image',title: __('Image'),events: Table.api.events.image,formatter: Table.api.formatter.image},
 						{field: 'images',title: __('Images'),events: Table.api.events.image,formatter: Table.api.formatter.images},
 						{field: 'flag',title: __('Flag'), searchList: {"hot": __('Flag hot'), "index": __('Flag index'), "recommend": __('Flag recommend')}, operate: 'FIND_IN_SET', formatter: Table.api.formatter.label},
@@ -83,9 +111,31 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'vue'], function($, u
 				columns: [
 					[
 						{checkbox: true},
-						{field: 'id',title: __('Id')},
-						{field: 'category.name', title: __('Category.name'), formatter: Table.api.formatter.search},
-						{field: 'title',title: __('Title')},
+                        {field: 'id',title: __('Id')},
+                        {
+                            field: 'category.name',
+                            title: __('Category.name'),
+                            formatter: function (value, row) {
+                                if (value) return value;
+                                if (row.category && row.category.name) return row.category.name;
+                                return '';
+                            }
+                        },
+                        {
+                            field: 'region_city_code',
+                            title: '发布城市',
+                            operate: Config.isPlatformShop ? 'IN' : false,
+                            searchList: Config.isPlatformShop ? citySearchList : null,
+                            formatter: function (value, row) {
+                                if (row.region_city_name) {
+                                    return row.region_city_name;
+                                }
+                                var city = cityMap[value];
+                                return city ? city.fullName : '-';
+                            },
+                            visible: true
+                        },
+                        {field: 'title',title: __('Title')},
 						{field: 'image',title: __('Image'),events: Table.api.events.image,formatter: Table.api.formatter.image},
 						{field: 'images',title: __('Images'),events: Table.api.events.image,formatter: Table.api.formatter.images},
 						{field: 'flag',title: __('Flag'), searchList: {"hot": __('Flag hot'), "index": __('Flag index'), "recommend": __('Flag recommend')}, operate: 'FIND_IN_SET', formatter: Table.api.formatter.label},
@@ -292,10 +342,72 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'vue'], function($, u
 						categoryThree: null,
 						categoryFour: null,
 						categoryFive: null,
-						attributeData: []
+						attributeData: [],
+						isPlatform: Config.isPlatformShop || false,
+						provinceList: RegionLib.regionData || [],
+						cityList: [],
+						provinceCode: '',
+						regionCityCode: Config.regionCityCode || '',
+						regionCityName: Config.regionCityName || (Config.shopCityName || '')
 					}
 				},
+				mounted() {
+					this.initRegionDefaults();
+				},
 				methods: {
+					// 初始化发布城市
+					initRegionDefaults() {
+						if (this.isPlatform) {
+							if (this.regionCityCode) {
+								this.setProvinceAndCityByCode(this.regionCityCode);
+							} else {
+								this.provinceCode = '';
+								this.cityList = [];
+								this.regionCityName = '';
+							}
+						} else {
+							this.regionCityCode = '';
+							if (!this.regionCityName && Config.shopCityName) {
+								this.regionCityName = Config.shopCityName;
+							}
+						}
+					},
+					setProvinceAndCityByCode(code) {
+						var foundProvince = null;
+						var foundCity = null;
+						this.provinceList.forEach(function (prov) {
+							(prov.children || []).forEach(function (city) {
+								if (city.id === code) {
+									foundProvince = prov;
+									foundCity = city;
+								}
+							});
+						});
+						if (foundProvince) {
+							this.provinceCode = foundProvince.id;
+							this.cityList = foundProvince.children || [];
+						}
+						if (foundCity) {
+							this.regionCityCode = foundCity.id;
+							this.regionCityName = foundCity.name;
+						}
+					},
+					onProvinceChange() {
+						var current = this.provinceList.find(function (item) {
+							return item.id === this.provinceCode;
+						}.bind(this));
+						this.cityList = current && current.children ? current.children : [];
+						this.regionCityCode = '';
+						this.regionCityName = '';
+					},
+					onCityChange() {
+						if (!this.regionCityCode) {
+							this.regionCityName = '';
+							return;
+						}
+						var cityInfo = cityMap[this.regionCityCode];
+						this.regionCityName = cityInfo ? cityInfo.name : '';
+					},
 					// 页面上传图片 1.1.9升级
 					changeImage(event, key){
 						let files = event.target.files[0]; //获取input的图片file值
@@ -475,7 +587,13 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'vue'], function($, u
 						categoryFive: null,
 						attribute: Config.attribute,
 						attributeData: [],
-						batch: 0
+						batch: 0,
+						isPlatform: Config.isPlatformShop || false,
+						provinceList: RegionLib.regionData || [],
+						cityList: [],
+						provinceCode: '',
+						regionCityCode: Config.regionCityCode || '',
+						regionCityName: Config.regionCityName || (Config.shopCityName || '')
 					}
 				},
 				mounted() {
@@ -523,8 +641,62 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'vue'], function($, u
                         //返回false时将不再有右上角的操作成功的提示
                         return false;
                     });
+                    this.initRegionDefaults();
                 },
 				methods: {
+					// 初始化发布城市
+					initRegionDefaults() {
+						if (this.isPlatform) {
+							if (this.regionCityCode) {
+								this.setProvinceAndCityByCode(this.regionCityCode);
+							} else {
+								this.provinceCode = '';
+								this.cityList = [];
+								this.regionCityName = '';
+							}
+						} else {
+							this.regionCityCode = '';
+							if (!this.regionCityName && Config.shopCityName) {
+								this.regionCityName = Config.shopCityName;
+							}
+						}
+					},
+					setProvinceAndCityByCode(code) {
+						var foundProvince = null;
+						var foundCity = null;
+						this.provinceList.forEach(function (prov) {
+							(prov.children || []).forEach(function (city) {
+								if (city.id === code) {
+									foundProvince = prov;
+									foundCity = city;
+								}
+							});
+						});
+						if (foundProvince) {
+							this.provinceCode = foundProvince.id;
+							this.cityList = foundProvince.children || [];
+						}
+						if (foundCity) {
+							this.regionCityCode = foundCity.id;
+							this.regionCityName = foundCity.name;
+						}
+					},
+					onProvinceChange() {
+						var current = this.provinceList.find(function (item) {
+							return item.id === this.provinceCode;
+						}.bind(this));
+						this.cityList = current && current.children ? current.children : [];
+						this.regionCityCode = '';
+						this.regionCityName = '';
+					},
+					onCityChange() {
+						if (!this.regionCityCode) {
+							this.regionCityName = '';
+							return;
+						}
+						var cityInfo = cityMap[this.regionCityCode];
+						this.regionCityName = cityInfo ? cityInfo.name : '';
+					},
 					// 页面上传图片 1.1.9升级
 					changeImage(event, key){
 						let files = event.target.files[0]; //获取input的图片file值
