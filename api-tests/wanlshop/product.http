@@ -6,7 +6,7 @@
 ### ========================================
 ### 环境变量
 ### ========================================
-@baseUrl = http://grain.local.com
+@baseUrl = https://grain.griffithres.top
 @apiPrefix = /api/wanlshop/product
 @goodsId = REPLACE_WITH_EXISTING_GOODS_ID
 
@@ -20,6 +20,14 @@ Content-Type: application/json
 ### 2. 按 shop_id=1 筛选商品
 ### ========================================
 GET {{baseUrl}}{{apiPrefix}}/lists?shop_id=1
+Content-Type: application/json
+
+### ========================================
+### 2.1 按地区筛选商品（region_city_code）
+###     说明：编码参考 public/assets/js/common/region-data.js（6位地级市代码）
+###     示例：南京市 320100；为空时不过滤
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/lists?region_city_code=320100
 Content-Type: application/json
 
 ### ========================================

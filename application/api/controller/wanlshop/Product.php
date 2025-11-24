@@ -29,9 +29,14 @@ class Product extends Api
 	    //设置过滤方法
 	    $this->request->filter(['strip_tags']);
 		// 判断业务类型
+		$regionCityCode = '';
 		if($type === 'goods'){
 			$goodsModel  = model('app\api\model\wanlshop\Goods');
 			$this->model = $goodsModel; // 确保 buildparams() 能获取表名
+			$regionCityCode = $this->request->get('region_city_code', '');
+			if ($regionCityCode && !preg_match('/^\d{6}$/', $regionCityCode)) {
+				$regionCityCode = '';
+			}
 		}else if($type === 'groups'){
 			$goodsModel  = model('app\api\model\wanlshop\groups\Goods');
 			$this->model = $goodsModel; // 确保 buildparams() 能获取表名
@@ -45,9 +50,16 @@ class Product extends Api
 	    		->with(['shop','category'])
 	    	    ->where($where)
 				->where('goods.status', 'normal');
-			if($shopId !== null && $shopId !== ''){
-				$query->where('goods.shop_id', intval($shopId));
-			}
+				if($type === 'goods' && $regionCityCode !== ''){
+					$query->where(function ($sub) use ($regionCityCode) {
+						$sub->where('goods.region_city_code', $regionCityCode)
+							->whereOr('goods.region_city_code', '')
+							->whereOr('goods.region_city_code', null);
+					});
+				}
+				if($shopId !== null && $shopId !== ''){
+					$query->where('goods.shop_id', intval($shopId));
+				}
 	    	$list = $query->order($sort, $order)->paginate();
     	foreach ($list as $row) {
     	    $row->getRelation('shop')->visible(['city', 'shopname', 'state']);
