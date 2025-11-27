@@ -60,7 +60,8 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'vue', 'common/region
                             },
                             visible: true
                         },
-                        {field: 'title',title: __('Title')},
+                        // 标题支持模糊匹配，方便按关键词筛选
+                        {field: 'title',title: __('Title'), operate: 'LIKE %...%'},
 						{field: 'image',title: __('Image'),events: Table.api.events.image,formatter: Table.api.formatter.image},
 						{field: 'images',title: __('Images'),events: Table.api.events.image,formatter: Table.api.formatter.images},
 						{field: 'flag',title: __('Flag'), searchList: {"hot": __('Flag hot'), "index": __('Flag index'), "recommend": __('Flag recommend')}, operate: 'FIND_IN_SET', formatter: Table.api.formatter.label},
@@ -135,7 +136,8 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'vue', 'common/region
                             },
                             visible: true
                         },
-                        {field: 'title',title: __('Title')},
+                        // 标题支持模糊匹配，方便按关键词筛选
+                        {field: 'title',title: __('Title'), operate: 'LIKE %...%'},
 						{field: 'image',title: __('Image'),events: Table.api.events.image,formatter: Table.api.formatter.image},
 						{field: 'images',title: __('Images'),events: Table.api.events.image,formatter: Table.api.formatter.images},
 						{field: 'flag',title: __('Flag'), searchList: {"hot": __('Flag hot'), "index": __('Flag index'), "recommend": __('Flag recommend')}, operate: 'FIND_IN_SET', formatter: Table.api.formatter.label},

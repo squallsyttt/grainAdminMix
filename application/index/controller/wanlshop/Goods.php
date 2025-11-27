@@ -54,29 +54,122 @@ class Goods extends Wanlshop
             if ($this->request->request('keyField')) {
                 return $this->selectpage();
             }
-            list($where, $sort, $order, $offset, $limit) = $this->buildparams();
-            // 计数与列表使用独立查询，避免绑定参数复用导致错误
-            $countQuery = (clone $this->model)
-                ->where($where)
-                ->where('shop_id', $this->shop->id);
-            $listQuery = (clone $this->model)
-                ->with(['category'])
-                ->where($where)
-                ->where('shop_id', $this->shop->id);
+
+            // 手动解析查询参数，避免 buildparams 闭包引用 $this->model 导致的污染问题
+            $sort = $this->request->get("sort", "weigh");
+            $order = $this->request->get("order", "DESC");
+            $offset = $this->request->get("offset", 0);
+            $limit = $this->request->get("limit", 10);
+            $filter = $this->request->get("filter", '');
+            $op = $this->request->get("op", '', 'trim');
+            $filter = (array)json_decode($filter, true);
+            $op = (array)json_decode($op, true);
+            $filter = $filter ? $filter : [];
+
+            // 构建 where 条件数组（不使用闭包）
+            $whereArr = [];
+            $aliasName = 'goods.';
+
+            // shop_id 限制
+            $whereArr[] = [$aliasName . 'shop_id', '=', $this->shop->id];
+
+            // 解析筛选条件
+            foreach ($filter as $k => $v) {
+                $sym = isset($op[$k]) ? $op[$k] : '=';
+                if (stripos($k, ".") === false) {
+                    $k = $aliasName . $k;
+                }
+                $v = !is_array($v) ? trim($v) : $v;
+                $sym = strtoupper(isset($op[$k]) ? $op[$k] : $sym);
+                switch ($sym) {
+                    case '=':
+                    case '<>':
+                        $whereArr[] = [$k, $sym, (string)$v];
+                        break;
+                    case 'LIKE':
+                    case 'NOT LIKE':
+                    case 'LIKE %...%':
+                    case 'NOT LIKE %...%':
+                        $whereArr[] = [$k, 'LIKE', "%{$v}%"];
+                        break;
+                    case '>':
+                    case '>=':
+                    case '<':
+                    case '<=':
+                        $whereArr[] = [$k, $sym, intval($v)];
+                        break;
+                    case 'IN':
+                    case 'IN(...)':
+                    case 'NOT IN':
+                    case 'NOT IN(...)':
+                        $whereArr[] = [$k, str_replace('(...)', '', $sym), is_array($v) ? $v : explode(',', $v)];
+                        break;
+                    case 'BETWEEN':
+                    case 'NOT BETWEEN':
+                        $arr = array_slice(explode(',', $v), 0, 2);
+                        if (stripos($v, ',') === false || !array_filter($arr)) {
+                            continue 2;
+                        }
+                        if ($arr[0] === '') {
+                            $sym = $sym == 'BETWEEN' ? '<=' : '>';
+                            $arr = $arr[1];
+                        } elseif ($arr[1] === '') {
+                            $sym = $sym == 'BETWEEN' ? '>=' : '<';
+                            $arr = $arr[0];
+                        }
+                        $whereArr[] = [$k, $sym, $arr];
+                        break;
+                }
+            }
+
+            // 处理排序字段别名
+            $sortArr = explode(',', $sort);
+            foreach ($sortArr as $index => &$item) {
+                $item = stripos($item, ".") === false ? $aliasName . trim($item) : $item;
+            }
+            unset($item);
+            $sort = implode(',', $sortArr);
+
             // 平台店铺可以查看全量，普通店铺仅看自身城市或未设置城市的商品
+            $shopCityFilter = null;
             if ($this->shop && $this->shop->id != 1) {
                 $shopCityName = $this->shop->city;
-                $filterClosure = function ($query) use ($shopCityName) {
-                    $query->where('region_city_name', '=', $shopCityName)
-                        ->whereOr('region_city_name', '')
-                        ->whereOr('region_city_name', null);
+                $shopCityFilter = function ($query) use ($shopCityName) {
+                    $query->where(function ($q) use ($shopCityName) {
+                        $q->where('goods.region_city_name', '=', $shopCityName)
+                            ->whereOr('goods.region_city_name', '')
+                            ->whereOr('goods.region_city_name', null);
+                    });
                 };
-                $countQuery = $countQuery->where($filterClosure);
-                $listQuery = $listQuery->where($filterClosure);
             }
-            $total = $countQuery->count();
 
-            $list = $listQuery
+            // 创建独立的 where 闭包（不引用外部模型）
+            $whereClosure = function ($query) use ($whereArr, $shopCityFilter) {
+                foreach ($whereArr as $v) {
+                    if (is_array($v)) {
+                        call_user_func_array([$query, 'where'], $v);
+                    } else {
+                        $query->where($v);
+                    }
+                }
+                // 应用城市过滤
+                if ($shopCityFilter) {
+                    $shopCityFilter($query);
+                }
+            };
+
+            // 计数查询（不需要关联，直接查主表）
+            $total = \think\Db::name('wanlshop_goods')
+                ->alias('goods')
+                ->where($whereClosure)
+                ->count();
+
+            // 列表查询（需要关联 category）
+            $listModel = new \app\index\model\wanlshop\Goods;
+            $list = $listModel
+                ->alias('goods')
+                ->with(['category'])
+                ->where($whereClosure)
                 ->order($sort, $order)
                 ->limit($offset, $limit)
                 ->select();
