@@ -423,7 +423,7 @@ class Order extends Api
         }
 
         // 查询订单并验证权限
-        $order = VoucherOrder::where([
+        $order = VoucherOrder::with(['goods', 'category', 'vouchers.voucherRefund', 'items'])->where([
             'id' => $id,
             'user_id' => $this->auth->id,
             'status' => 'normal'
@@ -437,7 +437,7 @@ class Order extends Api
         $order->goods;
         $order->category;
 
-        // 关联查询生成的核销券
+        // 关联查询生成的核销券及退款信息
         $order->vouchers;
         // 关联查询订单明细（多商品）
         $order->items;

@@ -4,6 +4,7 @@ namespace app\api\controller\wanlshop\voucher;
 use app\common\controller\Api;
 use app\admin\model\wanlshop\VoucherRefund;
 use app\admin\model\wanlshop\Voucher;
+use app\admin\model\wanlshop\VoucherOrder;
 use think\Db;
 use think\Exception;
 
@@ -63,13 +64,17 @@ class Refund extends Api
         }
 
         $refundDays = isset($voucherConfig['refund_days']) ? (int)$voucherConfig['refund_days'] : 7;
-        if ($refundDays > 0 && $voucher->valid_end) {
-            $now = time();
-            $remaining = $voucher->valid_end - $now;
+        if ($refundDays > 0) {
+            $order = VoucherOrder::get($voucher->order_id);
+            if (!$order || !$order->paymenttime) {
+                $this->error(__('订单未支付，无法退款'));
+            }
+
             $limitSeconds = $refundDays * 86400;
-            // 仅在到期前 N 天内允许发起退款
-            if ($remaining > $limitSeconds) {
-                $this->error(__('仅在到期前%s天内可申请退款', $refundDays));
+            $elapsed = time() - $order->paymenttime;
+            // 仅在支付后 N 天内允许发起退款
+            if ($elapsed > $limitSeconds) {
+                $this->error(__('仅在支付后%s天内可申请退款', $refundDays));
             }
         }
 
