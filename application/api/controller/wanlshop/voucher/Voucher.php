@@ -107,10 +107,8 @@ class Voucher extends Api
             $voucher->voucherVerification;
         }
 
-        // 如果已退款,显示退款信息
-        if ($voucher->state == 4) {
-            $voucher->voucherRefund;
-        }
+        // 无论券状态如何，只要存在退款记录就显示（包括申请中、拒绝、成功等）
+        $voucher->voucherRefund;
 
         // 地区信息（来自商品）
         $voucher['region_city_name'] = ($voucher->goods && isset($voucher->goods['region_city_name'])) ? $voucher->goods['region_city_name'] : '';
