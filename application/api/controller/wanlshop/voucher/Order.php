@@ -452,6 +452,7 @@ class Order extends Api
 
         if (!empty($orderData['goods']) && is_array($orderData['goods'])) {
             $this->castPriceFields($orderData['goods'], ['price', 'supply_price', 'retail_price', 'coupon_price', 'discount_price', 'actual_payment']);
+            $orderData['region_city_name'] = isset($orderData['goods']['region_city_name']) ? $orderData['goods']['region_city_name'] : '';
         }
 
         if (!empty($orderData['vouchers']) && is_array($orderData['vouchers'])) {
@@ -464,8 +465,14 @@ class Order extends Api
         if (!empty($orderData['items']) && is_array($orderData['items'])) {
             foreach ($orderData['items'] as &$item) {
                 $this->castPriceFields($item, ['supply_price', 'retail_price', 'coupon_price', 'discount_price', 'actual_payment']);
+                if (!isset($orderData['region_city_name']) || $orderData['region_city_name'] === '') {
+                    $orderData['region_city_name'] = isset($item['region_city_name']) ? $item['region_city_name'] : '';
+                }
             }
             unset($item);
+        }
+        if (!isset($orderData['region_city_name'])) {
+            $orderData['region_city_name'] = '';
         }
 
         $this->success('ok', $orderData);
@@ -501,6 +508,7 @@ class Order extends Api
             ->each(function($order) {
                 // 关联商品信息
                 $order->goods;
+                $order->goods && $order->goods->region_city_name;
                 // 关联券信息（含门店信息）
                 $order->vouchers()->with('shop')->select();
                 // 预加载明细（多商品）
@@ -518,6 +526,18 @@ class Order extends Api
                 $order->original_amount = $order->retail_price;
                 $order->discount_amount = $order->retail_price - $order->actual_payment;
                 $order->final_amount = $order->actual_payment;
+
+                // 地区汇总（优先主商品，否则明细）
+                $cityNames = [];
+                if ($order->goods && $order->goods->region_city_name) {
+                    $cityNames[] = $order->goods->region_city_name;
+                }
+                foreach ($order->items as $it) {
+                    if (isset($it->region_city_name) && $it->region_city_name) {
+                        $cityNames[] = $it->region_city_name;
+                    }
+                }
+                $order->region_city_name = $cityNames ? implode('/', array_unique($cityNames)) : '';
 
                 return $order;
             });
@@ -606,6 +626,7 @@ class Order extends Api
                     'goods_sku_id' => isset($voucher->goods_sku_id) ? (int)$voucher->goods_sku_id : 0,
                     'sku_difference' => isset($voucher->sku_difference) ? (string)$voucher->sku_difference : '',
                     'sku_weight' => isset($voucher->sku_weight) ? (float)$voucher->sku_weight : null,
+                    'region_city_name' => isset($voucher->goods) && isset($voucher->goods['region_city_name']) ? $voucher->goods['region_city_name'] : '',
 
                     // 核销券信息
                     'voucher_id' => $voucher->id,
@@ -632,6 +653,7 @@ class Order extends Api
                     'goods_sku_id' => isset($item->goods_sku_id) ? (int)$item->goods_sku_id : 0,
                     'sku_difference' => isset($item->sku_difference) ? (string)$item->sku_difference : '',
                     'sku_weight' => isset($item->sku_weight) ? (float)$item->sku_weight : null,
+                    'region_city_name' => isset($item->region_city_name) ? $item->region_city_name : '',
 
                     'voucher_id' => null,
                     'voucher_code' => null,

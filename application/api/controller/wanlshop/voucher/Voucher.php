@@ -51,6 +51,9 @@ class Voucher extends Api
                 // 关联商品价格字段
                 if (!empty($data['goods']) && is_array($data['goods'])) {
                     $this->castPriceFields($data['goods'], ['price', 'supply_price', 'retail_price', 'coupon_price', 'discount_price', 'actual_payment']);
+                    $data['region_city_name'] = isset($data['goods']['region_city_name']) ? $data['goods']['region_city_name'] : '';
+                } else {
+                    $data['region_city_name'] = '';
                 }
 
                 // 关联订单的金额字段
@@ -108,6 +111,9 @@ class Voucher extends Api
         if ($voucher->state == 4) {
             $voucher->voucherRefund;
         }
+
+        // 地区信息（来自商品）
+        $voucher['region_city_name'] = ($voucher->goods && isset($voucher->goods['region_city_name'])) ? $voucher->goods['region_city_name'] : '';
 
         $this->success('ok', $voucher);
     }
