@@ -422,10 +422,126 @@ class WechatPayment
                 ]);
             
             return json_decode($response->getBody(), true);
-            
+
         } catch (\Exception $e) {
             Log::error('查询订单失败：' . $e->getMessage());
             throw new Exception('查询订单失败：' . $e->getMessage());
+        }
+    }
+
+    /**
+     * 申请退款
+     *
+     * 微信支付 V3 API：POST /v3/refund/domestic/refunds
+     *
+     * @param array $params [
+     *   'transaction_id' => string  微信支付订单号（与 out_trade_no 二选一）
+     *   'out_trade_no'   => string  商户订单号（与 transaction_id 二选一）
+     *   'out_refund_no'  => string  商户退款单号（必填，商户系统内部唯一）
+     *   'reason'         => string  退款原因（可选）
+     *   'notify_url'     => string  退款结果回调地址（可选，不填则使用商户平台配置的）
+     *   'refund_amount'  => int     退款金额（单位：分）
+     *   'total_amount'   => int     原订单金额（单位：分）
+     * ]
+     * @return array 退款响应结果
+     * @throws Exception
+     */
+    public static function refund(array $params)
+    {
+        $config = config('wechat.payment');
+
+        if (empty($config) || !is_array($config)) {
+            throw new Exception('微信支付配置未设置（wechat.payment）');
+        }
+
+        // 验证必填参数
+        if (empty($params['out_refund_no'])) {
+            throw new Exception('退款参数不完整：out_refund_no 不能为空');
+        }
+        if (empty($params['transaction_id']) && empty($params['out_trade_no'])) {
+            throw new Exception('退款参数不完整：transaction_id 或 out_trade_no 必须提供其一');
+        }
+        if (empty($params['refund_amount']) || empty($params['total_amount'])) {
+            throw new Exception('退款参数不完整：refund_amount 和 total_amount 不能为空');
+        }
+
+        // 构建请求体
+        $body = [
+            'out_refund_no' => (string)$params['out_refund_no'],
+            'amount' => [
+                'refund'   => (int)$params['refund_amount'],
+                'total'    => (int)$params['total_amount'],
+                'currency' => 'CNY',
+            ],
+        ];
+
+        // 微信支付订单号优先
+        if (!empty($params['transaction_id'])) {
+            $body['transaction_id'] = (string)$params['transaction_id'];
+        } else {
+            $body['out_trade_no'] = (string)$params['out_trade_no'];
+        }
+
+        // 可选参数
+        if (!empty($params['reason'])) {
+            $body['reason'] = (string)$params['reason'];
+        }
+        if (!empty($params['notify_url'])) {
+            $body['notify_url'] = (string)$params['notify_url'];
+        }
+
+        try {
+            $instance = self::getInstance();
+            $response = $instance->chain('v3/refund/domestic/refunds')->post(['json' => $body]);
+
+            $result = json_decode($response->getBody(), true);
+
+            Log::info('微信退款请求成功：' . json_encode($result, JSON_UNESCAPED_UNICODE));
+
+            return $result;
+
+        } catch (\GuzzleHttp\Exception\RequestException $e) {
+            $responseBody = '';
+            if ($e->hasResponse()) {
+                $response = $e->getResponse();
+                $responseBody = (string)$response->getBody();
+            }
+            $message = '微信退款请求失败：' . $e->getMessage();
+            if ($responseBody !== '') {
+                $message .= ' | 响应：' . $responseBody;
+            }
+            Log::error($message);
+            throw new Exception($message);
+        } catch (\Exception $e) {
+            Log::error('微信退款失败：' . $e->getMessage());
+            throw new Exception('微信退款失败：' . $e->getMessage());
+        }
+    }
+
+    /**
+     * 查询退款
+     *
+     * @param string $outRefundNo 商户退款单号
+     * @return array
+     * @throws Exception
+     */
+    public static function queryRefund($outRefundNo)
+    {
+        if (empty($outRefundNo)) {
+            throw new Exception('退款单号不能为空');
+        }
+
+        try {
+            $instance = self::getInstance();
+            $response = $instance
+                ->chain('v3/refund/domestic/refunds/{out_refund_no}')
+                ->get(['out_refund_no' => $outRefundNo]);
+
+            return json_decode($response->getBody(), true);
+
+        } catch (\Exception $e) {
+            Log::error('查询退款失败：' . $e->getMessage());
+            throw new Exception('查询退款失败：' . $e->getMessage());
         }
     }
 }

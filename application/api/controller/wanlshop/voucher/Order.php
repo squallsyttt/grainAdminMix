@@ -5,6 +5,7 @@ use app\common\controller\Api;
 use app\admin\model\wanlshop\VoucherOrder;
 use app\admin\model\wanlshop\Voucher;
 use app\admin\model\wanlshop\VoucherOrderItem;
+use app\admin\model\wanlshop\VoucherRefund;
 use app\api\model\wanlshop\Third;
 use app\api\model\wanlshop\GoodsSku;
 use app\common\library\WechatPayment;
@@ -18,7 +19,7 @@ use think\Exception;
  */
 class Order extends Api
 {
-    protected $noNeedLogin = ['notify'];
+    protected $noNeedLogin = ['notify', 'refundNotify'];
     protected $noNeedRight = ['*'];
 
     /**
@@ -1093,5 +1094,246 @@ class Order extends Api
     private function generateVerifyCode()
     {
         return str_pad(mt_rand(0, 999999), 6, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * 微信退款回调
+     *
+     * @ApiSummary  (微信退款结果通知)
+     * @ApiMethod   (POST)
+     *
+     * 回调事件类型（event_type）：
+     * - REFUND.SUCCESS: 退款成功
+     * - REFUND.ABNORMAL: 退款异常
+     * - REFUND.CLOSED: 退款关闭
+     */
+    public function refundNotify()
+    {
+        $body = '';
+        $headers = [];
+        $resource = [];
+        $outRefundNo = '';
+        $refundId = '';
+        $eventType = '';
+
+        try {
+            // 原始报文
+            $body = file_get_contents('php://input');
+
+            // 记录回调日志
+            \think\Log::info('微信退款回调原始报文: ' . $body);
+
+            // 读取回调头部
+            $timestamp = $this->request->header('Wechatpay-Timestamp');
+            $nonce     = $this->request->header('Wechatpay-Nonce');
+            $signature = $this->request->header('Wechatpay-Signature');
+            $serial    = $this->request->header('Wechatpay-Serial');
+
+            $headers = [
+                'timestamp' => $timestamp,
+                'nonce'     => $nonce,
+                'signature' => $signature,
+                'serial'    => $serial,
+            ];
+
+            // 验证签名
+            if (!WechatPayment::verifyCallbackSignature($headers, $body)) {
+                \think\Log::error('微信退款回调：签名验证失败');
+                // 签名验证失败不记录到数据库，避免无效数据
+                return json(['code' => 'FAIL', 'message' => '签名验证失败']);
+            }
+
+            $data = json_decode($body, true);
+            if (!is_array($data) || empty($data['resource'])) {
+                \think\Log::error('微信退款回调：报文格式错误');
+                return json(['code' => 'FAIL', 'message' => '报文格式错误']);
+            }
+
+            // 获取事件类型
+            $eventType = $data['event_type'] ?? '';
+            \think\Log::info('微信退款回调事件类型: ' . $eventType);
+
+            // 解密资源数据
+            $resource = WechatPayment::decryptCallbackResource($data['resource']);
+            $outRefundNo = $resource['out_refund_no'] ?? '';
+            $refundId = $resource['refund_id'] ?? '';
+            $refundStatus = $resource['refund_status'] ?? '';
+            $outTradeNo = $resource['out_trade_no'] ?? '';
+
+            \think\Log::info('微信退款回调解密数据: ' . json_encode($resource, JSON_UNESCAPED_UNICODE));
+
+            if (!$outRefundNo) {
+                \think\Log::error('微信退款回调：out_refund_no 缺失');
+                return json(['code' => 'FAIL', 'message' => '退款单号缺失']);
+            }
+
+            // 幂等性检查：使用 refund_id 判断是否已处理
+            if ($refundId && PaymentCallbackLog::where('transaction_id', $refundId)
+                ->where('order_type', 'voucher_refund')
+                ->where('process_status', 'success')
+                ->value('id')) {
+                \think\Log::info('微信退款回调:重复通知,已处理 - ' . $refundId);
+                return json(['code' => 'SUCCESS', 'message' => '']);
+            }
+
+            // 根据事件类型处理
+            $processResult = 'success';
+            $processData = [];
+            if ($eventType === 'REFUND.SUCCESS' || $refundStatus === 'SUCCESS') {
+                $this->handleRefundSuccess($outRefundNo, $resource);
+                $processData = ['action' => 'refund_success', 'refund_no' => $outRefundNo];
+            } elseif ($eventType === 'REFUND.ABNORMAL' || $refundStatus === 'ABNORMAL') {
+                $this->handleRefundAbnormal($outRefundNo, $resource);
+                $processResult = 'fail';
+                $processData = ['action' => 'refund_abnormal', 'refund_no' => $outRefundNo];
+            } elseif ($eventType === 'REFUND.CLOSED' || $refundStatus === 'CLOSED') {
+                $this->handleRefundClosed($outRefundNo, $resource);
+                $processData = ['action' => 'refund_closed', 'refund_no' => $outRefundNo];
+            } else {
+                \think\Log::info('微信退款回调：未知事件类型或退款状态，忽略');
+                $processData = ['action' => 'ignored', 'event_type' => $eventType];
+            }
+
+            // 记录回调日志到数据库
+            try {
+                PaymentCallbackLog::recordCallback([
+                    'order_type'       => 'voucher_refund',
+                    'order_no'         => $outRefundNo,  // 使用退款单号
+                    'transaction_id'   => $refundId,      // 使用微信退款单号
+                    'trade_state'      => $refundStatus ?: $eventType,
+                    'callback_body'    => $body,
+                    'callback_headers' => json_encode($headers, JSON_UNESCAPED_UNICODE),
+                    'verify_result'    => 'success',
+                ])->markProcessed($processResult, $processData);
+            } catch (Exception $logEx) {
+                \think\Log::error('退款回调日志记录失败: ' . $logEx->getMessage());
+            }
+
+            // 必须在5秒内返回成功响应
+            return json(['code' => 'SUCCESS', 'message' => '']);
+
+        } catch (Exception $e) {
+            \think\Log::error('微信退款回调处理失败: ' . $e->getMessage());
+            // 记录失败日志
+            try {
+                PaymentCallbackLog::recordCallback([
+                    'order_type'       => 'voucher_refund',
+                    'order_no'         => $outRefundNo ?: '',
+                    'transaction_id'   => $refundId ?: '',
+                    'trade_state'      => $eventType ?: '',
+                    'callback_body'    => $body,
+                    'callback_headers' => json_encode($headers, JSON_UNESCAPED_UNICODE),
+                    'verify_result'    => 'success',
+                ])->markProcessed('fail', ['error' => $e->getMessage()]);
+            } catch (Exception $logEx) {
+                \think\Log::error('退款回调日志记录失败: ' . $logEx->getMessage());
+            }
+            return json(['code' => 'FAIL', 'message' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * 处理退款成功逻辑
+     *
+     * @param string $outRefundNo 商户退款单号
+     * @param array  $resource 回调资源数据
+     * @throws Exception
+     */
+    private function handleRefundSuccess($outRefundNo, array $resource)
+    {
+        \think\Log::info('处理退款成功: ' . $outRefundNo);
+
+        Db::startTrans();
+        try {
+            // 查询退款记录（商户退款单号 = refund_no）
+            $refund = VoucherRefund::where('refund_no', $outRefundNo)
+                ->lock(true)
+                ->find();
+
+            if (!$refund) {
+                \think\Log::error('退款记录不存在: ' . $outRefundNo);
+                throw new Exception('退款记录不存在');
+            }
+
+            // 防止重复处理（已经是退款成功状态）
+            if ($refund->state == 3) {
+                \think\Log::info('退款已处理，跳过: ' . $outRefundNo);
+                Db::commit();
+                return;
+            }
+
+            // 更新退款记录状态
+            $refund->state = 3;  // 退款成功
+            $refund->save();
+
+            // 更新券状态
+            $voucher = Voucher::get($refund->voucher_id);
+            if ($voucher) {
+                $voucher->state = 4;  // 已退款
+                $voucher->refundtime = time();
+                $voucher->save();
+            }
+
+            // 更新订单状态（标记为存在退款）
+            $voucherOrder = VoucherOrder::get($refund->order_id);
+            if ($voucherOrder && $voucherOrder->state == 2) {
+                $voucherOrder->state = 4;  // 存在退款
+                $voucherOrder->save();
+            }
+
+            Db::commit();
+
+            \think\Log::info('退款成功处理完成: ' . $outRefundNo);
+
+        } catch (Exception $e) {
+            Db::rollback();
+            throw $e;
+        }
+    }
+
+    /**
+     * 处理退款异常逻辑
+     *
+     * @param string $outRefundNo 商户退款单号
+     * @param array  $resource 回调资源数据
+     */
+    private function handleRefundAbnormal($outRefundNo, array $resource)
+    {
+        \think\Log::warning('退款异常: ' . $outRefundNo . ', 数据: ' . json_encode($resource, JSON_UNESCAPED_UNICODE));
+
+        // 退款异常需要人工处理，记录日志但不自动更改状态
+        // 可以在后台管理界面查看异常情况并手动处理
+    }
+
+    /**
+     * 处理退款关闭逻辑
+     *
+     * @param string $outRefundNo 商户退款单号
+     * @param array  $resource 回调资源数据
+     */
+    private function handleRefundClosed($outRefundNo, array $resource)
+    {
+        \think\Log::warning('退款关闭: ' . $outRefundNo . ', 数据: ' . json_encode($resource, JSON_UNESCAPED_UNICODE));
+
+        // 退款关闭意味着退款请求被取消
+        // 可根据业务需求决定是否恢复券状态
+        try {
+            $refund = VoucherRefund::where('refund_no', $outRefundNo)->find();
+            if ($refund && $refund->state == 1) {
+                // 如果退款被关闭，恢复券状态为未使用
+                $voucher = Voucher::get($refund->voucher_id);
+                if ($voucher && $voucher->state == 5) {
+                    $voucher->state = 1;  // 恢复为未使用
+                    $voucher->save();
+                }
+
+                // 标记退款为拒绝状态
+                $refund->state = 2;  // 拒绝退款
+                $refund->refuse_reason = '微信退款关闭';
+                $refund->save();
+            }
+        } catch (Exception $e) {
+            \think\Log::error('处理退款关闭失败: ' . $e->getMessage());
+        }
     }
 }
