@@ -1,6 +1,6 @@
 # GrainAdminMix 开发指南
 
-最后更新时间：2025-11-14
+最后更新时间：2025-11-27
 
 ## ⚠️ 重要：语言要求
 
@@ -16,15 +16,26 @@
 
 ## Codex Skill 使用规则
 
-**默认行为**：遵循全局 `~/.claude/CLAUDE.md` 配置文件中定义的 Codex Skill 使用规则。
+**核心原则**：Claude Code 负责分析和规划，代码执行通过 Codex Skill 完成。
 
-**强制禁用**：仅当用户明确要求"完全使用 Claude"或"不使用 Codex Skill"时，才禁用 Codex Skill，强制 Claude Code 直接执行所有代码修改任务。
+### 职责分工
 
-### 全局配置优先
+| 角色 | 职责 |
+|------|------|
+| **Claude Code** | 分析需求、理解代码、规划方案、验证结果 |
+| **Codex Skill** | 执行代码修改、创建文件、重构代码 |
 
+### 工作流程
+
+1. **分析阶段**（Claude Code）：理解需求，搜索代码，分析影响范围
+2. **规划阶段**（Claude Code）：制定修改方案，确定修改点
+3. **执行阶段**（Codex Skill）：按计划执行代码修改
+4. **验证阶段**（Claude Code）：直接调用 API 验证，检查结果
+
+### 默认行为
+
+- 遵循全局 `~/.claude/CLAUDE.md` 配置文件中定义的 Codex Skill 使用规则
 - 项目级配置不覆盖全局 Codex Skill 使用策略
-- 默认情况下，遵循全局配置的工作流程和执行模式
-- 全局配置会自动决定何时使用 Codex Skill 进行代码编辑
 
 ### 用户强制控制
 
@@ -167,14 +178,15 @@ npx grunt frontend:css   # 构建前端 CSS
 npx grunt backend:css    # 构建后台 CSS
 ```
 
-### 启动开发服务器
-```bash
-php -S 127.0.0.1:8000 -t public public/index.php
+### 开发服务器
 
-# 访问地址：
-# 前端：http://127.0.0.1:8000/
-# 后台：http://127.0.0.1:8000/admin.php
-# 安装：http://127.0.0.1:8000/install.php
+⚠️ **重要**：本项目通过服务器 Web 服务（Nginx/Apache）运行，PHP 服务已常驻，无需手动启动。
+
+**验证接口**：直接使用 `curl` 命令通过本地服务验证。
+
+```bash
+# 示例：验证 API 接口
+curl -s "http://localhost/api/xxx"
 ```
 
 ### 数据库安装（CLI）
@@ -240,6 +252,7 @@ php think install \
 
 ## 最近更新
 
+- 2025-11-27：**明确职责分工**：Claude Code 负责分析规划，Codex Skill 执行代码修改；PHP 服务常驻运行，直接验证无需启动
 - 2025-11-19：**调整 Codex Skill 使用策略**：项目级配置改为遵循全局配置，只有用户明确要求"完全使用 Claude"时才禁用 Codex Skill
 - 2025-11-17：**添加严格的错误处理原则（原则六）**：绝对禁止使用容错机制掩盖错误，必须彻底解决问题
 - 2025-11-17：调整 Codex Skill 使用策略，从强制使用改为按需使用（仅在用户明确要求时使用）
