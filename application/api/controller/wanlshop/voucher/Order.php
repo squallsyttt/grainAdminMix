@@ -11,6 +11,7 @@ use app\api\model\wanlshop\GoodsSku;
 use app\common\library\WechatPayment;
 use app\admin\model\wanlshop\Goods;
 use app\common\model\PaymentCallbackLog;
+use app\common\service\PriceCalculator;
 use think\Db;
 use think\Exception;
 
@@ -73,10 +74,17 @@ class Order extends Api
         // 生成订单号（到秒 + 随机6位，降低重复概率）
         $orderNo = 'ORD' . date('YmdHis') . mt_rand(100000, 999999);
 
-        // 计算订单金额
-        $supplyPrice = $unitPrice * $quantity;                 // 供货价总额（基于SKU或商品价）
-        $retailPrice = $unitPrice * 1.20 * $quantity;          // 零售价总额（供货价 + 20%）
-        $actualPayment = $retailPrice;                         // 实际支付(暂不考虑优惠)
+        // 使用价格计算服务计算订单金额
+        $priceResult = PriceCalculator::calculateOrderItemsPrices([[
+            'goods_id' => $goodsId,
+            'sku_id' => $goodsSkuId,
+            'quantity' => $quantity,
+            'shop_id' => $goods->shop_id,
+        ]]);
+        $priceItem = $priceResult[0] ?? [];
+        $supplyPrice = $priceItem['supply_price'] ?? ($unitPrice * $quantity);
+        $retailPrice = $priceItem['retail_price'] ?? $supplyPrice;
+        $actualPayment = $priceItem['actual_payment'] ?? $retailPrice;
         $now = time();
 
         Db::startTrans();
@@ -219,8 +227,17 @@ class Order extends Api
             $skuWeight = $sku ? (float)$sku->weigh : 0.0;
             $unitPrice = $sku && isset($sku->price) ? $sku->price : $goods->price;
 
-            $supplyPrice = $unitPrice * $qty;
-            $retailPrice = $unitPrice * 1.20 * $qty;
+            // 使用价格计算服务
+            $priceResult = PriceCalculator::calculateOrderItemsPrices([[
+                'goods_id' => $goodsId,
+                'sku_id' => $skuId,
+                'quantity' => $qty,
+                'shop_id' => $goods->shop_id,
+            ]]);
+            $priceItem = $priceResult[0] ?? [];
+            $supplyPrice = $priceItem['supply_price'] ?? ($unitPrice * $qty);
+            $retailPrice = $priceItem['retail_price'] ?? $supplyPrice;
+            $itemActualPayment = $priceItem['actual_payment'] ?? $retailPrice;
 
             $orderItemsData[] = [
                 'order_id' => 0, // 保存后填充
@@ -234,7 +251,7 @@ class Order extends Api
                 'quantity' => $qty,
                 'supply_price' => $supplyPrice,
                 'retail_price' => $retailPrice,
-                'actual_payment' => $retailPrice,
+                'actual_payment' => $itemActualPayment,
                 'createtime' => $now,
             ];
 
