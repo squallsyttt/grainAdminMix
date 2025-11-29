@@ -652,15 +652,22 @@ class Goods extends Wanlshop
                 ? '库存已经有商品，现在开始同步最新的规范商品到后台'
                 : '开始同步规范商品';
 
+            // 获取当前店铺的配送地级市
+            $deliveryCityName = $this->shop->delivery_city_name;
+            if (empty($deliveryCityName)) {
+                $this->error('当前店铺未设置配送地级市，无法获取规范商品');
+            }
+
             try {
-                // 获取规范商品（shop_id=1）
+                // 获取规范商品（shop_id=1，且配送城市匹配）
                 $standardGoods = $this->model
                     ->where('shop_id', 1)
+                    ->where('region_city_name', $deliveryCityName)
                     ->where('deletetime', 'null')
                     ->select();
 
                 if (empty($standardGoods)) {
-                    $this->error('暂无规范商品可同步');
+                    $this->error('当前城市暂无规范商品可同步');
                 }
 
                 $insertCount = 0;

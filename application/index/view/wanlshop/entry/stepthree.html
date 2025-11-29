@@ -119,6 +119,25 @@
 							</div>
 						</div>
 						<div class="form-group">
+							<label class="control-label col-xs-12 col-sm-2">配送地级市:</label>
+							<div class="col-xs-12 col-sm-8">
+								<div class="row">
+									<div class="col-xs-6">
+										<select id="delivery-province" class="form-control" data-rule="required">
+											<option value="">请选择省份</option>
+										</select>
+									</div>
+									<div class="col-xs-6">
+										<select id="delivery-city" class="form-control" data-rule="required">
+											<option value="">请选择城市</option>
+										</select>
+									</div>
+								</div>
+								<input type="hidden" name="delivery_city_code" id="delivery_city_code" value="{$entry.delivery_city_code|default=''}">
+								<input type="hidden" name="delivery_city_name" id="delivery_city_name" value="{$entry.delivery_city_name|default=''}">
+							</div>
+						</div>
+						<div class="form-group">
 							<label class="control-label col-xs-12 col-sm-2">{:__('店铺介绍')}:</label>
 							<div class="col-xs-12 col-sm-8">
 								{:Form::editor('content', $entry.content, ['data-rule'=>'required'])}
@@ -135,4 +154,4 @@
 			</div>
 		</form>
 	</div>
-</div>
+	</div>

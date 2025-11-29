@@ -71,6 +71,8 @@ class Entry extends Frontend
 				$shop->bio = $row['content'];
 				$shop->description = $row['bio'];
 				$shop->city = $row['city'];
+				$shop->delivery_city_code = $row['delivery_city_code'];
+				$shop->delivery_city_name = $row['delivery_city_name'];
 				$shop->verify = $verify;
 				$shop->save();
 			}

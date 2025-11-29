@@ -85,6 +85,8 @@ class Auth extends Backend
 					$shop->bio = $row['content'];
 					$shop->description = $row['bio'];
 					$shop->city = $row['city'];
+					$shop->delivery_city_code = $row['delivery_city_code'];
+					$shop->delivery_city_name = $row['delivery_city_name'];
 					$shop->verify = $row['verify'];
 					// 新增店铺配置
 					if($shop->save()){

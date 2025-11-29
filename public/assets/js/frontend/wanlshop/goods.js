@@ -78,6 +78,23 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'vue', 'common/region
 			});
 					// 为表格绑定事件
 					Table.api.bindevent(table);
+					// 绑定同步规范商品按钮事件
+					$(document).on('click', '.btn-sync-standard', function() {
+						Layer.confirm('确认要获取规范商品吗？', function(index) {
+							Fast.api.ajax({
+								url: 'wanlshop/goods/syncStandardGoods',
+								data: {},
+							}, function(data, ret) {
+								Layer.closeAll();
+								Toastr.success(ret.msg);
+								table.bootstrapTable('refresh');
+							}, function(data, ret) {
+								Layer.closeAll();
+								Toastr.error(ret.msg);
+							});
+							Layer.close(index);
+						});
+					});
 			table.on('load-success.bs.table',function(data){
 			   $(".btn-editone").data("area", ["90%","80%"]);
 			   $(".btn-add").data("area", ["90%","80%"]);
