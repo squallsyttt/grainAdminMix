@@ -130,31 +130,17 @@ class Goods extends Wanlshop
             unset($item);
             $sort = implode(',', $sortArr);
 
-            // 平台店铺可以查看全量，普通店铺仅看自身城市或未设置城市的商品
+            // 商品列表已按 shop_id 过滤，无需额外城市过滤
             $shopCityFilter = null;
-            if ($this->shop && $this->shop->id != 1) {
-                $shopCityName = $this->shop->city;
-                $shopCityFilter = function ($query) use ($shopCityName) {
-                    $query->where(function ($q) use ($shopCityName) {
-                        $q->where('goods.region_city_name', '=', $shopCityName)
-                            ->whereOr('goods.region_city_name', '')
-                            ->whereOr('goods.region_city_name', null);
-                    });
-                };
-            }
 
             // 创建独立的 where 闭包（不引用外部模型）
-            $whereClosure = function ($query) use ($whereArr, $shopCityFilter) {
+            $whereClosure = function ($query) use ($whereArr) {
                 foreach ($whereArr as $v) {
                     if (is_array($v)) {
                         call_user_func_array([$query, 'where'], $v);
                     } else {
                         $query->where($v);
                     }
-                }
-                // 应用城市过滤
-                if ($shopCityFilter) {
-                    $shopCityFilter($query);
                 }
             };
 
