@@ -3,6 +3,7 @@ namespace app\api\controller\wanlshop\voucher;
 
 use app\common\controller\Api;
 use app\admin\model\wanlshop\Voucher as VoucherModel;
+use think\Db;
 
 /**
  * 核销券接口
@@ -170,6 +171,75 @@ class Voucher extends Api
             'expiring_soon'  => (int)($data['expiring_soon'] ?? 0),
             'expired'        => (int)($data['expired'] ?? 0),
         ]);
+    }
+
+    /**
+     * 可核销店铺列表
+     *
+     * @ApiSummary  (获取核销券可核销的店铺列表)
+     * @ApiMethod   (GET)
+     *
+     * @param int $voucher_id 核销券ID
+     */
+    public function verifiableShops()
+    {
+        $this->request->filter(['strip_tags']);
+
+        $voucherId = $this->request->get('voucher_id/d');
+        if (!$voucherId) {
+            $this->error(__('参数错误'));
+        }
+
+        $now = time();
+        $voucher = Db::name('wanlshop_voucher')
+            ->where([
+                'id' => $voucherId,
+                'user_id' => $this->auth->id,
+                'status' => 'normal',
+                'state' => 1
+            ])
+            ->where('valid_start', '<=', $now)
+            ->where('valid_end', '>=', $now)
+            ->field('id, category_id, face_value')
+            ->find();
+
+        if (!$voucher) {
+            $this->error(__('券不存在或不可核销'));
+        }
+
+        $faceValue = (float)$voucher['face_value'];
+        $maxSupplyPrice = $faceValue * 0.8;
+
+        $shops = Db::name('wanlshop_shop')
+            ->alias('shop')
+            ->join('wanlshop_goods goods', 'goods.shop_id = shop.id')
+            ->join('wanlshop_goods_sku sku', 'sku.goods_id = goods.id')
+            ->where('shop.status', 'normal')
+            ->where('shop.id', '<>', 1)  // 过滤平台虚拟店铺
+            ->where('shop.state', '1')  // 店铺审核通过
+            ->where('goods.status', 'normal')
+            ->where('goods.deletetime', null)
+            ->where('goods.category_id', $voucher['category_id'])
+            ->where('sku.status', 'normal')
+            ->where('sku.deletetime', null)
+            ->where('sku.price', '<=', $maxSupplyPrice)
+            ->where('sku.stock', '>', 0)  // 有库存
+            ->field('shop.id AS shop_id, shop.shopname, shop.avatar, shop.city, shop.`return` AS address, MIN(sku.price) AS min_supply_price')
+            ->group('shop.id, shop.shopname, shop.avatar, shop.city, shop.`return`')
+            ->order('min_supply_price asc')
+            ->select();
+
+        $shopList = [];
+        if ($shops) {
+            // 兼容返回类型为数组或集合的情况
+            $shopList = is_array($shops) ? $shops : $shops->toArray();
+        }
+        foreach ($shopList as &$shop) {
+            $shop['min_supply_price'] = (float)$shop['min_supply_price'];
+        }
+        unset($shop);
+
+        $this->success('ok', $shopList);
     }
 
     /**

@@ -2,6 +2,8 @@
 ### 基础配置
 @baseUrl = https://grain.griffithres.top
 @token = da5f4209-bbb6-4232-87e1-ba8dcf09e323
+### 用于可核销店铺接口的有效券ID（需确保未使用且在有效期内）
+@validVoucherId = 30
 
 ### 1. 我的券列表 - 全部
 GET {{baseUrl}}/api/wanlshop/voucher/voucher/lists
@@ -41,4 +43,12 @@ token: {{token}}
 
 ### 10. 券统计 - 获取当前用户核销券统计信息
 GET {{baseUrl}}/api/wanlshop/voucher/voucher/statistics
+token: {{token}}
+
+### 11. 可核销店铺 - 正常
+GET {{baseUrl}}/api/wanlshop/voucher/voucher/verifiableShops?voucher_id={{validVoucherId}}
+token: {{token}}
+
+### 12. 可核销店铺 - 缺少参数
+GET {{baseUrl}}/api/wanlshop/voucher/voucher/verifiableShops
 token: {{token}}
