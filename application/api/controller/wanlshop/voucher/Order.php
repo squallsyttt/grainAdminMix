@@ -260,7 +260,8 @@ class Order extends Api
             $totalRetailPrice += $retailPrice;
         }
 
-        $actualPayment = $totalRetailPrice;
+        // 手续费按总价统一计算，避免逐行进位误差
+        $actualPayment = PriceCalculator::calculatePaymentPrice($totalRetailPrice);
         if ($actualPayment <= 0 || $totalQuantity <= 0) {
             $this->error(__('订单金额异常'));
         }
