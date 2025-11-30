@@ -6,6 +6,7 @@ use app\admin\model\wanlshop\VoucherOrder;
 use app\admin\model\wanlshop\Voucher;
 use app\admin\model\wanlshop\VoucherOrderItem;
 use app\admin\model\wanlshop\VoucherRefund;
+use app\admin\model\wanlshop\VoucherRule;
 use app\api\model\wanlshop\Third;
 use app\api\model\wanlshop\GoodsSku;
 use app\common\library\WechatPayment;
@@ -980,8 +981,15 @@ class Order extends Api
             $order->save();
 
             // 读取券有效期配置（单位：天）
-            $voucherConfig = config('voucher');
-            $validDays = isset($voucherConfig['valid_days']) ? (int)$voucherConfig['valid_days'] : 30;
+            $rule = VoucherRule::getActiveRule();
+            if ($rule) {
+                $validDays = (int)$rule->expire_days;
+                $ruleId = (int)$rule->id;
+            } else {
+                $voucherConfig = config('voucher');
+                $validDays = isset($voucherConfig['valid_days']) ? (int)$voucherConfig['valid_days'] : 30;
+                $ruleId = 0;
+            }
             if ($validDays <= 0) {
                 $validDays = 30;
             }
@@ -1031,6 +1039,7 @@ class Order extends Api
                         $voucher->face_value = $facePerUnit;
                         $voucher->valid_start = $now;
                         $voucher->valid_end = $validEnd;
+                        $voucher->rule_id = $ruleId;
                         $voucher->state = 1;  // 未使用
                         $voucher->createtime = $now;
                         $voucher->save();
@@ -1060,6 +1069,7 @@ class Order extends Api
                     $voucher->face_value = $order->actual_payment / $order->quantity;
                     $voucher->valid_start = $now;
                     $voucher->valid_end = $validEnd;
+                    $voucher->rule_id = $ruleId;
                     $voucher->state = 1;  // 未使用
                     $voucher->createtime = $now;
                     $voucher->save();
