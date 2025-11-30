@@ -37,7 +37,7 @@ class Voucher extends Api
         }
 
         // 分页查询
-        $list = VoucherModel::with(['goods', 'shop', 'voucherOrder'])
+        $list = VoucherModel::with(['goods', 'shop', 'voucherOrder', 'voucherRule'])
             ->where($where)
             ->order('createtime desc')
             ->paginate(10);
@@ -60,6 +60,18 @@ class Voucher extends Api
                 // 关联订单的金额字段
                 if (!empty($data['voucher_order']) && is_array($data['voucher_order'])) {
                     $this->castPriceFields($data['voucher_order'], ['supply_price', 'retail_price', 'coupon_price', 'discount_price', 'actual_payment']);
+                }
+
+                if (!empty($data['voucher_rule']) && is_array($data['voucher_rule'])) {
+                    $data['rule_expire_days'] = (int)$data['voucher_rule']['expire_days'];
+                    $data['rule_free_days'] = (int)$data['voucher_rule']['free_days'];
+                    $data['rule_welfare_days'] = (int)$data['voucher_rule']['welfare_days'];
+                    $data['rule_goods_days'] = (int)$data['voucher_rule']['goods_days'];
+                } else {
+                    $data['rule_expire_days'] = 0;
+                    $data['rule_free_days'] = 0;
+                    $data['rule_welfare_days'] = 0;
+                    $data['rule_goods_days'] = 0;
                 }
             }
             unset($data);

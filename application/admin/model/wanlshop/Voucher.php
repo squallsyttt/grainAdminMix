@@ -111,6 +111,15 @@ class Voucher extends Model
     }
 
     /**
+     * 关联：所属规则
+     * @return \think\model\relation\BelongsTo
+     */
+    public function voucherRule()
+    {
+        return $this->belongsTo('VoucherRule', 'rule_id', 'id');
+    }
+
+    /**
      * 关联：核销记录（与券一对一）
      * @return \think\model\relation\HasOne
      */
