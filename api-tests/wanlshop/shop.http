@@ -6,6 +6,8 @@
 ### ========================================
 @baseUrl = http://grain.local.com
 @apiPrefix = /api/wanlshop/shop
+@shopToken = REPLACE_WITH_SHOP_OWNER_TOKEN
+@userTokenNoShop = REPLACE_WITH_USER_WITHOUT_SHOP
 
 ### ========================================
 ### 1. 获取店铺列表（分页，默认按 id DESC）
@@ -43,3 +45,18 @@ Content-Type: application/json
 GET {{baseUrl}}{{apiPrefix}}/getShopInfo?id=1
 Content-Type: application/json
 
+### ========================================
+### 7. 获取当前登录用户的店铺信息（成功）
+### 前置：token 为拥有店铺的用户
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/myshop
+Content-Type: application/json
+token: {{shopToken}}
+
+### ========================================
+### 8. 获取当前登录用户的店铺信息 - 无店铺用户
+### 期望：返回错误（未找到此商家）
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/myshop
+Content-Type: application/json
+token: {{userTokenNoShop}}

@@ -4,6 +4,7 @@ namespace app\api\controller;
 
 use app\common\controller\Api;
 use app\common\library\WechatMiniProgram;
+use app\admin\model\wanlshop\Shop;
 use app\api\model\wanlshop\Third;
 use fast\Random;
 use think\Db;
@@ -98,11 +99,13 @@ class MiniProgramAuth extends Api
                         $third->save();
                         
                         $isNewUser = true;
+                        $bindShop = $this->getBindShop($user->id);
                         Db::commit();
                         $this->success('登录成功', [
                             'is_new_user' => $isNewUser,
                             'need_register' => false,
-                            'userinfo' => $this->auth->getUserinfo()
+                            'userinfo' => $this->auth->getUserinfo(),
+                            'bind_shop' => $bindShop
                         ]);
                         return;
                     }
@@ -136,12 +139,14 @@ class MiniProgramAuth extends Api
                     $third->save();
                     
                     $isNewUser = true;
+                    $bindShop = $this->getBindShop($user->id);
                     
                     Db::commit();
                     $this->success('登录成功', [
                         'is_new_user' => $isNewUser,
                         'need_register' => false,
-                        'userinfo' => $this->auth->getUserinfo()
+                        'userinfo' => $this->auth->getUserinfo(),
+                        'bind_shop' => $bindShop
                     ]);
                     return;
                 }
@@ -150,11 +155,13 @@ class MiniProgramAuth extends Api
                 $ret = $this->auth->direct($userId);
                 
                 if ($ret) {
+                    $bindShop = $this->getBindShop($userId);
                     Db::commit();
                     $this->success('登录成功', [
                         'is_new_user' => $isNewUser,
                         'need_register' => false,
-                        'userinfo' => $this->auth->getUserinfo()
+                        'userinfo' => $this->auth->getUserinfo(),
+                        'bind_shop' => $bindShop
                     ]);
                 } else {
                     throw new Exception($this->auth->getError());
@@ -273,10 +280,12 @@ class MiniProgramAuth extends Api
                     $third->save();
                 }
                 
+                $bindShop = $this->getBindShop($user->id);
                 Db::commit();
                 
                 $this->success('登录成功', [
-                    'userinfo' => $this->auth->getUserinfo()
+                    'userinfo' => $this->auth->getUserinfo(),
+                    'bind_shop' => $bindShop
                 ]);
                 
             } catch (Exception $e) {
@@ -352,10 +361,12 @@ class MiniProgramAuth extends Api
                 $third->openname = $nickname;
                 $third->save();
                 
+                $bindShop = $this->getBindShop($this->auth->id);
                 Db::commit();
                 
                 $this->success('注册成功', [
-                    'userinfo' => $this->auth->getUserinfo()
+                    'userinfo' => $this->auth->getUserinfo(),
+                    'bind_shop' => $bindShop
                 ]);
                 
             } catch (Exception $e) {
@@ -367,5 +378,28 @@ class MiniProgramAuth extends Api
             Log::error('注册失败：' . $e->getMessage());
             $this->error($e->getMessage());
         }
+    }
+
+    /**
+     * 获取用户绑定的店铺信息
+     *
+     * @param int $userId
+     * @return array|null
+     */
+    protected function getBindShop($userId)
+    {
+        // 从 user 表获取 bind_shop 字段（存储的是 shop_id）
+        $bindShopId = Db::name('user')->where('id', $userId)->value('bind_shop');
+        if (empty($bindShopId)) {
+            return null;
+        }
+
+        // 直接用 Db 查询，避免触发模型的 append 属性
+        $shop = Db::name('wanlshop_shop')
+            ->where('id', $bindShopId)
+            ->field('id, shopname, avatar, state')
+            ->find();
+
+        return $shop ?: null;
     }
 }

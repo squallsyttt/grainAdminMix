@@ -41,6 +41,26 @@ class Shop extends Api
 			$this->success('返回成功', $row);
 		}
 
+	/**
+	 * 获取当前登录用户的店铺信息
+	 *
+	 * @ApiSummary  (WanlShop 获取当前登录用户的店铺信息)
+	 * @ApiMethod   (GET)
+	 */
+	public function myshop()
+	{
+		//设置过滤方法
+		$this->request->filter(['strip_tags']);
+		// 根据当前登录用户查找店铺
+		$row = $this->model->get(['user_id' => $this->auth->id]);
+
+		if (!$row) {
+			$this->error(__('未找到此商家'));
+		}
+
+		$this->success('返回成功', $row);
+	}
+
 		/**
 		 * 获取店铺列表
 		 *

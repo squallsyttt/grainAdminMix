@@ -1,7 +1,7 @@
 ### 核销券核销接口测试(商家端)
 ### 基础配置
-@baseUrl = http://localhost:8000
-@token = YOUR_SHOP_TOKEN_HERE
+@baseUrl = https://grain.griffithres.top
+@token = da5f4209-bbb6-4232-87e1-ba8dcf09e323
 @shopId = 1
 
 ### 1. 验证码核销 - 使用券号
@@ -74,3 +74,36 @@ token: {{token}}
 ### 9. 核销记录列表 - 店铺ID为空(应失败)
 GET {{baseUrl}}/api/wanlshop/voucher/verify/records
 token: {{token}}
+
+### 10. 扫码确认 - 获取券详情
+GET {{baseUrl}}/api/wanlshop/voucher/verify/info?voucher_no=VCH20251130143954421849
+token: {{token}}
+
+### 11. 扫码确认 - 券不存在(应失败)
+GET {{baseUrl}}/api/wanlshop/voucher/verify/info?voucher_no=VCH000000000000
+token: {{token}}
+
+### 12. 扫码核销
+POST {{baseUrl}}/api/wanlshop/voucher/verify/scan
+Content-Type: application/json
+token: {{token}}
+
+{
+  "voucher_no": "VCH202511150001"
+}
+
+### 13. 扫码核销 - 缺少券号(应失败)
+POST {{baseUrl}}/api/wanlshop/voucher/verify/scan
+Content-Type: application/json
+token: {{token}}
+
+{}
+
+### 14. 扫码核销 - 不存在的券号(应失败)
+POST {{baseUrl}}/api/wanlshop/voucher/verify/scan
+Content-Type: application/json
+token: {{token}}
+
+{
+  "voucher_no": "VCH000000000000"
+}
