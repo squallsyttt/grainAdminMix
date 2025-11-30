@@ -402,4 +402,21 @@ class MiniProgramAuth extends Api
 
         return $shop ?: null;
     }
+
+    /**
+     * 解绑店铺
+     *
+     * @ApiSummary  (解绑当前用户绑定的店铺)
+     * @ApiMethod   (POST)
+     */
+    public function unbindShop()
+    {
+        if (!$this->request->isPost()) {
+            $this->error(__('非法请求'));
+        }
+
+        Db::name('user')->where('id', $this->auth->id)->update(['bind_shop' => null]);
+
+        $this->success('解绑成功');
+    }
 }

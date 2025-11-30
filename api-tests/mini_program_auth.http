@@ -1,0 +1,110 @@
+### 微信小程序授权登录接口测试
+### 基础配置
+@baseUrl = https://grain.griffithres.top
+@token = YOUR_TOKEN_HERE
+
+### 1. 微信小程序登录
+POST {{baseUrl}}/api/mini_program_auth/login
+Content-Type: application/json
+
+{
+  "code": "wx_login_code_here"
+}
+
+### 登录成功 Mock 响应（有绑定店铺）
+# {
+#   "code": 1,
+#   "msg": "登录成功",
+#   "time": "1764488511",
+#   "data": {
+#     "is_new_user": false,
+#     "need_register": false,
+#     "userinfo": {
+#       "id": 11,
+#       "username": "u_BbE9PqSF",
+#       "nickname": "u_BbE9PqSF",
+#       "mobile": "",
+#       "avatar": "...",
+#       "score": 0,
+#       "token": "db74147d-5212-42bd-9ff9-b77e2ee6e0bd",
+#       "user_id": 11,
+#       "createtime": 1764488511,
+#       "expiretime": 1767080511,
+#       "expires_in": 2592000
+#     },
+#     "bind_shop": {
+#       "id": 3,
+#       "shopname": "测试商铺二",
+#       "avatar": "/uploads/xxx.jpg",
+#       "state": "1"
+#     }
+#   }
+# }
+
+### 登录成功 Mock 响应（无绑定店铺）
+# {
+#   "code": 1,
+#   "msg": "登录成功",
+#   "time": "1764488511",
+#   "data": {
+#     "is_new_user": false,
+#     "need_register": false,
+#     "userinfo": {
+#       "id": 12,
+#       "username": "u_XyzAbcDe",
+#       "nickname": "普通用户",
+#       "mobile": "13800138000",
+#       "avatar": "...",
+#       "score": 0,
+#       "token": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+#       "user_id": 12,
+#       "createtime": 1764488511,
+#       "expiretime": 1767080511,
+#       "expires_in": 2592000
+#     },
+#     "bind_shop": null
+#   }
+# }
+
+### 2. 手机号登录
+POST {{baseUrl}}/api/mini_program_auth/loginByPhone
+Content-Type: application/json
+
+{
+  "code": "wx_login_code_here",
+  "phone_code": "phone_code_from_getPhoneNumber"
+}
+
+### 3. 完善用户信息（注册）
+POST {{baseUrl}}/api/mini_program_auth/register
+Content-Type: application/json
+
+{
+  "third_token": "third_token_here",
+  "nickname": "微信用户",
+  "avatar": "https://example.com/avatar.jpg",
+  "gender": 1
+}
+
+### 4. 解绑店铺
+POST {{baseUrl}}/api/mini_program_auth/unbindShop
+Content-Type: application/json
+token: {{token}}
+
+{}
+
+### 解绑成功 Mock 响应
+# {
+#   "code": 1,
+#   "msg": "解绑成功",
+#   "time": "1764489000",
+#   "data": null
+# }
+
+### 解绑失败 Mock 响应（未登录）
+# {
+#   "code": 401,
+#   "msg": "请登录后操作",
+#   "time": "1764489000",
+#   "data": null
+# }
