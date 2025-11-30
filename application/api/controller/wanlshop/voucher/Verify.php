@@ -290,7 +290,14 @@ class Verify extends Api
      */
     protected function getMerchantShop()
     {
-        $shop = Shop::where('user_id', $this->auth->id)->find();
+        // 先取当前登录用户在 user 表中绑定的店铺 ID
+        $bindShopId = Db::name('user')->where('id', $this->auth->id)->value('bind_shop');
+        if (!$bindShopId) {
+            $this->error(__('店铺不存在'));
+        }
+
+        // 再用绑定的店铺 ID 查询具体店铺
+        $shop = Shop::where('id', $bindShopId)->find();
         if (!$shop) {
             $this->error(__('店铺不存在'));
         }
