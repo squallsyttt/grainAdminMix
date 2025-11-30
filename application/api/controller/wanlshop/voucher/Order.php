@@ -1098,7 +1098,7 @@ class Order extends Api
     private function generateVoucherNo()
     {
         do {
-            $no = 'VCH' . date('Ymd') . mt_rand(100000, 999999);
+            $no = 'VCH' . date('YmdHis') . mt_rand(100000, 999999);
         } while (Voucher::where('voucher_no', $no)->count() > 0);
 
         return $no;
