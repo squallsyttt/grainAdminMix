@@ -1,0 +1,119 @@
+### WanlShop 邀请返利 API 测试
+### 对应控制器: application/api/controller/MiniProgramAuth.php
+
+### ========================================
+### 环境变量
+### ========================================
+@baseUrl = https://grain.griffithres.top
+@apiPrefix = /api/mini_program_auth
+@token = REPLACE_WITH_LOGIN_TOKEN
+@token_expired = EXPIRED_OR_EMPTY_TOKEN
+
+### ========================================
+### 1. 获取个人邀请信息 - 成功
+### 前置：已登录用户
+### 期望：code=1，返回 inviteCode、level、rebateRate、invitedTotal/verifiedInvitees/pendingInvitees 等字段
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/inviteInfo
+token: {{token}}
+
+### ========================================
+### 2. 获取个人邀请信息 - 未登录
+### 期望：code=0，msg 提示登录，data 为 null
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/inviteInfo
+
+### ========================================
+### 3. 查询邀请用户列表 - 成功（分页）
+### 前置：已登录用户
+### 期望：code=1，data.list 返回 status（pending/verified）、rebateRate、writeoffCount、lastWriteoffAt
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/inviteeList?page=1&limit=10
+token: {{token}}
+
+### ========================================
+### 4. 查询邀请用户列表 - 第2页
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/inviteeList?page=2&limit=5
+token: {{token}}
+
+### ========================================
+### 5. 查询邀请用户列表 - token 失效
+### 期望：code=0，msg=token expired/请先登录
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/inviteeList?page=1&limit=10
+token: {{token_expired}}
+
+### ========================================
+### 6. 绑定邀请码 - 成功
+### 前置：已登录用户，且未绑定过邀请码
+### 期望：code=1，返回 inviterLevel、rebateRate、boundAt、isFirstBind、upgradeHint
+### ========================================
+POST {{baseUrl}}{{apiPrefix}}/bindInviteCode
+Content-Type: application/json
+token: {{token}}
+
+{
+  "invite_code": "A888888X"
+}
+
+### ========================================
+### 7. 绑定邀请码 - 格式错误（小写字母）
+### 期望：code=0，msg=邀请码格式不正确，data=null
+### ========================================
+POST {{baseUrl}}{{apiPrefix}}/bindInviteCode
+Content-Type: application/json
+token: {{token}}
+
+{
+  "invite_code": "abcd1234"
+}
+
+### ========================================
+### 8. 绑定邀请码 - 格式错误（长度不足）
+### 期望：code=0，msg=邀请码格式不正确
+### ========================================
+POST {{baseUrl}}{{apiPrefix}}/bindInviteCode
+Content-Type: application/json
+token: {{token}}
+
+{
+  "invite_code": "ABC123"
+}
+
+### ========================================
+### 9. 绑定邀请码 - 邀请码不存在
+### 期望：code=0，msg=邀请码不存在
+### ========================================
+POST {{baseUrl}}{{apiPrefix}}/bindInviteCode
+Content-Type: application/json
+token: {{token}}
+
+{
+  "invite_code": "NOTEXIST"
+}
+
+### ========================================
+### 10. 绑定邀请码 - 重复绑定
+### 前置：用户已绑定过邀请码
+### 期望：code=0，msg=已经绑定过邀请码
+### ========================================
+POST {{baseUrl}}{{apiPrefix}}/bindInviteCode
+Content-Type: application/json
+token: {{token}}
+
+{
+  "invite_code": "A888888X"
+}
+
+### ========================================
+### 11. 绑定邀请码 - 绑定自己的邀请码
+### 期望：code=0，msg=不能绑定自己的邀请码
+### ========================================
+POST {{baseUrl}}{{apiPrefix}}/bindInviteCode
+Content-Type: application/json
+token: {{token}}
+
+{
+  "invite_code": "YOUR_OWN_CODE"
+}

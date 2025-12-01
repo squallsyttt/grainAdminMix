@@ -393,7 +393,7 @@ class MiniProgramAuth extends Api
             $this->error(__('非法请求'));
         }
         
-        $inviteCode = $this->request->post('invite_code', '');
+        $inviteCode = strtoupper($this->request->post('invite_code', ''));
         if (empty($inviteCode)) {
             $this->error(__('请输入邀请码'));
         }
@@ -402,82 +402,276 @@ class MiniProgramAuth extends Api
         if (!preg_match('/^[A-Z0-9]{8}$/', $inviteCode)) {
             $this->error(__('邀请码格式不正确'));
         }
-        
-        // 检查是否已绑定
-        $currentUser = Db::name('user')->where('id', $this->auth->id)->find();
+
+        $userId = $this->auth->id;
+        $currentUser = Db::name('user')->where('id', $userId)->field('id, inviter_id')->find();
+        if (!$currentUser) {
+            $this->error(__('用户不存在'));
+        }
         if (!empty($currentUser['inviter_id'])) {
             $this->error(__('您已绑定过邀请码'));
         }
         
         // 查询邀请码对应用户
-        $inviter = Db::name('user')->where('invite_code', $inviteCode)->find();
+        $inviter = Db::name('user')
+            ->where('invite_code', $inviteCode)
+            ->field('id, nickname, invite_code, bonus_level, bonus_ratio')
+            ->find();
         if (!$inviter) {
             $this->error(__('邀请码无效'));
         }
         
         // 不能绑定自己
-        if ($inviter['id'] == $this->auth->id) {
+        if ((int)$inviter['id'] === (int)$userId) {
             $this->error(__('不能绑定自己的邀请码'));
         }
-        
-        // 更新邀请关系
-        Db::name('user')->where('id', $this->auth->id)->update([
-            'inviter_id' => $inviter['id']
-        ]);
-        
-        $this->success('绑定成功', [
-            'inviter_nickname' => $inviter['nickname']
-        ]);
+
+        $now = time();
+
+        Db::startTrans();
+        try {
+            $updated = Db::name('user')
+                ->where('id', $userId)
+                ->update([
+                    'inviter_id' => $inviter['id'],
+                    'invite_bind_time' => $now
+                ]);
+
+            if ($updated === false) {
+                throw new Exception('绑定邀请码失败');
+            }
+
+            Db::commit();
+
+            $ratios = $this->getInviteRatios();
+            $inviterLevel = (int)$inviter['bonus_level'];
+            $rebateRate = isset($ratios[$inviterLevel]) ? (float)$ratios[$inviterLevel] : (float)$inviter['bonus_ratio'];
+
+            $this->success('绑定成功', [
+                'inviteCode' => $inviter['invite_code'],
+                'inviterLevel' => $inviterLevel,
+                'rebateRate' => $rebateRate,
+                'boundAt' => date('Y-m-d H:i:s', $now),
+                'isFirstBind' => true,
+                'upgradeHint' => '核销后可为邀请人升级，最多2级'
+            ]);
+        } catch (Exception $e) {
+            Db::rollback();
+            $this->error($e->getMessage());
+        }
     }
 
     /**
-     * 获取用户邀请信息
+     * 个人邀请信息
      *
-     * @ApiSummary  (获取当前用户的邀请码和红包比例信息)
      * @ApiMethod   (GET)
+     */
+    public function inviteInfo()
+    {
+        try {
+            $userId = $this->auth->id;
+            $user = Db::name('user')
+                ->where('id', $userId)
+                ->field('id, invite_code, bonus_level, bonus_ratio')
+                ->find();
+
+            if (!$user) {
+                $this->error('用户不存在');
+            }
+
+            $ratios = $this->getInviteRatios();
+            $level = (int)$user['bonus_level'];
+            $rebateRate = isset($ratios[$level]) ? (float)$ratios[$level] : (float)$user['bonus_ratio'];
+
+            $invitedTotal = (int)Db::name('user')->where('inviter_id', $userId)->count();
+            $verifiedInvitees = (int)Db::name('wanlshop_voucher_verification')
+                ->alias('vv')
+                ->join('__USER__ u', 'u.id = vv.user_id')
+                ->where('u.inviter_id', $userId)
+                ->count('DISTINCT vv.user_id');
+            $pendingInvitees = max($invitedTotal - $verifiedInvitees, 0);
+
+            $nextLevel = $level < 2 ? $level + 1 : null;
+            $nextRebateRate = $nextLevel !== null && isset($ratios[$nextLevel]) ? (float)$ratios[$nextLevel] : null;
+            $upgradeRule = '被邀请人核销触发升级，最多2次升级';
+
+            $this->success('ok', [
+                'inviteCode' => $user['invite_code'],
+                'level' => $level,
+                'levelName' => 'Level ' . $level,
+                'rebateRate' => $rebateRate,
+                'rebateText' => sprintf('Level %d 返利 %.2f%%', $level, $rebateRate),
+                'invitedTotal' => $invitedTotal,
+                'verifiedInvitees' => $verifiedInvitees,
+                'pendingInvitees' => $pendingInvitees,
+                'nextLevel' => $nextLevel,
+                'nextRebateRate' => $nextRebateRate,
+                'upgradeRule' => $upgradeRule,
+                'recentRebates' => []
+            ]);
+        } catch (Exception $e) {
+            Log::error('获取邀请信息失败：' . $e->getMessage());
+            $this->error($e->getMessage());
+        }
+    }
+
+    /**
+     * 兼容旧路径
      */
     public function getInviteInfo()
     {
-        $userId = $this->auth->id;
-        
-        // 获取当前用户信息
-        $user = Db::name('user')
-            ->field('invite_code, inviter_id, bonus_ratio, bonus_level')
-            ->where('id', $userId)
-            ->find();
-        
-        // 获取邀请人信息
-        $inviterInfo = null;
-        if (!empty($user['inviter_id'])) {
-            $inviterInfo = Db::name('user')
-                ->field('id, nickname, avatar')
-                ->where('id', $user['inviter_id'])
+        $this->inviteInfo();
+    }
+
+    /**
+     * 邀请列表
+     *
+     * @ApiMethod   (GET)
+     */
+    public function inviteeList()
+    {
+        $page = (int)$this->request->get('page', 1);
+        $limit = (int)$this->request->get('limit', 10);
+        $page = $page > 0 ? $page : 1;
+        $limit = $limit > 0 ? $limit : 10;
+
+        try {
+            $userId = $this->auth->id;
+
+            // 如果没有邀请任何人,直接返回空列表
+            $invitedCount = Db::name('user')->where('inviter_id', $userId)->count();
+            if ($invitedCount == 0) {
+                $this->success('ok', [
+                    'page' => $page,
+                    'perPage' => $limit,
+                    'total' => 0,
+                    'list' => []
+                ]);
+                return;
+            }
+
+            $currentUser = Db::name('user')
+                ->where('id', $userId)
+                ->field('invite_code, bonus_level, bonus_ratio')
                 ->find();
+            if (!$currentUser) {
+                $this->error('用户不存在');
+            }
+
+            $ratios = $this->getInviteRatios();
+            $currentLevel = (int)$currentUser['bonus_level'];
+            $defaultRebateRate = isset($ratios[$currentLevel]) ? (float)$ratios[$currentLevel] : (float)$currentUser['bonus_ratio'];
+            $currentInviteCode = $currentUser['invite_code'];
+
+            $baseQuery = Db::name('user')->where('inviter_id', $userId);
+            $total = (int)(clone $baseQuery)->count();
+
+            $rows = (clone $baseQuery)
+                ->alias('u')
+                ->field('u.id,u.nickname,u.avatar,u.invite_bind_time,u.jointime')
+                ->order('u.invite_bind_time desc,u.id desc')
+                ->page($page, $limit)
+                ->select();
+
+            if ($rows instanceof \think\Collection) {
+                $rows = $rows->toArray();
+            }
+
+            $inviteeIds = array_column($rows, 'id');
+
+            $writeoffCountMap = [];
+            $lastWriteoffMap = [];
+            $upgradeRatioMap = [];
+
+            if (!empty($inviteeIds)) {
+                // 统计每个被邀请人的核销次数
+                $writeoffData = Db::name('wanlshop_voucher_verification')
+                    ->field('user_id, COUNT(*) as count')
+                    ->where('user_id', 'in', $inviteeIds)
+                    ->group('user_id')
+                    ->select();
+                foreach ($writeoffData as $item) {
+                    $writeoffCountMap[$item['user_id']] = (int)$item['count'];
+                }
+
+                // 获取每个被邀请人的最后核销时间
+                $lastWriteoffData = Db::name('wanlshop_voucher_verification')
+                    ->field('user_id, MAX(createtime) as last_time')
+                    ->where('user_id', 'in', $inviteeIds)
+                    ->group('user_id')
+                    ->select();
+                foreach ($lastWriteoffData as $item) {
+                    $lastWriteoffMap[$item['user_id']] = (int)$item['last_time'];
+                }
+
+                // 获取升级后的返利比例
+                $upgradeRatioMap = Db::name('user_invite_upgrade_log')
+                    ->where('user_id', $userId)
+                    ->where('invitee_id', 'in', $inviteeIds)
+                    ->column('after_ratio', 'invitee_id');
+            }
+
+            $list = [];
+            foreach ($rows as $row) {
+                $inviteeId = (int)$row['id'];
+                $writeoffCount = isset($writeoffCountMap[$inviteeId]) ? (int)$writeoffCountMap[$inviteeId] : 0;
+                $lastWriteoffAt = isset($lastWriteoffMap[$inviteeId]) ? (int)$lastWriteoffMap[$inviteeId] : 0;
+                $upgradeRatio = isset($upgradeRatioMap[$inviteeId]) ? (float)$upgradeRatioMap[$inviteeId] : null;
+                $bindTime = !empty($row['invite_bind_time']) ? (int)$row['invite_bind_time'] : (!empty($row['jointime']) ? (int)$row['jointime'] : 0);
+
+                $list[] = [
+                    'userId' => $inviteeId,
+                    'nickname' => $row['nickname'],
+                    'avatar' => $row['avatar'],
+                    'inviteCode' => $currentInviteCode,
+                    'bindAt' => $bindTime ? date('Y-m-d H:i:s', $bindTime) : null,
+                    'writeoffCount' => $writeoffCount,
+                    'lastWriteoffAt' => $lastWriteoffAt ? date('Y-m-d H:i:s', $lastWriteoffAt) : null,
+                    'status' => $writeoffCount > 0 ? 'verified' : 'pending',
+                    'rebateRate' => $upgradeRatio !== null ? $upgradeRatio : $defaultRebateRate,
+                    'upgradeCount' => $upgradeRatio !== null ? 1 : 0
+                ];
+            }
+
+            $this->success('ok', [
+                'page' => $page,
+                'perPage' => $limit,
+                'total' => $total,
+                'list' => $list
+            ]);
+        } catch (Exception $e) {
+            Log::error('获取邀请列表失败：' . $e->getMessage());
+            $this->error($e->getMessage());
         }
-        
-        // 获取被邀请人数量
-        $inviteeCount = Db::name('user')->where('inviter_id', $userId)->count();
-        
-        // 获取比例配置
-        $ratioConfig = [
-            'base' => config('site.invite_base_ratio') ?: 5,
-            'level1' => config('site.invite_level1_ratio') ?: 8,
-            'level2' => config('site.invite_level2_ratio') ?: 10,
+    }
+
+    /**
+     * 获取返利比例配置
+     *
+     * @return array
+     * @throws Exception
+     */
+    protected function getInviteRatios()
+    {
+        $ratios = [
+            0 => config('site.invite_base_ratio'),
+            1 => config('site.invite_level1_ratio'),
+            2 => config('site.invite_level2_ratio'),
         ];
-        
-        $this->success('ok', [
-            'invite_code' => $user['invite_code'],
-            'bonus_ratio' => $user['bonus_ratio'],
-            'bonus_level' => $user['bonus_level'],
-            'inviter' => $inviterInfo,
-            'invitee_count' => $inviteeCount,
-            'ratio_config' => $ratioConfig
-        ]);
+
+        foreach ($ratios as $level => $ratio) {
+            if (!is_numeric($ratio)) {
+                throw new Exception('返利比例配置异常');
+            }
+            $ratios[$level] = (float)$ratio;
+        }
+
+        return $ratios;
     }
 
     /**
      * 获取用户绑定的店铺信息
-     *
+     * 
      * @param int $userId
      * @return array|null
      */

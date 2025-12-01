@@ -267,8 +267,10 @@ class Verify extends Api
             $settlement->createtime = time();
             $settlement->save();
 
-            // 处理邀请奖励：提升邀请人红包比例
-            $this->processInviteReward($voucher->user_id, $verification->id, $voucher->id);
+            // 轨道1：被邀请人核销触发邀请人升级
+            $this->processInviterUpgrade($voucher->user_id, $verification->id, $voucher->id);
+            // 轨道2：邀请人自核销返利发放
+            $this->processCashbackReward($voucher->user_id, $verification->id, $voucher->id);
 
             Db::commit();
 
@@ -287,72 +289,150 @@ class Verify extends Api
     }
 
     /**
-     * 处理邀请奖励：被邀请者核销后提升邀请者红包比例
+     * 轨道1：被邀请人首次核销触发邀请人等级升级
      *
-     * @param int $userId 被核销券的用户ID（被邀请者）
+     * @param int $inviteeUserId 被核销券的用户ID（被邀请者）
      * @param int $verificationId 核销记录ID
      * @param int $voucherId 券ID
      */
-    protected function processInviteReward($userId, $verificationId, $voucherId)
+    protected function processInviterUpgrade($inviteeUserId, $verificationId, $voucherId)
     {
-        // 查询被邀请者的邀请人
-        $user = Db::name('user')->where('id', $userId)->field('inviter_id')->find();
-        if (empty($user['inviter_id'])) {
-            return; // 无邀请人，不处理
+        $invitee = Db::name('user')->where('id', $inviteeUserId)->field('inviter_id')->find();
+        if (empty($invitee['inviter_id'])) {
+            return;
         }
 
-        $inviterId = $user['inviter_id'];
+        $inviterId = (int)$invitee['inviter_id'];
 
-        // 获取邀请人信息并加锁
         $inviter = Db::name('user')
             ->where('id', $inviterId)
             ->lock(true)
             ->field('id, bonus_ratio, bonus_level')
             ->find();
 
-        if (!$inviter || $inviter['bonus_level'] >= 2) {
-            return; // 邀请人不存在或已达最高等级
+        if (!$inviter) {
+            throw new Exception('邀请人不存在');
         }
 
-        // 检查该被邀请者是否已经为邀请者触发过奖励
-        $alreadyRewarded = Db::name('user_invite_reward')
+        $currentLevel = (int)$inviter['bonus_level'];
+        if ($currentLevel >= 2) {
+            return;
+        }
+
+        $alreadyUpgraded = Db::name('user_invite_upgrade_log')
             ->where('user_id', $inviterId)
-            ->where('invitee_id', $userId)
-            ->count();
-        if ($alreadyRewarded > 0) {
-            return; // 该被邀请者已触发过奖励，不再重复
+            ->where('invitee_id', $inviteeUserId)
+            ->lock(true)
+            ->find();
+        if ($alreadyUpgraded) {
+            return;
         }
 
-        // 获取比例配置
-        $ratioConfig = [
-            0 => config('site.invite_base_ratio') ?: 5,
-            1 => config('site.invite_level1_ratio') ?: 8,
-            2 => config('site.invite_level2_ratio') ?: 10,
-        ];
+        $ratioConfig = $this->getInviteRatios();
+        $afterLevel = $currentLevel + 1;
+        if (!array_key_exists($afterLevel, $ratioConfig)) {
+            throw new Exception('返利比例配置异常');
+        }
 
-        $beforeRatio = $inviter['bonus_ratio'];
-        $beforeLevel = $inviter['bonus_level'];
-        $afterLevel = $beforeLevel + 1;
-        $afterRatio = $ratioConfig[$afterLevel];
+        $beforeRatio = (float)$inviter['bonus_ratio'];
+        $afterRatio = (float)$ratioConfig[$afterLevel];
+        $now = time();
 
-        // 更新邀请人红包比例
         Db::name('user')->where('id', $inviterId)->update([
             'bonus_ratio' => $afterRatio,
             'bonus_level' => $afterLevel
         ]);
 
-        // 记录奖励日志
-        Db::name('user_invite_reward')->insert([
+        Db::name('user_invite_upgrade_log')->insert([
             'user_id' => $inviterId,
-            'invitee_id' => $userId,
+            'invitee_id' => $inviteeUserId,
             'verification_id' => $verificationId,
             'voucher_id' => $voucherId,
+            'before_level' => $currentLevel,
+            'after_level' => $afterLevel,
             'before_ratio' => $beforeRatio,
             'after_ratio' => $afterRatio,
-            'before_level' => $beforeLevel,
-            'after_level' => $afterLevel,
-            'createtime' => time()
+            'createtime' => $now
         ]);
+    }
+
+    /**
+     * 轨道2：邀请人自核销返利发放
+     *
+     * @param int $userId 核销人（邀请人）ID
+     * @param int $verificationId 核销记录ID
+     * @param int $voucherId 券ID
+     */
+    protected function processCashbackReward($userId, $verificationId, $voucherId)
+    {
+        $user = Db::name('user')
+            ->where('id', $userId)
+            ->field('id, bonus_level, bonus_ratio')
+            ->find();
+
+        if (!$user) {
+            throw new Exception('核销用户不存在');
+        }
+
+        $ratioConfig = $this->getInviteRatios();
+        $bonusLevel = (int)$user['bonus_level'];
+        if (!array_key_exists($bonusLevel, $ratioConfig)) {
+            throw new Exception('返利比例配置异常');
+        }
+        $bonusRatio = (float)$ratioConfig[$bonusLevel];
+
+        $voucher = Voucher::where('id', $voucherId)->field('id, supply_price')->find();
+        if (!$voucher) {
+            throw new Exception('核销券不存在');
+        }
+
+        $verification = VoucherVerification::where('id', $verificationId)
+            ->field('shop_id, verify_method')
+            ->find();
+        if (!$verification) {
+            throw new Exception('核销记录不存在');
+        }
+
+        $supplyPrice = (float)$voucher->supply_price;
+        $cashbackAmount = round($supplyPrice * ($bonusRatio / 100), 2);
+        $now = time();
+
+        Db::name('user_cashback_log')->insert([
+            'user_id' => $userId,
+            'voucher_id' => $voucherId,
+            'verification_id' => $verificationId,
+            'cashback_amount' => $cashbackAmount,
+            'supply_price' => $supplyPrice,
+            'bonus_ratio' => $bonusRatio,
+            'shop_id' => $verification->shop_id,
+            'verify_method' => $verification->verify_method,
+            'createtime' => $now,
+            'updatetime' => $now
+        ]);
+    }
+
+    /**
+     * 获取返利比例配置
+     *
+     * @return array
+     * @throws Exception
+     */
+    protected function getInviteRatios()
+    {
+        $ratios = [
+            0 => config('site.invite_base_ratio'),
+            1 => config('site.invite_level1_ratio'),
+            2 => config('site.invite_level2_ratio'),
+        ];
+
+        foreach ($ratios as $level => $ratio) {
+            if (!is_numeric($ratio)) {
+                throw new Exception('返利比例配置异常');
+            }
+            $ratios[$level] = (float)$ratio;
+        }
+
+        return $ratios;
     }
 
     /**
