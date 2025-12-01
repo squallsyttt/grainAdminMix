@@ -1,378 +1,153 @@
 <?php
 namespace app\index\controller\wanlshop;
 
-use think\Db;
-use think\Exception;
-
-use think\exception\PDOException;
-use think\exception\ValidateException;
-
-use addons\wanlshop\library\WanlChat\WanlChat;
 use app\common\controller\Wanlshop;
-use addons\wanlshop\library\WanlSdk\Ehund; //快递100订阅
 
 /**
- * 订单管理
+ * 核销记录管理（商家后台）
  *
- * @icon fa fa-circle-o
+ * @icon fa fa-check-square
  */
 class Order extends Wanlshop
 {
     protected $noNeedLogin = '';
     protected $noNeedRight = '*';
     /**
-     * Order模型对象
+     * VoucherVerification模型对象
+     * @var \app\admin\model\wanlshop\VoucherVerification
      */
     protected $model = null;
 
     public function _initialize()
     {
         parent::_initialize();
-        $this->model = new \app\index\model\wanlshop\Order;
-        $kuaidi = new \app\index\model\wanlshop\Kuaidi;
-		$this->wanlchat = new WanlChat();
-        $this->view->assign("kuaidiList", $kuaidi->field('name,code')->select());
-        $this->view->assign("stateList", $this->model->getStateList());
-        $this->view->assign("statusList", $this->model->getStatusList());
-        $this->view->assign("statesList", $this->model->getStatesList());
+        $this->model = new \app\admin\model\wanlshop\VoucherVerification;
     }
 
     /**
-     * 查看
+     * 查看核销记录列表
      */
     public function index()
     {
-        //当前是否为关联查询
+        // 当前是否为关联查询
         $this->relationSearch = true;
-        //设置过滤方法
+        // 设置过滤方法
         $this->request->filter(['strip_tags', 'trim']);
+
         if ($this->request->isAjax()) {
+            // 如果发送的来源是Selectpage，则转发到Selectpage
             if ($this->request->request('keyField')) {
                 return $this->selectpage();
             }
+
+            // 统计数据计算（在 buildparams 之前，避免模型被污染）
+            $stats = $this->calculateStats();
+
             list($where, $sort, $order, $offset, $limit) = $this->buildparams();
+
             $total = $this->model
-                    ->with(['user','ordergoods' => function($query){ $query->with(['goods']); }])
-                    ->where($where)
-                    ->order($sort, $order)
-                    ->count();
+                ->with(['voucher' => function($query){ $query->with(['goods']); }, 'user', 'shop'])
+                ->where($where)
+                ->count();
 
             $list = $this->model
-                    ->with(['user','ordergoods' => function($query){ $query->with(['goods']); }])
-                    ->where($where)
-                    ->order($sort, $order)
-                    ->limit($offset, $limit)
-                    ->select();
+                ->with(['voucher' => function($query){ $query->with(['goods']); }, 'user', 'shop'])
+                ->where($where)
+                ->order($sort, $order)
+                ->limit($offset, $limit)
+                ->select();
 
             foreach ($list as $row) {
-                $row->getRelation('user')->visible(['id','username','nickname','avatar']);
-				$row->pay = model('app\index\model\wanlshop\Pay')
-					->where(['order_id' => $row['id'], 'type' => 'goods'])
-					->field('pay_no, price, order_price, freight_price, discount_price, actual_payment')
-					->find();
-                $cities = [];
-                foreach ($row['ordergoods'] as $og) {
-                    if (isset($og['goods']) && $og['goods']['region_city_name']) {
-                        $cities[] = $og['goods']['region_city_name'];
-                    }
+                $row->getRelation('user')->visible(['id', 'username', 'nickname', 'avatar']);
+                $row->getRelation('shop')->visible(['id', 'name']);
+                if ($row->voucher) {
+                    $row->getRelation('voucher')->visible(['id', 'voucher_no', 'goods_title', 'state', 'goods']);
+                    $row['region_city_name'] = (isset($row->voucher->goods) && $row->voucher->goods->region_city_name) ? $row->voucher->goods->region_city_name : '';
                 }
-                $row['region_city_name'] = $cities ? implode('/', array_unique($cities)) : '';
             }
+
             $list = collection($list)->toArray();
-			
-			
-            $result = array("total" => $total, "rows" => $list);
+            $result = array("total" => $total, "rows" => $list, "stats" => $stats);
 
             return json($result);
         }
         return $this->view->fetch();
     }
-    
+
     /**
      * 详情
      */
     public function detail($id = null, $order_no = null)
     {
-    	$where = $order_no ? ['order_no' => $order_no] : ['id' => $id];
+        // 兼容旧参数名，支持按券号查询
+        $voucherNo = $this->request->param('voucher_no', $order_no, 'trim');
+        $where = $voucherNo ? ['voucher_no' => $voucherNo] : ['id' => $id];
+
         $row = $this->model
-    		->with(['ordergoods' => function($query){ $query->with(['goods']); }])
-    		->where($where)
-    		->find();
+            ->with(['voucher' => function($query){ $query->with(['goods']); }, 'user', 'shop'])
+            ->where($where)
+            ->find();
+
         if (!$row) {
             $this->error(__('No Results were found'));
         }
-        // 判断权限
+
+        // 判断权限：商家只能查看自己店铺的核销记录
         if ($row['shop_id'] != $this->shop->id) {
             $this->error(__('You have no permission'));
         }
-        $row['address'] = model('app\index\model\wanlshop\OrderAddress')
-            ->where(['order_id' => $row['id'], 'shop_id' => $this->shop->id])
-            ->order('isaddress desc')
-            ->field('id,name,mobile,address,address_name')
-            ->find();
-			
-		$row['pay'] = model('app\index\model\wanlshop\Pay')
-			->where(['order_id' => $row['id'], 'type' => 'goods'])
-			->find();
-		
-		// 汇总订单商品的城市信息（去重）
-		$cities = [];
-		foreach ($row['ordergoods'] as $og) {
-			if (isset($og['goods']) && $og['goods']['region_city_name']) {
-				$cities[] = $og['goods']['region_city_name'];
-			}
-		}
-		$row['region_city_name'] = $cities ? implode('/', array_unique($cities)) : '';
-			
-		// 查询快递状态
-		switch ($row['state']) {
-			case 1:
-				$express = [
-					'context' => '付款后，即可将商品发出',
-					'status' => '尚未付款',
-					'time' => date('Y-m-d H:i:s', $row['createtime'])
-				];
-				break;
-			case 2:
-				$express = [
-					'context' => '商家正在处理订单',
-					'status' => '已付款',
-					'time' => date('Y-m-d H:i:s', $row['paymenttime'])
-				];
-				break;
-			default: // 获取物流
-				$eData = model('app\api\model\wanlshop\KuaidiSub')
-					->where(['express_no' => $row['express_no']])
-					->find();
-				if($eData){
-				    // 获取数据 兼容PHP7.4	1.1.5升级
-			    	$ybData = json_decode($eData['data'], true);
-			    	if(!empty($ybData)){
-    				    // 运单状态 1.0.6升级
-    					$statusText = ['在途','揽收','疑难','签收','退签','派件','退回','转投'];
-    					$status = $statusText[0];
-    					if(in_array('status', $ybData[0])){
-    						$status = $ybData[0]['status'];
-    					}else{
-    						if($eData['ischeck'] === 1){
-    							$status = $statusText[3];
-    						}else{
-    							$status = $statusText[$eData['state']];
-    						}
-    					}
-    					$express = [
-    						'status' => $status,
-    						'context' => $ybData[0]['context'],
-    						'time' => $ybData[0]['time'],
-    					];
-			    	}
-				}
-				$express = [
-					'status' => '已核销',
-					'context' => '包裹正在等待快递小哥揽收~',
-					'time' => date('Y-m-d H:i:s', $row['delivertime'])
-				];
-		}
-		$this->view->assign("kuaidi", $express);
+
+        // 兼容前端模板所需的城市信息
+        $goods = $row->voucher && $row->voucher->goods ? $row->voucher->goods : null;
+        $row['region_city_name'] = $goods && isset($goods['region_city_name']) ? $goods['region_city_name'] : '';
+
         $this->view->assign("row", $row);
         return $this->view->fetch();
     }
-	
-	/**
-	 * 快递查询
-	 */
-	public function relative($id = null)
-	{
-		$row = $this->model->get($id);
-		if (!$row) {
-			$this->error(__('No Results were found'));
-		}
-		// 判断权限
-		if ($row['shop_id'] != $this->shop->id) {
-		    $this->error(__('You have no permission'));
-		}
-		$data = model('app\index\model\wanlshop\KuaidiSub')
-			->where(['express_no' => $row['express_no']])
-			->find();
-		$list = [];
-		$week = array("0"=>"星期日","1"=>"星期一","2"=>"星期二","3"=>"星期三","4"=>"星期四","5"=>"星期五","6"=>"星期六");
-		if($data){
-			// 兼容PHP7.4	1.1.6升级
-			$ybData = json_decode($data['data'], true);
-			if(!empty($ybData)){
-				foreach($ybData as $vo){
-					$list[] = [
-						'time' => strtotime($vo['time']),
-						'status' => in_array('status', $vo) ? $vo['status'] : '在途', // 1.0.6升级
-						'context' => $vo['context'],
-						'week' => $week[date('w', strtotime($vo['time']))]
-					];
-				}
-			}
-		}
-		$this->view->assign("week", $week);
-		$this->view->assign("list", $list);
-		$this->view->assign("row", $row);
-		return $this->view->fetch();
-	}
-	
 
     /**
-     * 打印核销单 1.1.2升级
+     * 计算统计数据
+     * @return array
      */
-    public function invoice($ids = null)
+    private function calculateStats()
     {
-        $list = $this->model->all($ids);
-        if (!$list) {
-            $this->error(__('No Results were found'));
-        }
-        foreach ($list as $row) {
-            // 判断权限
-            if ($row['shop_id'] != $this->shop->id) {
-                $this->error(__('You have no permission'));
-            }
-            $row['address'] = model('app\index\model\wanlshop\OrderAddress')
-                ->where(['order_id' => $row['id'], 'shop_id' => $this->shop->id])
-                ->order('isaddress desc')
-                ->field('id,name,mobile,address,address_name')
-                ->find();
-    		$row['pay'] = model('app\index\model\wanlshop\Pay')
-    			->where(['order_id' => $row['id'], 'type' => 'goods'])
-    			->field('id,number,actual_payment,order_price,freight_price,discount_price,price')
-    			->find();
-        }
-        $this->view->assign("row", $list);
-        return $this->view->fetch();
-    }
+        // 获取今日起始时间戳（0点）
+        $todayStart = strtotime(date('Y-m-d 00:00:00'));
+        // 获取本月起始时间戳（1日0点）
+        $monthStart = strtotime(date('Y-m-01 00:00:00'));
 
-    /**
-     * 核销 & 批量核销
-     */
-    public function delivery($ids = null)
-    {
-        $row = $this->model->all($ids);
-        if (!$row) {
-            $this->error(__('No Results were found'));
-        }
-		$data = [];
-		$lists = [];
-		$mobile = [];
-        foreach ($row as $vo) {
-			if ($vo['shop_id'] != $this->shop->id) {
-			    $this->error(__('You have no permission'));
-			}
-			$address = model('app\index\model\wanlshop\OrderAddress')
-			    ->where(['order_id' => $vo['id'], 'shop_id' => $this->shop->id])
-			    ->order('isaddress desc')
-			    ->field('id,name,mobile,address,address_name')
-			    ->find();
-			$vo['address'] = $address;
-			if ($vo['state'] == 2) {
-			    $lists[] = $vo;
-			} else {
-			    $data[] = $vo;
-			}
-			$mobile[$vo['id']] = $address['mobile'];
-        }
-        if ($this->request->isAjax()) {
-            $request = $this->request->post();
-            if (!array_key_exists("order", $request['row'])) {
-                $this->success(__('没有发现可以核销订单~'));
-            }
-			if(!$this->wanlchat->isWsStart()){
-				$this->error('平台未启动IM即时通讯服务，暂时不可以核销');
-			}
-            $config = get_addon_config('wanlshop');
-            $ehund = new Ehund($config['kuaidi']['secretKey'], $config['ini']['appurl'].$config['kuaidi']['callbackUrl']);
-            $order = [];
-			$express = [];
-			foreach ($request['row']['order']['id'] as $key => $id) {
-                $express_no = $request['row']['order']['express_no'][$key];
-                $express_name = $request['row']['express_name'];
-                $order[] = [
-                    'id' => $id,
-                    'express_name' => $express_name,
-                    'express_no' => $express_no,
-                    'delivertime' => time(),
-                    'state' => 3
-                ];
-				// 1.0.5升级 查询是否存在,如果存在绕过快递100订阅
-				$is_express_no = model('app\index\model\wanlshop\KuaidiSub')->where(['express_no' => $express_no])->count();
-                // 订阅快递查询
-                if ($config['kuaidi']['secretKey'] && $is_express_no == 0 && $express_name !== 'ziti') {
-                    $returncode = $ehund->subScribe($express_name, $express_no, $mobile[$id]);
-                    if(!$returncode){
-                        $this->error('快递订阅接口异常-可能后台没有配置正确的快递100SDK');
-                    }
-                    if ($returncode['returnCode'] != 200) {
-                        $this->error('快递订阅接口异常-'.$returncode['message']);
-                    }
-                    $express[] = [
-                        'sign' => $ehund->sign($express_no),
-                        'express_no' => $express_no,
-                        'returncode' => $returncode['returnCode'],
-                        'message' => $returncode['message']
-                    ];
-                }
-				// 推送消息
-				$this->pushOrder($id,'已核销');
-            }
-		// 使用事务 1.1.2升级
-		$result = false;
-		Db::startTrans();
-		try {
-		  	$result = $this->model->saveAll($order);
-		  	// 写入快递订阅列表
-		  	if ($express) model('app\index\model\wanlshop\KuaidiSub')->saveAll($express);
-			Db::commit();
-		} catch (PDOException $e) {
-		    Db::rollback();
-		    $this->error($e->getMessage());
-		} catch (Exception $e) {
-		    Db::rollback();
-		    $this->error($e->getMessage());
-		}
-		// 判断是否支付成功
-		if($result){
-			$this->success();
-		}else{
-			$this->error('网络异常，核销失败');
-		}
-        }
-        $this->view->assign("lists", $lists); //可以核销
-        $this->view->assign("data", $data);
-        return $this->view->fetch();
-    }
-    
+        // 使用新模型实例避免 buildparams 污染别名
+        $statsModel = new \app\admin\model\wanlshop\VoucherVerification;
 
-	/**
-	 * 订单推送消息（方法内使用）
-	 *
-	 * @param string order_id 订单ID
-	 * @param string state 状态
-	 */
-	private function pushOrder($order_id = 0, $state = '已核销')
-	{
-		$order = $this->model->get($order_id);
-		$orderGoods = model('app\index\model\wanlshop\OrderGoods')
-			->where(['order_id' => $order_id])
-			->select();
-		$msgData = [];
-		foreach ($orderGoods as $goods) {
-			$msg = [
-				'user_id' => $order['user_id'], // 推送目标用户
-				'shop_id' => $this->shop->id, 
-				'title' => '您的订单'.$state, // 推送标题
-				'image' => $goods['image'], // 推送图片
-				'content' => '您购买的商品 '.(mb_strlen($goods['title'],'utf8') >= 25 ? mb_substr($goods['title'],0,25,'utf-8').'...' : $goods['title']).' '.$state, 
-				'type' => 'order',  // 推送类型
-				'modules' => 'order',  // 模块类型
-				'modules_id' => $order_id,  // 模块ID
-				'come' => '订单'.$order['order_no'] // 来自
-			];
-			$msgData[] = $msg;
-			$this->wanlchat->send($order['user_id'], $msg);
-		}
-		$notice = model('app\index\model\wanlshop\Notice')->saveAll($msgData);
-	}
+        // 今日核销数
+        $todayCount = $statsModel
+            ->where('shop_id', $this->shop->id)
+            ->where('createtime', '>=', $todayStart)
+            ->count();
+
+        // 今日核销金额（使用 face_value 字段作为核销金额）
+        $todayAmount = (new \app\admin\model\wanlshop\VoucherVerification)
+            ->where('shop_id', $this->shop->id)
+            ->where('createtime', '>=', $todayStart)
+            ->sum('face_value');
+
+        // 本月核销数
+        $monthCount = (new \app\admin\model\wanlshop\VoucherVerification)
+            ->where('shop_id', $this->shop->id)
+            ->where('createtime', '>=', $monthStart)
+            ->count();
+
+        // 本月核销金额
+        $monthAmount = (new \app\admin\model\wanlshop\VoucherVerification)
+            ->where('shop_id', $this->shop->id)
+            ->where('createtime', '>=', $monthStart)
+            ->sum('face_value');
+
+        return [
+            'today_count' => $todayCount,
+            'today_amount' => number_format($todayAmount ?: 0, 2, '.', ''),
+            'month_count' => $monthCount,
+            'month_amount' => number_format($monthAmount ?: 0, 2, '.', '')
+        ];
+    }
 }

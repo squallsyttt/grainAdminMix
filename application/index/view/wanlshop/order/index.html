@@ -1,5 +1,5 @@
 <style type="text/css">
-	@page {
+@page {
 		size: auto;
 		margin: 0mm;
 	}
@@ -63,6 +63,13 @@
 		overflow: hidden;
 		border-radius: 6px;
 		flex-shrink: 0;
+		width: 72px;
+		height: 72px;
+	}
+	.wanl_order_list .item .order_img img{
+		width: 72px;
+		height: 72px;
+		object-fit: cover;
 	}
 	.wanl_order_list .item .order_info {
 		width: 90%;
@@ -73,41 +80,135 @@
 		color: #9e9e9e;
 	}
 	
-	.wanl_order_list .refund{
-		color: #e74c3c; font-size: 12px;
-	}
-	
 	.wanl_order_list .operation a{
 		color: #565656;
 	}
 	.no-records-found{
 		background-color: #fffbfb;
 	}
+	.wanl-stat {
+        background: #fff;
+        padding: 16px;
+        border-radius: 8px;
+        box-shadow: 0 1px 0 rgba(0, 0, 0, 0.05);
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+    }
+    .wanl-stat .icon {
+        width: 46px;
+        height: 46px;
+        border-radius: 8px;
+        color: #fff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        margin-right: 10px;
+    }
+    .wanl-stat .meta {
+        line-height: 1.3;
+    }
+    .wanl-stat .meta .value {
+        font-size: 22px;
+        font-weight: 600;
+        display: block;
+    }
+    .wanl-stat .meta .label {
+        color: #888;
+        font-size: 12px;
+    }
+    .wanl-filter {
+        margin-bottom: 15px;
+        padding: 12px;
+    }
+    .wanl-filter .form-group {
+        margin-right: 10px;
+        margin-bottom: 8px;
+    }
+    .table-nowrap {
+        table-layout: fixed;
+    }
+    @media (max-width: 768px) {
+        .wanl-stat {
+            margin-bottom: 10px;
+        }
+        .wanl-filter .form-group {
+            display: block;
+            width: 100%;
+        }
+        .wanl-filter .form-control {
+            width: 100%;
+        }
+    }
 </style>
 <div class="panel panel-default panel-intro">
 	<div class="panel-heading">
-		<ul class="nav nav-tabs" data-field="state">
-			<li class="active"><a href="#t-all" data-value="" data-toggle="tab">{:__('All')}</a></li>
-			{foreach name="stateList" item="vo"}
-			<li><a href="#t-{$key}" data-value="{$key}" data-toggle="tab">{$vo}</a></li>
-			{/foreach}
-		</ul>
+		<span class="panel-title">核销记录</span>
 	</div>
 	<div class="panel-body">
-		<div id="myTabContent" class="tab-content">
-			<div class="tab-pane fade active in" id="one">
-				<div class="widget-body no-padding">
-					<div id="toolbar" class="toolbar">
-						<a href="javascript:;" class="btn btn-primary btn-refresh" title="{:__('Refresh')}" ><i class="fa fa-refresh"></i> </a>
-						<a class="btn btn-info btn-disabled disabled btn-invoice" href="javascript:;"><i class="fa fa-leaf"></i> 查看待核销单</a>
-						<!-- <a class="btn btn-success btn-disabled disabled btn-express" href="javascript:;"><i class="fa fa-leaf"></i> 电子面单云打印</a> -->
-						<a class="btn btn-danger btn-disabled disabled btn-delivery" href="javascript:;"><i class="fa fa-leaf"></i> 批量核销</a>
-						<!-- <a class="btn btn-warning btn-recyclebin btn-dialog" href="wanlshop/order/recyclebin" title="{:__('Recycle bin')}"><i class="fa fa-recycle"></i> {:__('Recycle bin')}</a> -->
+		<div class="row">
+			<div class="col-xs-12 col-sm-6 col-lg-3">
+				<div class="wanl-stat">
+					<span class="icon" style="background:#23b7e5;"><i class="fa fa-bolt"></i></span>
+					<div class="meta">
+						<span class="value" data-field="today_count">{$stats.today_count|default='0'}</span>
+						<span class="label">今日核销数</span>
 					</div>
-					<table id="table" data-show-export="false" data-show-toggle="false" data-show-columns="false" class="table" width="100%"></table>
 				</div>
 			</div>
+			<div class="col-xs-12 col-sm-6 col-lg-3">
+				<div class="wanl-stat">
+					<span class="icon" style="background:#f05050;"><i class="fa fa-cny"></i></span>
+					<div class="meta">
+						<span class="value" data-field="today_amount">{$stats.today_amount|default='0.00'}</span>
+						<span class="label">今日核销金额</span>
+					</div>
+				</div>
+			</div>
+			<div class="col-xs-12 col-sm-6 col-lg-3">
+				<div class="wanl-stat">
+					<span class="icon" style="background:#27c24c;"><i class="fa fa-calendar"></i></span>
+					<div class="meta">
+						<span class="value" data-field="month_count">{$stats.month_count|default='0'}</span>
+						<span class="label">本月核销数</span>
+					</div>
+				</div>
+			</div>
+			<div class="col-xs-12 col-sm-6 col-lg-3">
+				<div class="wanl-stat">
+					<span class="icon" style="background:#7266ba;"><i class="fa fa-line-chart"></i></span>
+					<div class="meta">
+						<span class="value" data-field="month_amount">{$stats.month_amount|default='0.00'}</span>
+						<span class="label">本月核销金额</span>
+					</div>
+				</div>
+			</div>
+		</div>
 
+		<div class="well well-sm wanl-filter">
+			<form class="form-inline" role="form">
+				<div class="form-group">
+					<label class="control-label">核销时间</label>
+					<input type="text"
+						   name="createtime"
+						   class="form-control datetimerange"
+						   placeholder="选择时间范围"
+						   data-start-date="{:date('Y-m-01 00:00:00')}"
+						   data-end-date="{:date('Y-m-t 23:59:59')}"
+						   data-locale-format="YYYY-MM-DD HH:mm:ss"
+						   value="{:date('Y-m-01 00:00:00')} - {:date('Y-m-t 23:59:59')}">
+				</div>
+				<button type="button" class="btn btn-primary btn-filter"><i class="fa fa-search"></i> 查询</button>
+				<button type="button" class="btn btn-default btn-reset"><i class="fa fa-refresh"></i> 重置</button>
+			</form>
+		</div>
+
+		<div class="widget-body no-padding">
+			<div id="toolbar" class="toolbar">
+				<a href="javascript:;" class="btn btn-primary btn-refresh" title="{:__('Refresh')}"><i class="fa fa-refresh"></i></a>
+			</div>
+			<table id="table" data-show-export="false" data-show-toggle="false" data-show-columns="false" class="table" width="100%"></table>
 		</div>
 	</div>
 </div>
@@ -118,11 +219,11 @@
 			   <thead>
 				   <tr>
 						<th class="text-center"><div class="th-inner"><strong>商品</strong></div></th>
-						<th class="fix-108"><div class="th-inner">单价</div></th>
-						<th class="fix-108"><div class="th-inner">数量</div></th>
-						<th class="fix-108"><div class="th-inner">买家</div></th>
-						<th class="fix-108"><div class="th-inner">实际支付</div></th>
-						<th class="fix-108"><div class="th-inner">状态</div></th>
+						<th class="fix-108"><div class="th-inner">核销码</div></th>
+						<th class="fix-108"><div class="th-inner">核销金额</div></th>
+						<th class="fix-108"><div class="th-inner">用户</div></th>
+						<th class="fix-108"><div class="th-inner">核销方式</div></th>
+						<th class="fix-108"><div class="th-inner">核销时间</div></th>
 						<th class="fix-108"><div class="th-inner">操作</div></th>
 				   </tr>
 			   </thead>
@@ -131,90 +232,41 @@
 	<% } %>
 	<div class="wanl_order_list col-sm-12">
 		<table class="table table-bordered table-hover ">
-			<thead>
-				<tr>
-					<th colspan="7">
-						<div class="th-inner">
-							<input name="checkbox" data-id="<%=item.id%>" id="order_<%=item.id%>" type="checkbox" /> 
-							<label style="margin-left: 2px;" for="order_<%=item.id%>">订单号：<%=item.order_no%></label>
-							<label style="margin-left:60px;" for="order_<%=item.id%>">创建时间：<%=Moment(item.createtime*1000).format("YYYY-MM-DD HH:mm:ss")%></label>
-							<label style="margin-left:60px;" for="order_<%=item.id%>">发布城市：<%=item.region_city_name || '-'%></label>
-						</div>
-					</th>
-				</tr>			   
-			</thead>
 			<tbody>
-				<% for(var k = 0 ; k < item.ordergoods.length ; k ++){ %>
-				    <% var goods = item.ordergoods[k]; %>
-					<% var labelarr = ['primary', 'success', 'info', 'danger', 'warning', 'muted']; %>
-				    <tr>
-				    	<td class="conceal">
-							<div class="item">
-								<div class="order_img">
-									<a href="javascript:"><img class="img-md img-center" src="<%=cdnurl(goods.image)%>" alt="<%=goods.title%>"></a>
-								</div>
-								<div class="order_info">
-									<p><%=goods.title%></p>
-									<p class="sku"><%=goods.difference%></p>
-								</div>
+			    <% var goods = item.voucher && item.voucher.goods ? item.voucher.goods : {}; %>
+				<tr>
+			    	<td class="conceal">
+						<div class="item">
+							<div class="order_img">
+								<a href="javascript:"><img class="img-md img-center" src="<%= goods.image ? cdnurl(goods.image) : '' %>" alt="<%= item.voucher ? (item.voucher.goods_title || '') : '' %>"></a>
 							</div>
-				    	</td>
-				    	<td class="conceal fix-108">
-				    		<p> <del>￥<%=goods.price%></del> </p>
-				    		<p>￥<%=goods.actual_payment%></p>
-				    	</td>
-				    	<td class="conceal fix-108">
-							<p>x<%=goods.number%></p>	
-							<p><a href="javascript:;" class="refund" data-id="<%=goods.refund_id%>"><%=goods.refund_status_text%></a></p>
-						</td>
-						<% if(k == 0){ %>
-				    	<td class="fix-108">
-				    		<p style="margin-bottom:5px;">
-				    			<a href="javascript:;" class="searchit" data-toggle="tooltip" title="" data-field="user.nickname" data-value="<%=item.user.nickname%>" data-original-title="点击搜索 <%=item.user.nickname%>"><%=item.user.nickname%></a>
-				    		</p>
-				    	</td>
-						<td class="fix-108">
-							<p><strong>￥<%= item.pay.price %></strong> </p>
-							<p style="color:#6c6c6c;font-family:verdana;margin-bottom:1px;"> (含运费：￥<%= item.pay.freight_price %>) </p>
-						</td>
-						<td class="fix-108 operation">
-							<% if(item.state == 2){ %>
-							<p>
-								<a href="javascript:;" class="searchit" data-toggle="tooltip" title="" data-field="state" data-value="<%=item.state%>" data-original-title="点击搜索 <%=item.state_text%>">
-									<span class="text-<%=labelarr[0]%>"><i class="fa fa-circle"></i> <%=item.state_text%></span>
-								</a>
-							</p>
-							<p><a href="javascript:;" class="detail" data-id="<%=item.id%>">订单详情</a> </p>
-							<% }else if(item.state == 7){ %>
-							<p>
-								<a href="javascript:;" class="searchit" data-toggle="tooltip" title="" data-field="state" data-value="<%=item.state%>" data-original-title="点击搜索 <%=item.state_text%>">
-									<span class="text-<%=labelarr[5]%>"><i class="fa fa-circle"></i> <%=item.state_text%></span>
-								</a>
-							</p>
-							<p><a href="javascript:;" class="detail" data-id="<%=item.id%>">订单详情</a> </p>
-							<p><a href="javascript:;" class="kuaidisub" data-id="<%=item.id%>">查看物流</a> </p>
-							<% } %>
-						</td>
-						<td class="fix-108">
-								<a href="javascript:;" class="btn btn-xs btn-<%=labelarr[1]%> btn-delone" data-toggle="tooltip" title="联系买家" data-id="<%=item.user.id%>" data-name="<%=item.user.nickname%>" data-avatar="<%=item.user.avatar%>"><i class="fa fa-comment"></i></a>
-							<!-- 1.1.6升级 -->
-							<% if(['0','4'].indexOf(goods.refund_status) == '-1'){ %>
-								<a href="javascript:;" class="btn btn-xs btn-<%=labelarr[2]%> btn-selected" data-toggle="tooltip" title="查看退款" data-id="<%=item.id%>"><i class="fa fa-eye"></i></a>
-							<% }else{ %>
-								<% if(item.state == 2){ %>
-									<a href="javascript:;" class="btn btn-xs btn-<%=labelarr[4]%> btn-delivery" data-toggle="tooltip" title="核销" data-id="<%=item.id%>"><i class="fa fa-truck"></i></a>
-									<a href="javascript:;" class="btn btn-xs btn-<%=labelarr[3]%> btn-invoice" data-toggle="tooltip" title="打印核销单" data-id="<%=item.id%>"><i class="fa fa-print"></i></a>
-								<% } %>
-							<% } %>
-						</td>
-						<% }else{ %>
-						<td class="empty"> </td>
-						<td class="empty"> </td>
-						<td class="empty"> </td>
-						<td class="empty"> </td>
-						<% } %>
-				    </tr>
-				<% } %>
+							<div class="order_info">
+								<p><%= item.voucher ? (item.voucher.goods_title || '-') : '-' %></p>
+								<p class="sku"><%= item.shop_name || item.region_city_name || '-' %></p>
+							</div>
+						</div>
+			    	</td>
+			    	<td class="conceal fix-108">
+						<p><%= item.voucher_no || (item.voucher ? item.voucher.voucher_no : '') %></p>
+			    	</td>
+			    	<td class="conceal fix-108">
+						<p>￥<%= item.face_value || '0.00' %></p>
+					</td>
+			    	<td class="conceal fix-108">
+						<p style="margin-bottom:5px;">
+							<a href="javascript:;" class="searchit" data-toggle="tooltip" title="" data-field="user.nickname" data-value="<%= item.user ? item.user.nickname : '' %>" data-original-title="点击搜索 <%= item.user ? item.user.nickname : '' %>"><%= item.user ? item.user.nickname : '-' %></a>
+						</p>
+			    	</td>
+					<td class="conceal fix-108">
+						<p><%= item.verify_method_text || '-' %></p>
+					</td>
+					<td class="conceal fix-108">
+						<p><%= item.createtime ? Moment(item.createtime*1000).format("YYYY-MM-DD HH:mm:ss") : '-' %></p>
+					</td>
+					<td class="conceal fix-108 operation">
+						<a href="javascript:;" class="btn btn-xs btn-info detail" data-id="<%=item.id%>">查看详情</a>
+					</td>
+			    </tr>
 			</tbody>
 		</table>
 	</div>

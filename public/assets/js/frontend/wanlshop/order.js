@@ -7,12 +7,19 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'template', 'jquery-j
                     index_url: 'wanlshop/order/index' + location.search,
                     add_url: '',
                     edit_url: '',
-                    del_url: 'wanlshop/order/del',
-                    multi_url: 'wanlshop/order/multi',
-                    table: 'wanlshop_order',
+                    del_url: '',
+                    multi_url: '',
+                    table: 'wanlshop_voucher_verification',
                 }
             });
             var table = $("#table");
+			var filterData = {};
+			var $filterForm = $(".wanl-filter form");
+			var $timeInput = $filterForm.find('input[name="createtime"]');
+			var defaultRange = $.trim($timeInput.val());
+			if (defaultRange) {
+				filterData.createtime = defaultRange;
+			}
 			Template.helper("Moment", Moment);
 			Template.helper("cdnurl", function(image) {
 				return Fast.api.cdnurl(image); 
@@ -22,21 +29,31 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'template', 'jquery-j
                 url: $.fn.bootstrapTable.defaults.extend.index_url,
 				templateView: true,
                 pk: 'id',
-                sortName: 'id',
+                sortName: 'createtime',
+				sortOrder: 'desc',
+				queryParams: function (params) {
+					var filter = params.filter ? (typeof params.filter === 'object' ? params.filter : JSON.parse(params.filter)) : {};
+					var op = params.op ? (typeof params.op === 'object' ? params.op : JSON.parse(params.op)) : {};
+					if (filterData.createtime) {
+						filter.createtime = filterData.createtime;
+						op.createtime = 'RANGE';
+					} else {
+						delete filter.createtime;
+						delete op.createtime;
+					}
+					params.filter = JSON.stringify(filter);
+					params.op = JSON.stringify(op);
+					return params;
+				},
                 columns: [
                     [
-                        {checkbox: true},
-                        {field: 'id', title: __('Id')},
-                        {field: 'user.nickname', title: __('User.nickname'), align: 'left', formatter: Table.api.formatter.search},
-                        {field: 'order_no', title: __('Order_no')},
-                        {field: 'express_no', title: __('Express_no')},
-                        {field: 'state', title: __('State'), searchList: {"2":__('State 2'),"7":__('State 7')}, formatter: Table.api.formatter.normal},
-                        {field: 'createtime', title: __('Createtime'), operate:'RANGE', addclass:'datetimerange', formatter: Table.api.formatter.datetime},
-                        {field: 'paymenttime', title: __('Paymenttime'), operate:'RANGE', addclass:'datetimerange', formatter: Table.api.formatter.datetime},
-                        {field: 'delivertime', title: __('Delivertime'), operate:'RANGE', addclass:'datetimerange', formatter: Table.api.formatter.datetime},
-                        {field: 'dealtime', title: __('Dealtime'), operate:'RANGE', addclass:'datetimerange', formatter: Table.api.formatter.datetime},
-                        {field: 'status', title: __('Status'), searchList: {"normal":__('Normal'),"hidden":__('Hidden')}, formatter: Table.api.formatter.status},
-                        {field: 'operate', title: __('Operate'), table: table, events: Table.api.events.operate, formatter: Table.api.formatter.operate}
+						{checkbox: true},
+						{field: 'voucher_no', title: __('核销码')},
+						{field: 'voucher.goods_title', title: __('商品名称'), align: 'left'},
+						{field: 'user.nickname', title: __('用户昵称'), align: 'left', formatter: Table.api.formatter.search},
+						{field: 'face_value', title: __('核销金额'), operate: 'BETWEEN'},
+						{field: 'verify_method', title: __('核销方式'), searchList: {"code":__('验证码'),"scan":__('扫码')}, formatter: Table.api.formatter.normal},
+						{field: 'createtime', title: __('核销时间'), operate:'RANGE', addclass:'datetimerange', formatter: Table.api.formatter.datetime}
                     ]
                 ]
             });
@@ -46,47 +63,40 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'template', 'jquery-j
 			$(document).on("click", ".detail[data-id]", function () {
 			    Backend.api.open('wanlshop/order/detail/id/' + $(this).data('id'), __('查看详情'),{area:['1200px', '780px']});
 			});
-			//查看退款
-			$(document).on("click", ".refund[data-id]", function () {
-			    Backend.api.open('wanlshop/refund/detail/ids/' + $(this).data('id'), __('查看退款'));
-			});
-			// 查看退款
-			$(document).on("click", ".btn-selected", function () {
-			    Backend.api.open('wanlshop/refund/detail/order_id/' + $(this).data('id'), __('查看退款'));
-			});
-			// 即时沟通
-			$(document).on("click", ".btn-delone", function () {
-				console.log(window);
-				chatFun({
-					user_id: $(this).data('id'),
-					nickname: $(this).data('name'),
-					avatar: $(this).data('avatar'),
-					isOnline: 1
-				}, 'fun');
-			});
-			// 核销 & 批量核销
-			$(document).on("click", ".btn-delivery", function () {
-				if($(this).data('id')){
-					Backend.api.open('wanlshop/order/delivery/ids/' + $(this).data('id'), __('核销'),{area:['1000px', '700px']});
-				}else{
-					Backend.api.open('wanlshop/order/delivery/ids/' + Table.api.selectedids(table), __('批量核销'),{area:['1000px', '700px']});
+			var applyFilter = function (range) {
+				if (range) {
+					filterData.createtime = range;
+				} else {
+					delete filterData.createtime;
 				}
+				table.bootstrapTable('refresh', {pageNumber: 1});
+			};
+			// 查询
+			$(document).on("click", ".btn-filter", function () {
+				applyFilter($.trim($timeInput.val()));
 			});
-			// 打印 & 批量打印订单 自动关闭窗口parent.Layer.closeAll();
-			$(document).on("click", ".btn-invoice", function () {
-				if($(this).data('id')){
-					Backend.api.open('wanlshop/order/invoice/ids/' + $(this).data('id'), __('查看核销单'),{area:['1100px', '750px']});
-				}else{
-					Backend.api.open('wanlshop/order/invoice/ids/' + Table.api.selectedids(table), __('批量查看核销单'),{area:['1100px', '750px']});
+			// 重置
+			$(document).on("click", ".btn-reset", function () {
+				if ($filterForm.length) {
+					$filterForm[0].reset();
 				}
+				if (defaultRange) {
+					$timeInput.val(defaultRange);
+				} else {
+					$timeInput.val('');
+				}
+				applyFilter($.trim($timeInput.val()));
 			});
-			// 查询物流状态
-			$(document).on("click", ".kuaidisub[data-id]", function () {
-			    Backend.api.open('wanlshop/order/relative/id/' + $(this).data('id'), __('快递查询'),{area:['800px', '600px']});
-			});
-			// 提交云面单
-			$(document).on("click", ".btn-express", function () {
-				Layer.alert('订单' + JSON.stringify(Table.api.selectedids(table)) + '无法云打印,因为API接口维护中...');
+			// 数据加载完成后刷新统计面板
+			table.on('load-success.bs.table', function (event, data) {
+				var stats = data && data.stats ? data.stats : null;
+				if (!stats) {
+					return;
+				}
+				$('[data-field="today_count"]').text(stats.today_count !== undefined ? stats.today_count : 0);
+				$('[data-field="today_amount"]').text(stats.today_amount !== undefined ? stats.today_amount : 0);
+				$('[data-field="month_count"]').text(stats.month_count !== undefined ? stats.month_count : 0);
+				$('[data-field="month_amount"]').text(stats.month_amount !== undefined ? stats.month_amount : 0);
 			});
         },
 		comment: function () {
