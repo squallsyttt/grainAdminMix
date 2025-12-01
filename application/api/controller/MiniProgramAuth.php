@@ -381,6 +381,101 @@ class MiniProgramAuth extends Api
     }
 
     /**
+     * 绑定邀请码
+     *
+     * @ApiSummary  (绑定邀请人邀请码)
+     * @ApiMethod   (POST)
+     * @param string $invite_code 邀请码
+     */
+    public function bindInviteCode()
+    {
+        if (!$this->request->isPost()) {
+            $this->error(__('非法请求'));
+        }
+        
+        $inviteCode = $this->request->post('invite_code', '');
+        if (empty($inviteCode)) {
+            $this->error(__('请输入邀请码'));
+        }
+        
+        // 验证邀请码格式
+        if (!preg_match('/^[A-Z0-9]{8}$/', $inviteCode)) {
+            $this->error(__('邀请码格式不正确'));
+        }
+        
+        // 检查是否已绑定
+        $currentUser = Db::name('user')->where('id', $this->auth->id)->find();
+        if (!empty($currentUser['inviter_id'])) {
+            $this->error(__('您已绑定过邀请码'));
+        }
+        
+        // 查询邀请码对应用户
+        $inviter = Db::name('user')->where('invite_code', $inviteCode)->find();
+        if (!$inviter) {
+            $this->error(__('邀请码无效'));
+        }
+        
+        // 不能绑定自己
+        if ($inviter['id'] == $this->auth->id) {
+            $this->error(__('不能绑定自己的邀请码'));
+        }
+        
+        // 更新邀请关系
+        Db::name('user')->where('id', $this->auth->id)->update([
+            'inviter_id' => $inviter['id']
+        ]);
+        
+        $this->success('绑定成功', [
+            'inviter_nickname' => $inviter['nickname']
+        ]);
+    }
+
+    /**
+     * 获取用户邀请信息
+     *
+     * @ApiSummary  (获取当前用户的邀请码和红包比例信息)
+     * @ApiMethod   (GET)
+     */
+    public function getInviteInfo()
+    {
+        $userId = $this->auth->id;
+        
+        // 获取当前用户信息
+        $user = Db::name('user')
+            ->field('invite_code, inviter_id, bonus_ratio, bonus_level')
+            ->where('id', $userId)
+            ->find();
+        
+        // 获取邀请人信息
+        $inviterInfo = null;
+        if (!empty($user['inviter_id'])) {
+            $inviterInfo = Db::name('user')
+                ->field('id, nickname, avatar')
+                ->where('id', $user['inviter_id'])
+                ->find();
+        }
+        
+        // 获取被邀请人数量
+        $inviteeCount = Db::name('user')->where('inviter_id', $userId)->count();
+        
+        // 获取比例配置
+        $ratioConfig = [
+            'base' => config('site.invite_base_ratio') ?: 5,
+            'level1' => config('site.invite_level1_ratio') ?: 8,
+            'level2' => config('site.invite_level2_ratio') ?: 10,
+        ];
+        
+        $this->success('ok', [
+            'invite_code' => $user['invite_code'],
+            'bonus_ratio' => $user['bonus_ratio'],
+            'bonus_level' => $user['bonus_level'],
+            'inviter' => $inviterInfo,
+            'invitee_count' => $inviteeCount,
+            'ratio_config' => $ratioConfig
+        ]);
+    }
+
+    /**
      * 获取用户绑定的店铺信息
      *
      * @param int $userId

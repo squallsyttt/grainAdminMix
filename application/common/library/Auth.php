@@ -181,6 +181,17 @@ class Auth
         try {
             $user = User::create($params, true);
 
+            // 生成唯一邀请码
+            $inviteCode = $this->generateUniqueInviteCode();
+            // 获取基础红包比例
+            $baseRatio = config('site.invite_base_ratio') ?: 5;
+            // 更新用户信息
+            Db::name('user')->where('id', $user->id)->update([
+                'invite_code' => $inviteCode,
+                'bonus_ratio' => $baseRatio,
+                'bonus_level' => 0
+            ]);
+
             $this->_user = User::get($user->id);
 
             //设置Token
@@ -479,6 +490,25 @@ class Auth
             return false;
         }
         return true;
+    }
+
+    /**
+     * 生成唯一邀请码
+     * @return string 8位邀请码
+     */
+    protected function generateUniqueInviteCode()
+    {
+        $chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 排除易混淆字符 I,O,0,1
+        do {
+            $code = '';
+            for ($i = 0; $i < 8; $i++) {
+                $code .= $chars[mt_rand(0, strlen($chars) - 1)];
+            }
+            // 检查是否已存在
+            $exists = Db::name('user')->where('invite_code', $code)->count();
+        } while ($exists > 0);
+
+        return $code;
     }
 
     /**

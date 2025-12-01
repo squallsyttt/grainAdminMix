@@ -187,6 +187,7 @@ return [
     'Addon'                                                 => '插件管理',
     'Auth'                                                  => '权限管理',
     'Config'                                                => '系统配置',
+    'Invite'                                                => '邀请设置',
     'Attachment'                                            => '附件管理',
     'Admin'                                                 => '管理员管理',
     'Admin log'                                             => '管理员日志',

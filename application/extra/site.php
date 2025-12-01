@@ -27,6 +27,7 @@ return array (
     'dictionary' => 'Dictionary',
     'user' => 'User',
     'example' => 'Example',
+    'invite' => 'Invite',
   ),
   'mail_type' => '1',
   'mail_smtp_host' => 'smtp.qq.com',
@@ -41,4 +42,7 @@ return array (
     'category2' => 'Category2',
     'custom' => 'Custom',
   ),
+  'invite_base_ratio' => '1.2',
+  'invite_level1_ratio' => '1.5',
+  'invite_level2_ratio' => '2',
 );

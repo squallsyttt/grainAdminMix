@@ -267,6 +267,9 @@ class Verify extends Api
             $settlement->createtime = time();
             $settlement->save();
 
+            // 处理邀请奖励：提升邀请人红包比例
+            $this->processInviteReward($voucher->user_id, $verification->id, $voucher->id);
+
             Db::commit();
 
             return [
@@ -281,6 +284,75 @@ class Verify extends Api
             Db::rollback();
             throw $e;
         }
+    }
+
+    /**
+     * 处理邀请奖励：被邀请者核销后提升邀请者红包比例
+     *
+     * @param int $userId 被核销券的用户ID（被邀请者）
+     * @param int $verificationId 核销记录ID
+     * @param int $voucherId 券ID
+     */
+    protected function processInviteReward($userId, $verificationId, $voucherId)
+    {
+        // 查询被邀请者的邀请人
+        $user = Db::name('user')->where('id', $userId)->field('inviter_id')->find();
+        if (empty($user['inviter_id'])) {
+            return; // 无邀请人，不处理
+        }
+
+        $inviterId = $user['inviter_id'];
+
+        // 获取邀请人信息并加锁
+        $inviter = Db::name('user')
+            ->where('id', $inviterId)
+            ->lock(true)
+            ->field('id, bonus_ratio, bonus_level')
+            ->find();
+
+        if (!$inviter || $inviter['bonus_level'] >= 2) {
+            return; // 邀请人不存在或已达最高等级
+        }
+
+        // 检查该被邀请者是否已经为邀请者触发过奖励
+        $alreadyRewarded = Db::name('user_invite_reward')
+            ->where('user_id', $inviterId)
+            ->where('invitee_id', $userId)
+            ->count();
+        if ($alreadyRewarded > 0) {
+            return; // 该被邀请者已触发过奖励，不再重复
+        }
+
+        // 获取比例配置
+        $ratioConfig = [
+            0 => config('site.invite_base_ratio') ?: 5,
+            1 => config('site.invite_level1_ratio') ?: 8,
+            2 => config('site.invite_level2_ratio') ?: 10,
+        ];
+
+        $beforeRatio = $inviter['bonus_ratio'];
+        $beforeLevel = $inviter['bonus_level'];
+        $afterLevel = $beforeLevel + 1;
+        $afterRatio = $ratioConfig[$afterLevel];
+
+        // 更新邀请人红包比例
+        Db::name('user')->where('id', $inviterId)->update([
+            'bonus_ratio' => $afterRatio,
+            'bonus_level' => $afterLevel
+        ]);
+
+        // 记录奖励日志
+        Db::name('user_invite_reward')->insert([
+            'user_id' => $inviterId,
+            'invitee_id' => $userId,
+            'verification_id' => $verificationId,
+            'voucher_id' => $voucherId,
+            'before_ratio' => $beforeRatio,
+            'after_ratio' => $afterRatio,
+            'before_level' => $beforeLevel,
+            'after_level' => $afterLevel,
+            'createtime' => time()
+        ]);
     }
 
     /**
