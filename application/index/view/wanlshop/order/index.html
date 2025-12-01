@@ -1,192 +1,342 @@
 <style type="text/css">
-@page {
-		size: auto;
-		margin: 0mm;
+	:root {
+		--wanl-bg: #f6f7fb;
+		--wanl-surface: #ffffff;
+		--wanl-border: #e5e7eb;
+		--wanl-muted: #6b7280;
+		--wanl-strong: #0f172a;
+		--wanl-primary: #0ea5e9;
+		--wanl-primary-soft: #e0f2fe;
+		--wanl-accent: #6366f1;
+		--wanl-success: #22c55e;
+		--wanl-shadow: 0 18px 38px -24px rgba(15, 23, 42, 0.35);
 	}
-	.wanl_order_list{
-		margin-bottom: 15px;
+	.panel-intro {
+		background: var(--wanl-bg);
+		border: none;
+		box-shadow: inset 0 1px 0 rgba(15, 23, 42, 0.04);
 	}
-	.wanl_order_list .detail{
-		
+	.panel-heading {
+		background: transparent;
+		border-bottom: 1px solid var(--wanl-border);
+		padding: 12px 0 6px;
 	}
-	.fix-108{
-		width: 108px;
-		text-align: center;
-	}
-	.text-left{
-		text-align: left;
-	}
-	.text-right{
-		text-align: right;
-	}
-	.wanl_order_list .table>thead{
-		background: #f9fafc;
-	}
-	.bootstrap-table .table,
-	.bootstrap-table .table>thead>tr>th{
-		border-bottom: 1px solid #f1f1f1;
-	}
-	.table-bordered{
-		border: 1px solid #f1f1f1;
-	}
-	.table-bordered > thead > tr > th, 
-	.table-bordered > tbody > tr > td {
-		border: 1px solid #f1f1f1;
-		border-bottom: 0;
-	}
-	.table-bordered > thead > tr > th, label{
-		margin-bottom: 0;
-		font-weight: normal;
-	}
-	.table-bordered > tbody td.empty{
-		border-top: 0;
-	}
-	.table-bordered > tbody td.conceal{
-		border-left: 0 ;
-		border-right: 0 ;
-	}
-	.table-bordered > tbody td.conceal.fix-108{
-	}
-	.table-hover > tbody > tr:hover {
-	  background-color: #fffbfb;
-	}
-	/* 产品 */
-	.wanl_order_list p{
-		margin-bottom: 4px;
-	}
-	.wanl_order_list .item {
+	.wanl-head {
 		display: flex;
-		margin: 10px;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
 	}
-	
-	.wanl_order_list .item .order_img {
+	.wanl-kicker {
+		color: var(--wanl-accent);
+		font-weight: 700;
+		font-size: 12px;
+		letter-spacing: 0.02em;
+		text-transform: uppercase;
+		margin: 0 0 4px;
+	}
+	.wanl-title {
+		margin: 0;
+		color: var(--wanl-strong);
+		font-weight: 700;
+	}
+	.wanl-subtitle {
+		margin: 4px 0 0;
+		color: var(--wanl-muted);
+		font-size: 13px;
+	}
+	.panel-body {
+		padding: 6px 0 12px;
+	}
+	.wanl-stat-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+		gap: 12px;
+		margin-bottom: 14px;
+	}
+	.wanl-stat-card {
+		background: var(--wanl-surface);
+		border: 1px solid var(--wanl-border);
+		border-radius: 14px;
+		padding: 14px;
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		box-shadow: var(--wanl-shadow);
+	}
+	.wanl-stat-card .icon {
+		width: 48px;
+		height: 48px;
+		border-radius: 12px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		color: #fff;
+		font-size: 20px;
+	}
+	.wanl-stat-card .meta {
+		line-height: 1.3;
+	}
+	.wanl-stat-card .value {
+		font-size: 22px;
+		font-weight: 700;
+		color: var(--wanl-strong);
+	}
+	.wanl-stat-card .label {
+		color: var(--wanl-muted);
+		font-size: 12px;
+	}
+	.wanl-filter {
+		background: var(--wanl-surface);
+		border: 1px dashed rgba(14, 165, 233, 0.35);
+		border-radius: 14px;
+		padding: 14px 16px;
+		box-shadow: var(--wanl-shadow);
+		margin-bottom: 14px;
+	}
+	.wanl-filter form {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 10px;
+		align-items: center;
+	}
+	.wanl-filter .form-group {
+		margin: 0;
+	}
+	.wanl-filter label {
+		margin-right: 8px;
+		color: var(--wanl-muted);
+		font-weight: 600;
+	}
+	.wanl-filter .form-control {
+		min-width: 240px;
+		border-radius: 10px;
+	}
+	.wanl-filter .btn {
+		border-radius: 10px;
+	}
+	.wanl-table-wrap {
+		background: var(--wanl-surface);
+		border: 1px solid var(--wanl-border);
+		border-radius: 16px;
+		box-shadow: var(--wanl-shadow);
+		width: 100%;
 		overflow: hidden;
-		border-radius: 6px;
-		flex-shrink: 0;
-		width: 72px;
-		height: 72px;
 	}
-	.wanl_order_list .item .order_img img{
-		width: 72px;
-		height: 72px;
+	.wanl-table-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		padding: 10px 14px;
+		border-bottom: 1px solid var(--wanl-border);
+	}
+	.wanl-table-head .title {
+		font-weight: 700;
+		color: var(--wanl-strong);
+		margin: 0;
+	}
+	.wanl-table-actions {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		margin-left: auto;
+	}
+	.wanl-table-actions .btn {
+		border-radius: 10px;
+	}
+	.wanl-search {
+		position: relative;
+		width: 200px;
+	}
+	.wanl-search .wanl-search-input {
+		width: 100%;
+		height: 34px;
+		border: 1px solid var(--wanl-border);
+		border-radius: 999px;
+		padding: 7px 38px 7px 12px;
+		font-size: 13px;
+		color: var(--wanl-strong);
+		background: #fff;
+		transition: border-color 0.2s ease, box-shadow 0.2s ease;
+	}
+	.wanl-search .wanl-search-input:focus {
+		outline: none;
+		border-color: var(--wanl-primary);
+		box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
+	}
+	.wanl-search .wanl-search-btn {
+		position: absolute;
+		top: 4px;
+		right: 4px;
+		bottom: 4px;
+		border: none;
+		border-radius: 999px;
+		background: var(--wanl-primary);
+		color: #fff;
+		width: 32px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		transition: background 0.2s ease, box-shadow 0.2s ease;
+	}
+	.wanl-search .wanl-search-btn:hover {
+		background: #0284c7;
+		box-shadow: 0 10px 22px -16px rgba(14, 165, 233, 0.6);
+	}
+	.wanl-table-wrap .fixed-table-toolbar {
+		display: none !important;
+	}
+	/* 表格布局 */
+	.wanl-data-table {
+		width: 100%;
+		border-collapse: collapse;
+		table-layout: fixed;
+	}
+	.wanl-data-table th,
+	.wanl-data-table td {
+		padding: 12px 16px;
+		text-align: left;
+		border-bottom: 1px solid var(--wanl-border);
+		vertical-align: middle;
+	}
+	.wanl-data-table thead th {
+		color: var(--wanl-muted);
+		font-weight: 700;
+		font-size: 12px;
+		text-transform: uppercase;
+		letter-spacing: 0.03em;
+		background: #fafafa;
+	}
+	.wanl-data-table tbody tr:hover {
+		background: #f8fafc;
+	}
+	.wanl-data-table tbody tr:last-child td {
+		border-bottom: none;
+	}
+	/* 列宽 */
+	.wanl-data-table .col-product { width: 22%; }
+	.wanl-data-table .col-code { width: 22%; }
+	.wanl-data-table .col-amount { width: 8%; }
+	.wanl-data-table .col-method { width: 10%; }
+	.wanl-data-table .col-user { width: 12%; }
+	.wanl-data-table .col-time { width: 16%; }
+	.wanl-data-table .col-action { width: 10%; }
+	.wanl-product-inline {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+	}
+	.wanl-product-inline .thumb {
+		width: 64px;
+		height: 64px;
+		border-radius: 10px;
+		overflow: hidden;
+		background: #e5e7eb;
+		flex-shrink: 0;
+	}
+	.wanl-product-inline img {
+		width: 100%;
+		height: 100%;
 		object-fit: cover;
 	}
-	.wanl_order_list .item .order_info {
-		width: 90%;
-		margin-left: 10px;
-		margin-top: 2px;
+	.wanl-product-inline .title {
+		font-weight: 700;
+		color: var(--wanl-strong);
+		margin-bottom: 2px;
 	}
-	.wanl_order_list .item .order_info .sku {
-		color: #9e9e9e;
+	.wanl-product-inline .desc {
+		color: var(--wanl-muted);
+		font-size: 12px;
+		margin: 0;
 	}
-	
-	.wanl_order_list .operation a{
-		color: #565656;
+	.wanl-pill {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		border-radius: 999px;
+		padding: 6px 10px;
+		font-weight: 700;
+		font-size: 12px;
+		background: var(--wanl-primary-soft);
+		color: #0369a1;
 	}
-	.no-records-found{
-		background-color: #fffbfb;
+	.wanl-pill.green {
+		background: rgba(34, 197, 94, 0.12);
+		color: #15803d;
 	}
-	.wanl-stat {
-        background: #fff;
-        padding: 16px;
-        border-radius: 8px;
-        box-shadow: 0 1px 0 rgba(0, 0, 0, 0.05);
-        margin-bottom: 15px;
-        display: flex;
-        align-items: center;
-    }
-    .wanl-stat .icon {
-        width: 46px;
-        height: 46px;
-        border-radius: 8px;
-        color: #fff;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 20px;
-        margin-right: 10px;
-    }
-    .wanl-stat .meta {
-        line-height: 1.3;
-    }
-    .wanl-stat .meta .value {
-        font-size: 22px;
-        font-weight: 600;
-        display: block;
-    }
-    .wanl-stat .meta .label {
-        color: #888;
-        font-size: 12px;
-    }
-    .wanl-filter {
-        margin-bottom: 15px;
-        padding: 12px;
-    }
-    .wanl-filter .form-group {
-        margin-right: 10px;
-        margin-bottom: 8px;
-    }
-    .table-nowrap {
-        table-layout: fixed;
-    }
-    @media (max-width: 768px) {
-        .wanl-stat {
-            margin-bottom: 10px;
-        }
-        .wanl-filter .form-group {
-            display: block;
-            width: 100%;
-        }
-        .wanl-filter .form-control {
-            width: 100%;
-        }
-    }
+	.wanl-pill.purple {
+		background: rgba(99, 102, 241, 0.12);
+		color: #4338ca;
+	}
+	.wanl-amount {
+		font-weight: 800;
+		color: var(--wanl-strong);
+	}
+	.wanl-time {
+		color: var(--wanl-muted);
+		font-size: 12px;
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+	}
+	.btn-ghost {
+		background: #0f172a;
+		color: #fff !important;
+		border: none;
+		border-radius: 10px;
+		padding: 6px 12px;
+		box-shadow: 0 10px 26px -18px rgba(15, 23, 42, 0.6);
+	}
+	.template-empty {
+		text-align: center;
+		color: var(--wanl-muted);
+		padding: 20px 10px;
+	}
 </style>
 <div class="panel panel-default panel-intro">
 	<div class="panel-heading">
-		<span class="panel-title">核销记录</span>
+		<div class="wanl-head">
+			<div>
+				<p class="wanl-kicker">Verification board</p>
+				<h3 class="wanl-title">核销记录</h3>
+				<p class="wanl-subtitle">查看核销趋势、筛选时间范围并快速跳转详情</p>
+			</div>
+		</div>
 	</div>
 	<div class="panel-body">
-		<div class="row">
-			<div class="col-xs-12 col-sm-6 col-lg-3">
-				<div class="wanl-stat">
-					<span class="icon" style="background:#23b7e5;"><i class="fa fa-bolt"></i></span>
-					<div class="meta">
-						<span class="value" data-field="today_count">{$stats.today_count|default='0'}</span>
-						<span class="label">今日核销数</span>
-					</div>
+		<div class="wanl-stat-grid">
+			<div class="wanl-stat-card">
+				<span class="icon" style="background: linear-gradient(135deg,#0ea5e9,#38bdf8);"><i class="fa fa-bolt"></i></span>
+				<div class="meta">
+					<span class="value" data-field="today_count">{$stats.today_count|default='0'}</span>
+					<span class="label">今日核销数</span>
 				</div>
 			</div>
-			<div class="col-xs-12 col-sm-6 col-lg-3">
-				<div class="wanl-stat">
-					<span class="icon" style="background:#f05050;"><i class="fa fa-cny"></i></span>
-					<div class="meta">
-						<span class="value" data-field="today_amount">{$stats.today_amount|default='0.00'}</span>
-						<span class="label">今日核销金额</span>
-					</div>
+			<div class="wanl-stat-card">
+				<span class="icon" style="background: linear-gradient(135deg,#a855f7,#6366f1);"><i class="fa fa-cny"></i></span>
+				<div class="meta">
+					<span class="value" data-field="today_amount">{$stats.today_amount|default='0.00'}</span>
+					<span class="label">今日核销金额</span>
 				</div>
 			</div>
-			<div class="col-xs-12 col-sm-6 col-lg-3">
-				<div class="wanl-stat">
-					<span class="icon" style="background:#27c24c;"><i class="fa fa-calendar"></i></span>
-					<div class="meta">
-						<span class="value" data-field="month_count">{$stats.month_count|default='0'}</span>
-						<span class="label">本月核销数</span>
-					</div>
+			<div class="wanl-stat-card">
+				<span class="icon" style="background: linear-gradient(135deg,#22c55e,#16a34a);"><i class="fa fa-calendar"></i></span>
+				<div class="meta">
+					<span class="value" data-field="month_count">{$stats.month_count|default='0'}</span>
+					<span class="label">本月核销数</span>
 				</div>
 			</div>
-			<div class="col-xs-12 col-sm-6 col-lg-3">
-				<div class="wanl-stat">
-					<span class="icon" style="background:#7266ba;"><i class="fa fa-line-chart"></i></span>
-					<div class="meta">
-						<span class="value" data-field="month_amount">{$stats.month_amount|default='0.00'}</span>
-						<span class="label">本月核销金额</span>
-					</div>
+			<div class="wanl-stat-card">
+				<span class="icon" style="background: linear-gradient(135deg,#f97316,#f59e0b);"><i class="fa fa-line-chart"></i></span>
+				<div class="meta">
+					<span class="value" data-field="month_amount">{$stats.month_amount|default='0.00'}</span>
+					<span class="label">本月核销金额</span>
 				</div>
 			</div>
 		</div>
 
-		<div class="well well-sm wanl-filter">
+		<div class="wanl-filter">
 			<form class="form-inline" role="form">
 				<div class="form-group">
 					<label class="control-label">核销时间</label>
@@ -204,70 +354,69 @@
 			</form>
 		</div>
 
-		<div class="widget-body no-padding">
-			<div id="toolbar" class="toolbar">
-				<a href="javascript:;" class="btn btn-primary btn-refresh" title="{:__('Refresh')}"><i class="fa fa-refresh"></i></a>
+		<div class="wanl-table-wrap widget-body no-padding">
+			<div class="wanl-table-head">
+				<h4 class="title">核销记录列表</h4>
+				<div class="wanl-table-actions">
+					<a href="javascript:;" class="btn btn-default btn-refresh" title="{:__('Refresh')}"><i class="fa fa-refresh"></i> 刷新</a>
+					<div class="wanl-search">
+						<input type="text" class="wanl-search-input" placeholder="搜索商品/核销码/用户">
+						<button type="button" class="wanl-search-btn"><i class="fa fa-search"></i></button>
+					</div>
+				</div>
 			</div>
-			<table id="table" data-show-export="false" data-show-toggle="false" data-show-columns="false" class="table" width="100%"></table>
+			<table class="wanl-data-table">
+				<thead>
+					<tr>
+						<th class="col-product">商品</th>
+						<th class="col-code">核销码</th>
+						<th class="col-amount">金额</th>
+						<th class="col-method">核销方式</th>
+						<th class="col-user">用户</th>
+						<th class="col-time">时间</th>
+						<th class="col-action">操作</th>
+					</tr>
+				</thead>
+				<tbody id="data-list"></tbody>
+			</table>
+			<table id="table" data-show-export="false" data-show-toggle="false" data-show-columns="false" class="table" width="100%" style="display:none;"></table>
 		</div>
 	</div>
 </div>
 <script type="text/html" id="itemtpl">
-	<% if(i == 0){ %>
-		<div class="col-sm-12" style="margin-bottom: 15px;">
-			<table class="table table-bordered table-striped table-hover table-nowrap">
-			   <thead>
-				   <tr>
-						<th class="text-center"><div class="th-inner"><strong>商品</strong></div></th>
-						<th class="fix-108"><div class="th-inner">核销码</div></th>
-						<th class="fix-108"><div class="th-inner">核销金额</div></th>
-						<th class="fix-108"><div class="th-inner">用户</div></th>
-						<th class="fix-108"><div class="th-inner">核销方式</div></th>
-						<th class="fix-108"><div class="th-inner">核销时间</div></th>
-						<th class="fix-108"><div class="th-inner">操作</div></th>
-				   </tr>
-			   </thead>
-			</table>
-		</div>
-	<% } %>
-	<div class="wanl_order_list col-sm-12">
-		<table class="table table-bordered table-hover ">
-			<tbody>
-			    <% var goods = item.voucher && item.voucher.goods ? item.voucher.goods : {}; %>
-				<tr>
-			    	<td class="conceal">
-						<div class="item">
-							<div class="order_img">
-								<a href="javascript:"><img class="img-md img-center" src="<%= goods.image ? cdnurl(goods.image) : '' %>" alt="<%= item.voucher ? (item.voucher.goods_title || '') : '' %>"></a>
-							</div>
-							<div class="order_info">
-								<p><%= item.voucher ? (item.voucher.goods_title || '-') : '-' %></p>
-								<p class="sku"><%= item.shop_name || item.region_city_name || '-' %></p>
-							</div>
-						</div>
-			    	</td>
-			    	<td class="conceal fix-108">
-						<p><%= item.voucher_no || (item.voucher ? item.voucher.voucher_no : '') %></p>
-			    	</td>
-			    	<td class="conceal fix-108">
-						<p>￥<%= item.face_value || '0.00' %></p>
-					</td>
-			    	<td class="conceal fix-108">
-						<p style="margin-bottom:5px;">
-							<a href="javascript:;" class="searchit" data-toggle="tooltip" title="" data-field="user.nickname" data-value="<%= item.user ? item.user.nickname : '' %>" data-original-title="点击搜索 <%= item.user ? item.user.nickname : '' %>"><%= item.user ? item.user.nickname : '-' %></a>
-						</p>
-			    	</td>
-					<td class="conceal fix-108">
-						<p><%= item.verify_method_text || '-' %></p>
-					</td>
-					<td class="conceal fix-108">
-						<p><%= item.createtime ? Moment(item.createtime*1000).format("YYYY-MM-DD HH:mm:ss") : '-' %></p>
-					</td>
-					<td class="conceal fix-108 operation">
-						<a href="javascript:;" class="btn btn-xs btn-info detail" data-id="<%=item.id%>">查看详情</a>
-					</td>
-			    </tr>
-			</tbody>
-		</table>
-	</div>
+	<% var goods = item.voucher && item.voucher.goods ? item.voucher.goods : {}; %>
+	<tr>
+		<td>
+			<div class="wanl-product-inline">
+				<div class="thumb">
+					<img src="<%= goods.image ? cdnurl(goods.image) : '' %>" alt="<%= item.voucher ? (item.voucher.goods_title || '') : '' %>">
+				</div>
+				<div>
+					<div class="title"><%= item.voucher ? (item.voucher.goods_title || '-') : '-' %></div>
+					<p class="desc"><i class="fa fa-building-o"></i> <%= item.shop_name || item.region_city_name || '-' %></p>
+				</div>
+			</div>
+		</td>
+		<td>
+			<span class="wanl-pill purple"><i class="fa fa-key"></i> <%= item.voucher_no || (item.voucher ? item.voucher.voucher_no : '') %></span>
+		</td>
+		<td>
+			<span class="wanl-amount">￥<%= item.face_value || '0.00' %></span>
+		</td>
+		<td>
+			<span class="wanl-pill"><i class="fa fa-qrcode"></i> <%= item.verify_method_text || '-' %></span>
+		</td>
+		<td>
+			<span class="wanl-pill green">
+				<i class="fa fa-user"></i>
+				<a href="javascript:;" class="searchit" data-field="user.nickname" data-value="<%= item.user ? item.user.nickname : '' %>"><%= item.user ? item.user.nickname : '-' %></a>
+			</span>
+		</td>
+		<td>
+			<span class="wanl-time"><i class="fa fa-clock-o"></i> <%= item.createtime ? Moment(item.createtime*1000).format("YYYY-MM-DD HH:mm:ss") : '-' %></span>
+		</td>
+		<td>
+			<a href="javascript:;" class="btn btn-xs btn-ghost detail" data-id="<%=item.id%>">查看详情</a>
+		</td>
+	</tr>
 </script>

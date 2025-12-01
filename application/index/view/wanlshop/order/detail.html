@@ -1,128 +1,139 @@
-<div class="row verification-detail">
-	<div class="col-md-6">
-		<div class="panel panel-default">
-			<div class="panel-heading">核销概览</div>
-			<div class="panel-body">
-				<table class="table table-striped">
-					<tbody>
-						<tr>
-							<td>核销码</td>
-							<td>{$row.voucher_no|htmlentities|default='-'}</td>
-						</tr>
-						<tr>
-							<td>核销方式</td>
-							<td>{$row.verify_method_text|htmlentities|default='-'}</td>
-						</tr>
-						<tr>
-							<td>核销金额</td>
-							<td>￥{$row.face_value|default='0.00'}</td>
-						</tr>
-						<tr>
-							<td>供货价</td>
-							<td>￥{$row.supply_price|default='0.00'}</td>
-						</tr>
-						<tr>
-							<td>核销时间</td>
-							<td>{$row.createtime?datetime($row.createtime):'-'}</td>
-						</tr>
-						<tr>
-							<td>核销门店</td>
-							<td>{$row.shop_name|htmlentities|default='-'}</td>
-						</tr>
-						<tr>
-							<td>核销员</td>
-							<td>{$row.verify_user_id|default='-'}</td>
-						</tr>
-					</tbody>
-				</table>
+<div class="wanl-detail">
+	<div class="wanl-detail__hero">
+		<div>
+			<p class="wanl-kicker">Verification</p>
+			<h3 class="wanl-hero-title">核销码 {$row.voucher_no|htmlentities|default='-'}</h3>
+			<div class="wanl-hero-meta">
+				<span class="wanl-pill"><i class="fa fa-qrcode"></i> {$row.verify_method_text|htmlentities|default='-'}</span>
+				<span class="wanl-pill ghost"><i class="fa fa-clock-o"></i> {$row.createtime?datetime($row.createtime):'-'}</span>
+			</div>
+		</div>
+		<div class="wanl-hero-stats">
+			<div class="stat">
+				<div class="label">核销金额</div>
+				<div class="value text-primary">￥{$row.face_value|default='0.00'}</div>
+			</div>
+			<div class="stat">
+				<div class="label">供货价</div>
+				<div class="value">￥{$row.supply_price|default='0.00'}</div>
+			</div>
+			<div class="stat">
+				<div class="label">核销门店</div>
+				<div class="value">{$row.shop_name|htmlentities|default='-'}</div>
 			</div>
 		</div>
 	</div>
-	<div class="col-md-6">
-		<div class="panel panel-default">
-			<div class="panel-heading">券信息</div>
-			<div class="panel-body">
-				{if condition="$row.voucher"}
-				<table class="table table-striped">
-					<tbody>
-						<tr>
-							<td>券编号</td>
-							<td>{$row.voucher.voucher_no|htmlentities|default='-'}</td>
-						</tr>
-						<tr>
-							<td>券状态</td>
-							<td>{$row.voucher.state_text|htmlentities|default='-'}</td>
-						</tr>
-						<tr>
-							<td>面值</td>
-							<td>￥{$row.voucher.face_value|default='0.00'}</td>
-						</tr>
-						<tr>
-							<td>供货价</td>
-							<td>￥{$row.voucher.supply_price|default='0.00'}</td>
-						</tr>
-						<tr>
-							<td>所属订单</td>
-							<td>{$row.voucher.order_id|default='-'}</td>
-						</tr>
-						<tr>
-							<td>所属用户</td>
-							<td>{$row.voucher.user_id|default='-'}</td>
-						</tr>
-					</tbody>
-				</table>
-				{else /}
-				<p class="text-muted">暂无券信息</p>
-				{/if}
-			</div>
+
+	<div class="wanl-detail__grid">
+		<div class="wanl-card">
+			<div class="wanl-card__title">核销概览</div>
+			<table class="table wanl-table">
+				<tbody>
+					<tr>
+						<td>核销码</td>
+						<td>{$row.voucher_no|htmlentities|default='-'}</td>
+					</tr>
+					<tr>
+						<td>核销方式</td>
+						<td>{$row.verify_method_text|htmlentities|default='-'}</td>
+					</tr>
+					<tr>
+						<td>核销金额</td>
+						<td>￥{$row.face_value|default='0.00'}</td>
+					</tr>
+					<tr>
+						<td>供货价</td>
+						<td>￥{$row.supply_price|default='0.00'}</td>
+					</tr>
+					<tr>
+						<td>核销时间</td>
+						<td>{$row.createtime?datetime($row.createtime):'-'}</td>
+					</tr>
+					<tr>
+						<td>核销门店</td>
+						<td>{$row.shop_name|htmlentities|default='-'}</td>
+					</tr>
+					<tr>
+						<td>核销员</td>
+						<td>{$row.verify_user_id|default='-'}</td>
+					</tr>
+				</tbody>
+			</table>
 		</div>
-	</div>
-	<div class="col-md-6">
-		<div class="panel panel-default">
-			<div class="panel-heading">用户信息</div>
-			<div class="panel-body">
-				{if condition="$row.user"}
-				<table class="table table-striped">
-					<tbody>
-						<tr>
-							<td>用户ID</td>
-							<td>{$row.user_id|default='-'}</td>
-						</tr>
-						<tr>
-							<td>昵称</td>
-							<td>{$row.user.nickname|htmlentities|default='-'}</td>
-						</tr>
-						<tr>
-							<td>手机号</td>
-							<td>{$row.user.mobile|htmlentities|default='-'}</td>
-						</tr>
-					</tbody>
-				</table>
-				{else /}
-				<p class="text-muted">暂无用户信息</p>
-				{/if}
-			</div>
+		<div class="wanl-card">
+			<div class="wanl-card__title">券信息</div>
+			{if condition="$row.voucher"}
+			<table class="table wanl-table">
+				<tbody>
+					<tr>
+						<td>券编号</td>
+						<td>{$row.voucher.voucher_no|htmlentities|default='-'}</td>
+					</tr>
+					<tr>
+						<td>券状态</td>
+						<td>{$row.voucher.state_text|htmlentities|default='-'}</td>
+					</tr>
+					<tr>
+						<td>面值</td>
+						<td>￥{$row.voucher.face_value|default='0.00'}</td>
+					</tr>
+					<tr>
+						<td>供货价</td>
+						<td>￥{$row.voucher.supply_price|default='0.00'}</td>
+					</tr>
+					<tr>
+						<td>所属订单</td>
+						<td>{$row.voucher.order_id|default='-'}</td>
+					</tr>
+					<tr>
+						<td>所属用户</td>
+						<td>{$row.voucher.user_id|default='-'}</td>
+					</tr>
+				</tbody>
+			</table>
+			{else /}
+			<p class="wanl-muted">暂无券信息</p>
+			{/if}
 		</div>
-	</div>
-	<div class="col-md-6">
-		<div class="panel panel-default">
-			<div class="panel-heading">商品信息</div>
-			<div class="panel-body">
-				{if condition="$row.voucher && $row.voucher.goods"}
-				<div class="media">
-					<div class="media-left">
-						<img class="media-object img-thumbnail" style="width:96px;height:96px;" src="{$row.voucher.goods.image|cdnurl|htmlentities|default=''}" alt="{$row.voucher.goods.title|htmlentities|default='商品'}">
-					</div>
-					<div class="media-body">
-						<h4 class="media-heading">{$row.voucher.goods_title|htmlentities|default='-'}</h4>
-						<p>商品ID：{$row.voucher.goods.id|default='-'}</p>
-						<p>城市：{$row.region_city_name|htmlentities|default='-'}</p>
-					</div>
+		<div class="wanl-card">
+			<div class="wanl-card__title">用户信息</div>
+			{if condition="$row.user"}
+			<table class="table wanl-table">
+				<tbody>
+					<tr>
+						<td>用户ID</td>
+						<td>{$row.user_id|default='-'}</td>
+					</tr>
+					<tr>
+						<td>昵称</td>
+						<td>{$row.user.nickname|htmlentities|default='-'}</td>
+					</tr>
+					<tr>
+						<td>手机号</td>
+						<td>{$row.user.mobile|htmlentities|default='-'}</td>
+					</tr>
+				</tbody>
+			</table>
+			{else /}
+			<p class="wanl-muted">暂无用户信息</p>
+			{/if}
+		</div>
+		<div class="wanl-card">
+			<div class="wanl-card__title">商品信息</div>
+			{if condition="$row.voucher && $row.voucher.goods"}
+			<div class="wanl-product">
+				<div class="thumb">
+					<img src="{$row.voucher.goods.image|cdnurl|htmlentities|default=''}" alt="{$row.voucher.goods.title|htmlentities|default='商品'}">
 				</div>
-				{else /}
-				<p class="text-muted">暂无商品信息</p>
-				{/if}
+				<div class="info">
+					<div class="name">{$row.voucher.goods_title|htmlentities|default='-'}</div>
+					<p class="wanl-muted">商品ID：{$row.voucher.goods.id|default='-'}</p>
+					<p class="wanl-muted">城市：{$row.region_city_name|htmlentities|default='-'}</p>
+				</div>
 			</div>
+			{else /}
+			<p class="wanl-muted">暂无商品信息</p>
+			{/if}
 		</div>
 	</div>
 </div>
@@ -135,11 +146,136 @@
 </div>
 
 <style type="text/css">
-	.verification-detail .panel-body table td:first-child {
-		width: 110px;
-		color: #666;
+	.wanl-detail {
+		background: #f6f7fb;
+		padding: 8px;
 	}
-	.verification-detail .media {
+	.wanl-detail__hero {
+		background: linear-gradient(120deg, #e0f2fe, #eef2ff);
+		border: 1px solid #dbeafe;
+		border-radius: 16px;
+		padding: 16px;
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 16px;
+		box-shadow: 0 18px 38px -24px rgba(15, 23, 42, 0.35);
+	}
+	.wanl-kicker {
+		margin: 0 0 6px;
+		color: #6366f1;
+		font-weight: 700;
+		font-size: 12px;
+		letter-spacing: 0.02em;
+		text-transform: uppercase;
+	}
+	.wanl-hero-title {
+		margin: 0;
+		color: #0f172a;
+		font-weight: 800;
+	}
+	.wanl-hero-meta {
+		display: flex;
+		gap: 8px;
+		flex-wrap: wrap;
+		margin-top: 6px;
+	}
+	.wanl-pill {
+		display: inline-flex;
 		align-items: center;
+		gap: 6px;
+		background: #0ea5e9;
+		color: #fff;
+		padding: 6px 12px;
+		border-radius: 999px;
+		font-weight: 700;
+		font-size: 12px;
+	}
+	.wanl-pill.ghost {
+		background: rgba(15, 23, 42, 0.08);
+		color: #0f172a;
+	}
+	.wanl-hero-stats {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+		gap: 10px;
+		min-width: 360px;
+	}
+	.wanl-hero-stats .stat {
+		background: #fff;
+		border: 1px solid #e5e7eb;
+		border-radius: 12px;
+		padding: 10px 12px;
+		text-align: right;
+	}
+	.wanl-hero-stats .label {
+		color: #6b7280;
+		font-size: 12px;
+	}
+	.wanl-hero-stats .value {
+		font-weight: 800;
+		color: #0f172a;
+	}
+	.wanl-detail__grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+		gap: 14px;
+		margin-top: 14px;
+	}
+	.wanl-card {
+		background: #fff;
+		border: 1px solid #e5e7eb;
+		border-radius: 14px;
+		padding: 12px;
+		box-shadow: 0 10px 26px -20px rgba(15, 23, 42, 0.35);
+	}
+	.wanl-card__title {
+		font-weight: 700;
+		color: #0f172a;
+		margin-bottom: 8px;
+	}
+	.wanl-table td:first-child {
+		width: 110px;
+		color: #6b7280;
+	}
+	.wanl-table td {
+		border: none !important;
+		padding-left: 0;
+	}
+	.wanl-product {
+		display: flex;
+		gap: 12px;
+		align-items: center;
+	}
+	.wanl-product .thumb {
+		width: 84px;
+		height: 84px;
+		border-radius: 12px;
+		overflow: hidden;
+		background: #f1f5f9;
+		flex-shrink: 0;
+	}
+	.wanl-product img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+	.wanl-product .info .name {
+		font-weight: 700;
+		color: #0f172a;
+		margin-bottom: 4px;
+	}
+	.wanl-muted {
+		color: #6b7280;
+		margin: 0;
+	}
+	@media (max-width: 768px) {
+		.wanl-detail__hero {
+			flex-direction: column;
+		}
+		.wanl-hero-stats {
+			width: 100%;
+			min-width: 0;
+		}
 	}
 </style>

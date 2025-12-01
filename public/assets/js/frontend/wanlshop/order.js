@@ -13,20 +13,29 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'template', 'jquery-j
                 }
             });
             var table = $("#table");
+			var $dataList = $("#data-list");
 			var filterData = {};
 			var $filterForm = $(".wanl-filter form");
 			var $timeInput = $filterForm.find('input[name="createtime"]');
 			var defaultRange = $.trim($timeInput.val());
+			var quickSearch = '';
+			var $searchInput = $(".wanl-search-input");
 			if (defaultRange) {
 				filterData.createtime = defaultRange;
 			}
 			Template.helper("Moment", Moment);
 			Template.helper("cdnurl", function(image) {
-				return Fast.api.cdnurl(image); 
-			}); 
+				return Fast.api.cdnurl(image);
+			});
             // 初始化表格
             table.bootstrapTable({
                 url: $.fn.bootstrapTable.defaults.extend.index_url,
+				toolbar: '',
+				search: false,
+				commonSearch: false,
+				showColumns: false,
+				showToggle: false,
+				showExport: false,
 				templateView: true,
                 pk: 'id',
                 sortName: 'createtime',
@@ -40,6 +49,11 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'template', 'jquery-j
 					} else {
 						delete filter.createtime;
 						delete op.createtime;
+					}
+					if (quickSearch) {
+						params.search = quickSearch;
+					} else {
+						delete params.search;
 					}
 					params.filter = JSON.stringify(filter);
 					params.op = JSON.stringify(op);
@@ -71,6 +85,27 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'template', 'jquery-j
 				}
 				table.bootstrapTable('refresh', {pageNumber: 1});
 			};
+			var applySearch = function (keyword) {
+				quickSearch = $.trim(keyword || '');
+				table.bootstrapTable('refresh', {pageNumber: 1});
+			};
+			$(document).on("click", ".wanl-table-actions .btn-refresh", function () {
+				table.bootstrapTable('refresh');
+			});
+			$(document).on("click", ".wanl-search-btn", function () {
+				applySearch($searchInput.val());
+			});
+			$searchInput.on("keypress", function (event) {
+				if (event.which === 13) {
+					event.preventDefault();
+					applySearch($(this).val());
+				}
+			});
+			$(document).on("click", ".searchit[data-value]", function () {
+				var value = $(this).data("value") || '';
+				$searchInput.val(value);
+				applySearch(value);
+			});
 			// 查询
 			$(document).on("click", ".btn-filter", function () {
 				applyFilter($.trim($timeInput.val()));
@@ -87,16 +122,23 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'template', 'jquery-j
 				}
 				applyFilter($.trim($timeInput.val()));
 			});
-			// 数据加载完成后刷新统计面板
+			// 数据加载完成后渲染到自定义表格
 			table.on('load-success.bs.table', function (event, data) {
-				var stats = data && data.stats ? data.stats : null;
-				if (!stats) {
-					return;
+				var rows = data && data.rows ? data.rows : [];
+				var html = '';
+				var tpl = Template('itemtpl');
+				for (var i = 0; i < rows.length; i++) {
+					html += tpl({item: rows[i], i: i});
 				}
-				$('[data-field="today_count"]').text(stats.today_count !== undefined ? stats.today_count : 0);
-				$('[data-field="today_amount"]').text(stats.today_amount !== undefined ? stats.today_amount : 0);
-				$('[data-field="month_count"]').text(stats.month_count !== undefined ? stats.month_count : 0);
-				$('[data-field="month_amount"]').text(stats.month_amount !== undefined ? stats.month_amount : 0);
+				$dataList.html(html || '<tr><td colspan="7" style="text-align:center;color:#6b7280;padding:40px;">暂无数据</td></tr>');
+				// 刷新统计面板
+				var stats = data && data.stats ? data.stats : null;
+				if (stats) {
+					$('[data-field="today_count"]').text(stats.today_count !== undefined ? stats.today_count : 0);
+					$('[data-field="today_amount"]').text(stats.today_amount !== undefined ? stats.today_amount : 0);
+					$('[data-field="month_count"]').text(stats.month_count !== undefined ? stats.month_count : 0);
+					$('[data-field="month_amount"]').text(stats.month_amount !== undefined ? stats.month_amount : 0);
+				}
 			});
         },
 		comment: function () {
