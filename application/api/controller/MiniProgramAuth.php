@@ -472,7 +472,7 @@ class MiniProgramAuth extends Api
             $userId = $this->auth->id;
             $user = Db::name('user')
                 ->where('id', $userId)
-                ->field('id, invite_code, bonus_level, bonus_ratio')
+                ->field('id, invite_code, bonus_level, bonus_ratio, inviter_id, invite_bind_time')
                 ->find();
 
             if (!$user) {
@@ -495,6 +495,28 @@ class MiniProgramAuth extends Api
             $nextRebateRate = $nextLevel !== null && isset($ratios[$nextLevel]) ? (float)$ratios[$nextLevel] : null;
             $upgradeRule = '被邀请人核销触发升级，最多2次升级';
 
+            // 查询当前用户绑定的邀请人信息
+            $boundInviter = null;
+            if (!empty($user['inviter_id'])) {
+                $inviter = Db::name('user')
+                    ->where('id', $user['inviter_id'])
+                    ->field('id, nickname, avatar, invite_code, bonus_level, bonus_ratio')
+                    ->find();
+                if ($inviter) {
+                    $inviterLevel = (int)$inviter['bonus_level'];
+                    $inviterRebateRate = isset($ratios[$inviterLevel]) ? (float)$ratios[$inviterLevel] : (float)$inviter['bonus_ratio'];
+                    $boundInviter = [
+                        'userId' => (int)$inviter['id'],
+                        'nickname' => $inviter['nickname'],
+                        'avatar' => $inviter['avatar'],
+                        'inviteCode' => $inviter['invite_code'],
+                        'level' => $inviterLevel,
+                        'rebateRate' => $inviterRebateRate,
+                        'boundAt' => !empty($user['invite_bind_time']) ? date('Y-m-d H:i:s', $user['invite_bind_time']) : null
+                    ];
+                }
+            }
+
             $this->success('ok', [
                 'inviteCode' => $user['invite_code'],
                 'level' => $level,
@@ -507,7 +529,8 @@ class MiniProgramAuth extends Api
                 'nextLevel' => $nextLevel,
                 'nextRebateRate' => $nextRebateRate,
                 'upgradeRule' => $upgradeRule,
-                'recentRebates' => []
+                'recentRebates' => [],
+                'boundInviter' => $boundInviter
             ]);
         } catch (Exception $e) {
             Log::error('获取邀请信息失败：' . $e->getMessage());
