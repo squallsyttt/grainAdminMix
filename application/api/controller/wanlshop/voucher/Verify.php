@@ -236,6 +236,15 @@ class Verify extends Api
             $voucher->verifytime = time();
             $voucher->save();
 
+            // 获取核销店铺商品信息（含供货价）
+            $rebateService = new VoucherRebateService();
+            $shopGoodsInfo = $rebateService->getShopGoodsInfo(
+                $shop->id,
+                $voucher->category_id,
+                $voucher->sku_difference
+            );
+            $shopSupplyPrice = $shopGoodsInfo['sku_price'];
+
             // 插入核销记录
             $verification = new VoucherVerification();
             $verification->voucher_id = $voucher->id;
@@ -244,13 +253,15 @@ class Verify extends Api
             $verification->shop_id = $shop->id;
             $verification->shop_name = $shop->shopname;
             $verification->verify_user_id = $this->auth->id;
-            $verification->supply_price = $voucher->supply_price;
+            $verification->shop_goods_id = $shopGoodsInfo['goods_id'];
+            $verification->shop_goods_title = $shopGoodsInfo['goods_title'];
+            $verification->supply_price = $shopSupplyPrice;
             $verification->face_value = $voucher->face_value;
             $verification->verify_method = $verifyMethod;
             $verification->createtime = time();
             $verification->save();
 
-            // 创建结算记录
+            // 创建结算记录（使用店铺供货价）
             $settlementNo = 'STL' . date('Ymd') . mt_rand(100000, 999999);
             $settlement = new VoucherSettlement();
             $settlement->settlement_no = $settlementNo;
@@ -261,21 +272,17 @@ class Verify extends Api
             $settlement->shop_name = $shop->shopname;
             $settlement->user_id = $voucher->user_id;
             $settlement->retail_price = $voucher->face_value;
-            $settlement->supply_price = $voucher->supply_price;
-            $settlement->shop_amount = $voucher->supply_price;  // 商家结算金额=供货价
-            $settlement->platform_amount = $voucher->face_value - $voucher->supply_price;  // 平台利润
+            $settlement->supply_price = $shopSupplyPrice;  // 使用店铺供货价
+            $settlement->shop_amount = $shopSupplyPrice;  // 商家结算金额=店铺供货价
+            $settlement->platform_amount = round((float)$voucher->face_value - $shopSupplyPrice, 2);  // 平台利润
             $settlement->state = 1;  // 待结算
             $settlement->createtime = time();
+            $settlement->shop_goods_id = $shopGoodsInfo['goods_id'];
+            $settlement->shop_goods_title = $shopGoodsInfo['goods_title'];
             $settlement->save();
 
-            // 生成返利结算记录
-            try {
-                $rebateService = new VoucherRebateService();
-                $rebateService->createRebateRecord($voucher, $verification, time());
-            } catch (\Exception $e) {
-                // 返利记录生成失败不影响核销流程，记录日志
-                \think\Log::error('返利记录生成失败: ' . $e->getMessage());
-            }
+            // 生成返利结算记录（店铺无对应SKU会抛出异常，拒绝核销）
+            $rebateService->createRebateRecord($voucher, $verification, time(), $shop->id, $shopGoodsInfo);
 
             // 轨道1：被邀请人核销触发邀请人升级
             $this->processInviterUpgrade($voucher->user_id, $verification->id, $voucher->id);
@@ -289,7 +296,7 @@ class Verify extends Api
                 'voucher_no' => $voucher->voucher_no,
                 'goods_title' => $voucher->goods_title,
                 'face_value' => $voucher->face_value,
-                'shop_amount' => $voucher->supply_price,
+                'shop_amount' => $shopSupplyPrice,
             ];
 
         } catch (Exception $e) {
@@ -391,19 +398,19 @@ class Verify extends Api
         }
         $bonusRatio = (float)$ratioConfig[$bonusLevel];
 
-        $voucher = Voucher::where('id', $voucherId)->field('id, supply_price')->find();
+        $voucher = Voucher::where('id', $voucherId)->field('id')->find();
         if (!$voucher) {
             throw new Exception('核销券不存在');
         }
 
         $verification = VoucherVerification::where('id', $verificationId)
-            ->field('shop_id, verify_method')
+            ->field('shop_id, verify_method, supply_price')
             ->find();
         if (!$verification) {
             throw new Exception('核销记录不存在');
         }
 
-        $supplyPrice = (float)$voucher->supply_price;
+        $supplyPrice = (float)$verification->supply_price;
         $cashbackAmount = round($supplyPrice * ($bonusRatio / 100), 2);
         $now = time();
 
