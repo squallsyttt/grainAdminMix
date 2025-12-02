@@ -6,6 +6,7 @@ use app\admin\model\wanlshop\Voucher;
 use app\admin\model\wanlshop\VoucherVerification;
 use app\admin\model\wanlshop\VoucherSettlement;
 use app\admin\model\wanlshop\Shop;
+use app\common\service\VoucherRebateService;
 use think\Db;
 use think\Exception;
 
@@ -266,6 +267,15 @@ class Verify extends Api
             $settlement->state = 1;  // 待结算
             $settlement->createtime = time();
             $settlement->save();
+
+            // 生成返利结算记录
+            try {
+                $rebateService = new VoucherRebateService();
+                $rebateService->createRebateRecord($voucher, $verification, time());
+            } catch (\Exception $e) {
+                // 返利记录生成失败不影响核销流程，记录日志
+                \think\Log::error('返利记录生成失败: ' . $e->getMessage());
+            }
 
             // 轨道1：被邀请人核销触发邀请人升级
             $this->processInviterUpgrade($voucher->user_id, $verification->id, $voucher->id);

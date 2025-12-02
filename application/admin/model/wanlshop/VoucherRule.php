@@ -67,6 +67,15 @@ class VoucherRule extends Model
     }
 
     /**
+     * 关联：返利结算记录
+     * @return \think\model\relation\HasMany
+     */
+    public function voucherRebates()
+    {
+        return $this->hasMany('VoucherRebate', 'rule_id', 'id');
+    }
+
+    /**
      * 获取启用状态且优先级最高的规则
      * @return static|null
      */

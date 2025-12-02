@@ -1,0 +1,30 @@
+### 核销券返利记录接口测试(用户端)
+@baseUrl = http://localhost:8000
+@apiPrefix = /api/wanlshop/voucher/rebate
+@token = YOUR_USER_TOKEN_HERE
+@rebateId = 1
+@otherUserRebateId = 2
+
+### 1. 返利记录列表 - 默认分页
+GET {{baseUrl}}{{apiPrefix}}/index
+token: {{token}}
+
+### 2. 返利记录列表 - 第二页
+GET {{baseUrl}}{{apiPrefix}}/index?page=2
+token: {{token}}
+
+### 3. 返利记录详情 - 正常查询
+GET {{baseUrl}}{{apiPrefix}}/detail?id={{rebateId}}
+token: {{token}}
+
+### 4. 返利记录详情 - ID 不存在
+GET {{baseUrl}}{{apiPrefix}}/detail?id=999999
+token: {{token}}
+
+### 5. 返利记录详情 - 缺少 ID 参数
+GET {{baseUrl}}{{apiPrefix}}/detail
+token: {{token}}
+
+### 6. 返利记录详情 - 非本人记录(应失败，请替换为其他用户记录 ID)
+GET {{baseUrl}}{{apiPrefix}}/detail?id={{otherUserRebateId}}
+token: {{token}}

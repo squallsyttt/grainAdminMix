@@ -1,0 +1,113 @@
+<div class="panel panel-default panel-intro">
+    <div class="panel-heading">
+        {:build_heading()}
+    </div>
+    <div class="panel-body">
+        <div class="row">
+            <div class="col-md-12">
+                <h4>基本信息</h4>
+                <table class="table table-bordered table-striped">
+                    <tr>
+                        <th width="15%">返利ID</th>
+                        <td width="35%">{$row.id}</td>
+                        <th width="15%">券号</th>
+                        <td>{$row.voucher_no|default='-'}</td>
+                    </tr>
+                    <tr>
+                        <th>用户</th>
+                        <td>
+                            {$row.user.nickname|default='-'}
+                            {if $row.user && $row.user.username} ({$row.user.username}){/if}
+                        </td>
+                        <th>用户ID</th>
+                        <td>{$row.user_id|default='-'}</td>
+                    </tr>
+                    <tr>
+                        <th>店铺</th>
+                        <td>{$row.shop.shopname|default=$row.shop_name|default='-'}</td>
+                        <th>店铺ID</th>
+                        <td>{$row.shop_id|default='-'}</td>
+                    </tr>
+                    <tr>
+                        <th>订单ID</th>
+                        <td>{$row.order_id|default='-'}</td>
+                        <th>核销记录ID</th>
+                        <td>{$row.verification_id|default='-'}</td>
+                    </tr>
+                    <tr>
+                        <th>状态</th>
+                        <td>{:isset($row['status']) && $row['status'] === 'hidden' ? '隐藏' : '正常'}</td>
+                        <th>返利阶段</th>
+                        <td>{$row.stage_text|default='-'}</td>
+                    </tr>
+                </table>
+
+                <h4>返利信息</h4>
+                <table class="table table-bordered table-striped">
+                    <tr>
+                        <th width="15%">返利金额</th>
+                        <td width="35%">¥{$row.rebate_amount|default='0.00'}</td>
+                        <th width="15%">实际返利比例</th>
+                        <td>{$row.actual_bonus_ratio|default='0.00'}%</td>
+                    </tr>
+                    <tr>
+                        <th>用户原始返利比例</th>
+                        <td>{$row.user_bonus_ratio|default='0.00'}%</td>
+                        <th>距付款天数</th>
+                        <td>{$row.days_from_payment|default='0'}</td>
+                    </tr>
+                    <tr>
+                        <th>供货价</th>
+                        <td>¥{$row.supply_price|default='0.00'}</td>
+                        <th>券面值</th>
+                        <td>¥{$row.face_value|default='0.00'}</td>
+                    </tr>
+                    <tr>
+                        <th>付款时间</th>
+                        <td>{:isset($row['payment_time']) && $row['payment_time'] ? date('Y-m-d H:i:s', $row['payment_time']) : '-'}</td>
+                        <th>核销时间</th>
+                        <td>{:isset($row['verify_time']) && $row['verify_time'] ? date('Y-m-d H:i:s', $row['verify_time']) : '-'}</td>
+                    </tr>
+                    <tr>
+                        <th>创建时间</th>
+                        <td>{:isset($row['createtime']) && $row['createtime'] ? date('Y-m-d H:i:s', $row['createtime']) : '-'}</td>
+                        <th>更新时间</th>
+                        <td>{:isset($row['updatetime']) && $row['updatetime'] ? date('Y-m-d H:i:s', $row['updatetime']) : '-'}</td>
+                    </tr>
+                </table>
+
+                <h4>货物信息</h4>
+                <table class="table table-bordered table-striped">
+                    <tr>
+                        <th width="15%">商品标题</th>
+                        <td width="35%">{$row.goods_title|default='-'}</td>
+                        <th width="15%">SKU 重量</th>
+                        <td>{$row.sku_weight|default='0.00'} 斤</td>
+                    </tr>
+                    <tr>
+                        <th>原始货物重量</th>
+                        <td>{$row.original_goods_weight|default='0.00'} 斤</td>
+                        <th>实际货物重量</th>
+                        <td>{$row.actual_goods_weight|default='0.00'} 斤</td>
+                    </tr>
+                </table>
+
+                <h4>规则快照</h4>
+                <table class="table table-bordered table-striped">
+                    <tr>
+                        <th width="15%">规则ID</th>
+                        <td width="35%">{$row.rule_id|default='-'}</td>
+                        <th width="15%">免费期天数</th>
+                        <td>{$row.free_days|default='0'}</td>
+                    </tr>
+                    <tr>
+                        <th>福利损耗期天数</th>
+                        <td>{$row.welfare_days|default='0'}</td>
+                        <th>货物损耗期天数</th>
+                        <td>{$row.goods_days|default='0'}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
