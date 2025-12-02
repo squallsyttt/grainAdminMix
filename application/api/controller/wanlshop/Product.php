@@ -237,15 +237,38 @@ class Product extends Api
 		$id ? $id : ($this->error(__('非正常访问')));
 		// 加载商品模型
 		$goodsModel = model('app\api\model\wanlshop\Goods');
-		// 查询商品
-		$goods = $goodsModel
-			->where(['id' => $id])
-			->field('id,category_id,shop_category_id,brand_id,freight_id,shop_id,title,image,images,flag,content,category_attribute,activity_type,price,sales,payment,comment,praise,moderate,negative,like,views,status')
-			->find();
-		// 浏览+1 & 报错
+			// 查询商品
+			$goods = $goodsModel
+				->where(['id' => $id])
+				->field('id,category_id,shop_category_id,brand_id,freight_id,shop_id,title,image,images,flag,content,category_attribute,activity_type,price,sales,payment,comment,praise,moderate,negative,like,views,status')
+				->find();
+            // 浏览+1 & 报错
         if($goods && $goods['status'] == 'normal'){
             // 查询类目
             $goods->category && $goods->category->visible(['id','pid','name']);
+			// 类目全链路
+			if ($goods->category) {
+				$categoryModel = model('app\api\model\wanlshop\Category');
+				$chain = [];
+				$current = $goods->category;
+				$guard = 0;
+				while ($current && $guard < 10) { // 限制层级避免死循环
+					$chain[] = [
+						'id' => $current['id'],
+						'pid' => $current['pid'],
+						'name' => $current['name']
+					];
+					if (!$current['pid']) {
+						break;
+					}
+					$current = $categoryModel
+						->where('id', $current['pid'])
+						->field('id,pid,name')
+						->find();
+					$guard++;
+				}
+				$goods['category_chain'] = array_reverse($chain);
+			}
 			// 查询优惠券
 			$goods['coupon'] = $this->queryCoupon($goods['id'], $goods['shop_id'], $goods['shop_category_id'], $goods['price']);
 			// 查询是否关注
