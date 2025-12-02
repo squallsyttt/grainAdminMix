@@ -82,6 +82,7 @@ class Shop extends Api
 			$list = $this->model
 				->where($where)
 				->where('status', 'normal')
+				->field('id,user_id,shopname,avatar,city,location_latitude,location_longitude,location_address,service_ids,bio,status')
 				->order($sort, $order)
 				->paginate();
 
@@ -109,6 +110,7 @@ class Shop extends Api
 		$list = $this->model
 			->where($where)
 			->where('status', 'normal')
+			->field('id,user_id,shopname,avatar,city,location_latitude,location_longitude,location_address,service_ids,bio,status')
 			->order($sort, $order)
 			->paginate();
 
