@@ -43,6 +43,11 @@
 	.sp_result_area{
 		z-index: 10000;
 	}
+	.location-hint{
+		color: #999;
+		font-size: 12px;
+		margin-left: 8px;
+	}
 </style>
 <div class="row animated fadeInRight">
 	<div class="col-md-4">
@@ -90,6 +95,25 @@
 						<div class="form-group">
 							<label for="city" class="control-label">{:__('City')}:</label>
 							<div class='control-relative'><input id="c-city" data-rule="required" class="form-control" data-toggle="city-picker" name="row[city]" type="text" value="{$row.city|htmlentities}"></div>
+						</div>
+						<div class="form-group">
+							<label class="control-label">地图定位:</label>
+							<div class="row">
+								<div class="col-xs-6">
+									<input id="c-location_latitude" class="form-control" name="row[location_latitude]" type="text" placeholder="纬度" value="{$row.location_latitude|htmlentities}">
+								</div>
+								<div class="col-xs-6">
+									<input id="c-location_longitude" class="form-control" name="row[location_longitude]" type="text" placeholder="经度" value="{$row.location_longitude|htmlentities}">
+								</div>
+							</div>
+							<div style="margin-top:8px;">
+								<button type="button" class="btn btn-info btn-embossed btn-open-map"><i class="fa fa-map-marker"></i> 地图选点</button>
+								<span class="location-hint">选点后自动回填经纬度与地址</span>
+							</div>
+						</div>
+						<div class="form-group">
+							<label for="location_address" class="control-label">详细地址:</label>
+							<input id="c-location_address" class="form-control" name="row[location_address]" type="text" placeholder="路牌号、门牌号等" value="{$row.location_address|htmlentities}">
 						</div>
 						<div class="form-group layer-footer">
 							<label class="control-label"></label>

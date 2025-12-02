@@ -48,6 +48,52 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'vue'], function ($, 
 			    var url = Backend.api.cdnurl(data.url);
 			    $(".profile-user-img").prop("src", url);
 			});
+			var $lat = $("#c-location_latitude");
+			var $lng = $("#c-location_longitude");
+			var $address = $("#c-location_address");
+			var qqMapKey = Config.qqmapKey || '';
+			var pickerOpened = false;
+			// 地图选点
+			var openMapPicker = function () {
+				if (!qqMapKey) {
+					Layer.msg('请先在运营配置中填写腾讯地图key');
+					return;
+				}
+				var coord = '';
+				if ($lat.val() && $lng.val()) {
+					coord = '&coord=' + $.trim($lat.val()) + ',' + $.trim($lng.val());
+				}
+				var url = 'https://apis.map.qq.com/tools/locpicker?search=1&type=1&policy=1&key=' + qqMapKey + '&referer=wanlshop' + coord;
+				Fast.api.open(url, '选择店铺位置', {area:['90%','90%']});
+				pickerOpened = true;
+			};
+			$(document).on("click", ".btn-open-map", function () {
+				openMapPicker();
+			});
+			window.addEventListener('message', function (event) {
+				var loc = event.data;
+				if (!loc || loc.module !== 'locationPicker') {
+					return;
+				}
+				if (loc.latlng) {
+					$lat.val(loc.latlng.lat);
+					$lng.val(loc.latlng.lng);
+				}
+				var fullAddress = '';
+				if (loc.poiaddress) {
+					fullAddress = loc.poiaddress;
+				}
+				if (loc.poiname) {
+					fullAddress = fullAddress ? (fullAddress + ' ' + loc.poiname) : loc.poiname;
+				}
+				if (fullAddress) {
+					$address.val(fullAddress);
+				}
+				if (pickerOpened) {
+					Layer.closeAll('iframe');
+					pickerOpened = false;
+				}
+			}, false);
 		    Controller.api.bindevent();
 		},
 		brand: function () {

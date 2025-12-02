@@ -52,6 +52,10 @@ class Shop extends Wanlshop
         if ($row['user_id'] !=$this->auth->id) {
             $this->error(__('You have no permission'));
         }
+        // 地图选点所需的腾讯地图key（从H5配置读取）
+        $addonConfig = get_addon_config('wanlshop');
+        $qqmapKey = isset($addonConfig['h5']['qqmap_key']) ? $addonConfig['h5']['qqmap_key'] : '';
+        $this->assignconfig('qqmapKey', $qqmapKey);
         if ($this->request->isPost()) {
 			// 1.1.9升级 还原屏蔽html
 			$this->request->filter([]);
@@ -62,7 +66,7 @@ class Shop extends Wanlshop
                 try {
 					// 1.1.9升级优化 更新指定字段
 					$result = $row
-						->allowField(['avatar','shopname','keywords','description','service_ids','service_ids','city','bio'])
+						->allowField(['avatar','shopname','keywords','description','service_ids','service_ids','city','location_latitude','location_longitude','location_address','bio'])
 						->save($params);
                     Db::commit();
                 } catch (PDOException $e) {
