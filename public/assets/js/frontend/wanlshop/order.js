@@ -14,19 +14,65 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'template', 'jquery-j
             });
             var table = $("#table");
 			var $dataList = $("#data-list");
-			var filterData = {};
-			var $filterForm = $(".wanl-filter form");
-			var $timeInput = $filterForm.find('input[name="createtime"]');
-			var defaultRange = $.trim($timeInput.val());
-			var quickSearch = '';
-			var $searchInput = $(".wanl-search-input");
-			if (defaultRange) {
-				filterData.createtime = defaultRange;
-			}
-			Template.helper("Moment", Moment);
-			Template.helper("cdnurl", function(image) {
-				return Fast.api.cdnurl(image);
-			});
+            var filterData = {};
+            var $filterForm = $(".wanl-filter form");
+            var $timeInput = $filterForm.find('input[name="createtime"]');
+            var defaultRange = $.trim($timeInput.val());
+            var $quickRange = $(".wanl-quick-range");
+            var quickSearch = '';
+            var $searchInput = $(".wanl-search-input");
+            if (defaultRange) {
+                filterData.createtime = defaultRange;
+            }
+            var formatRangeValue = function (range) {
+                if (!range || range.length !== 2) {
+                    return '';
+                }
+                return range[0].format('YYYY-MM-DD HH:mm:ss') + ' - ' + range[1].format('YYYY-MM-DD HH:mm:ss');
+            };
+            var presetRanges = {
+                today: function () {
+                    var now = Moment();
+                    return [now.clone().startOf('day'), now.clone().endOf('day')];
+                },
+                recent7: function () {
+                    var now = Moment();
+                    return [now.clone().subtract(6, 'day').startOf('day'), now.clone().endOf('day')];
+                },
+                recent30: function () {
+                    var now = Moment();
+                    return [now.clone().subtract(29, 'day').startOf('day'), now.clone().endOf('day')];
+                },
+                month: function () {
+                    var now = Moment();
+                    return [now.clone().startOf('month'), now.clone().endOf('month')];
+                },
+                lastMonth: function () {
+                    var lastMonth = Moment().subtract(1, 'month');
+                    return [lastMonth.clone().startOf('month'), lastMonth.clone().endOf('month')];
+                }
+            };
+            var highlightPreset = function (value) {
+                if (!$quickRange.length) {
+                    return;
+                }
+                $quickRange.find('[data-range]').removeClass('active');
+                var current = $.trim(value || '');
+                if (!current) {
+                    return;
+                }
+                $.each(presetRanges, function (key, builder) {
+                    if (formatRangeValue(builder()) === current) {
+                        $quickRange.find('[data-range="' + key + '"]').addClass('active');
+                        return false;
+                    }
+                });
+            };
+            Template.helper("Moment", Moment);
+            Template.helper("cdnurl", function(image) {
+                return Fast.api.cdnurl(image);
+            });
+            highlightPreset(defaultRange);
             // 初始化表格
             table.bootstrapTable({
                 url: $.fn.bootstrapTable.defaults.extend.index_url,
@@ -63,9 +109,12 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'template', 'jquery-j
                     [
 						{checkbox: true},
 						{field: 'voucher_no', title: __('核销码')},
-						{field: 'voucher.goods_title', title: __('商品名称'), align: 'left'},
+						{field: 'shop_goods_title', title: __('商品名称'), align: 'left', formatter: function (value, row) {
+							return value || (row.voucher ? row.voucher.goods_title : '');
+						}},
+						{field: 'shop_name', title: __('核销店铺'), align: 'left', formatter: Table.api.formatter.search},
 						{field: 'user.nickname', title: __('用户昵称'), align: 'left', formatter: Table.api.formatter.search},
-						{field: 'face_value', title: __('核销金额'), operate: 'BETWEEN'},
+						{field: 'supply_price', title: __('供货价'), operate: 'BETWEEN'},
 						{field: 'verify_method', title: __('核销方式'), searchList: {"code":__('验证码'),"scan":__('扫码')}, formatter: Table.api.formatter.normal},
 						{field: 'createtime', title: __('核销时间'), operate:'RANGE', addclass:'datetimerange', formatter: Table.api.formatter.datetime}
                     ]
@@ -78,11 +127,13 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'template', 'jquery-j
 			    Backend.api.open('wanlshop/order/detail/id/' + $(this).data('id'), __('查看详情'),{area:['1200px', '780px']});
 			});
 			var applyFilter = function (range) {
-				if (range) {
-					filterData.createtime = range;
+				var value = $.trim(range || '');
+				if (value) {
+					filterData.createtime = value;
 				} else {
 					delete filterData.createtime;
 				}
+				highlightPreset(value);
 				table.bootstrapTable('refresh', {pageNumber: 1});
 			};
 			var applySearch = function (keyword) {
@@ -105,6 +156,16 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'template', 'jquery-j
 				var value = $(this).data("value") || '';
 				$searchInput.val(value);
 				applySearch(value);
+			});
+			$(document).on("click", ".wanl-quick-range [data-range]", function () {
+				var key = $(this).data("range");
+				var builder = presetRanges[key];
+				if (!builder) {
+					return;
+				}
+				var rangeValue = formatRangeValue(builder());
+				$timeInput.val(rangeValue);
+				applyFilter(rangeValue);
 			});
 			// 查询
 			$(document).on("click", ".btn-filter", function () {

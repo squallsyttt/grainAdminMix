@@ -12,6 +12,7 @@ class Order extends Wanlshop
 {
     protected $noNeedLogin = '';
     protected $noNeedRight = '*';
+    protected $searchFields = 'voucher_no,shop_name,shop_goods_title';
     /**
      * VoucherVerification模型对象
      * @var \app\admin\model\wanlshop\VoucherVerification
@@ -59,11 +60,14 @@ class Order extends Wanlshop
 
             foreach ($list as $row) {
                 $row->getRelation('user')->visible(['id', 'username', 'nickname', 'avatar']);
-                $row->getRelation('shop')->visible(['id', 'name']);
+                $row->getRelation('shop')->visible(['id', 'shopname']);
                 if ($row->voucher) {
                     $row->getRelation('voucher')->visible(['id', 'voucher_no', 'goods_title', 'state', 'goods']);
-                    $row['region_city_name'] = (isset($row->voucher->goods) && $row->voucher->goods->region_city_name) ? $row->voucher->goods->region_city_name : '';
                 }
+                // 统一商品展示字段，优先使用核销记录自身的商品标题
+                $row['shop_goods_title'] = $row['shop_goods_title'] ?: ($row->voucher ? $row->voucher->goods_title : '');
+                // 商品图片取券商品图，核销记录侧没有图片字段
+                $row['product_image'] = ($row->voucher && $row->voucher->goods && isset($row->voucher->goods->image)) ? $row->voucher->goods->image : '';
             }
 
             $list = collection($list)->toArray();
@@ -125,11 +129,11 @@ class Order extends Wanlshop
             ->where('createtime', '>=', $todayStart)
             ->count();
 
-        // 今日核销金额（使用 face_value 字段作为核销金额）
+        // 今日核销金额（使用供货价字段）
         $todayAmount = (new \app\admin\model\wanlshop\VoucherVerification)
             ->where('shop_id', $this->shop->id)
             ->where('createtime', '>=', $todayStart)
-            ->sum('face_value');
+            ->sum('supply_price');
 
         // 本月核销数
         $monthCount = (new \app\admin\model\wanlshop\VoucherVerification)
@@ -137,11 +141,11 @@ class Order extends Wanlshop
             ->where('createtime', '>=', $monthStart)
             ->count();
 
-        // 本月核销金额
+        // 本月核销金额（供货价汇总）
         $monthAmount = (new \app\admin\model\wanlshop\VoucherVerification)
             ->where('shop_id', $this->shop->id)
             ->where('createtime', '>=', $monthStart)
-            ->sum('face_value');
+            ->sum('supply_price');
 
         return [
             'today_count' => $todayCount,
