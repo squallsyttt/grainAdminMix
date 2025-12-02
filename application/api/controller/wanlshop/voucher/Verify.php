@@ -228,14 +228,6 @@ class Verify extends Api
                 throw new Exception('券不在有效期内');
             }
 
-            // 更新券状态
-            $voucher->state = 2;  // 已核销
-            $voucher->shop_id = $shop->id;
-            $voucher->shop_name = $shop->shopname;
-            $voucher->verify_user_id = $this->auth->id;  // 核销操作员
-            $voucher->verifytime = time();
-            $voucher->save();
-
             // 获取核销店铺商品信息（含供货价）
             $rebateService = new VoucherRebateService();
             $shopGoodsInfo = $rebateService->getShopGoodsInfo(
@@ -244,6 +236,15 @@ class Verify extends Api
                 $voucher->sku_difference
             );
             $shopSupplyPrice = $shopGoodsInfo['sku_price'];
+
+            // 更新券状态
+            $voucher->state = 2;  // 已核销
+            $voucher->shop_id = $shop->id;
+            $voucher->shop_name = $shop->shopname;
+            $voucher->verify_user_id = $this->auth->id;  // 核销操作员
+            $voucher->verifytime = time();
+            $voucher->supply_price = $shopSupplyPrice;
+            $voucher->save();
 
             // 插入核销记录
             $verification = new VoucherVerification();
