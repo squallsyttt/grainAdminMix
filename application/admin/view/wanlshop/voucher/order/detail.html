@@ -27,20 +27,20 @@
                     <tr>
                         <th>数量</th>
                         <td>{$row.quantity}</td>
-                        <th>供货价</th>
-                        <td>¥{$row.supply_price}</td>
-                    </tr>
-                    <tr>
                         <th>零售价</th>
                         <td>¥{$row.retail_price}</td>
-                        <th>实付金额</th>
-                        <td>¥{$row.actual_payment}</td>
                     </tr>
                     <tr>
+                        <th>实付金额</th>
+                        <td>¥{$row.actual_payment}</td>
                         <th>状态</th>
                         <td>{$row.state_text}</td>
+                    </tr>
+                    <tr>
                         <th>创建时间</th>
                         <td>{$row.createtime|date='Y-m-d H:i:s'}</td>
+                        <th></th>
+                        <td></td>
                     </tr>
                 </table>
 

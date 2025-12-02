@@ -83,14 +83,13 @@ class Order extends Api
             'shop_id' => $goods->shop_id,
         ]]);
         $priceItem = $priceResult[0] ?? [];
-        $supplyPrice = $priceItem['supply_price'] ?? ($unitPrice * $quantity);
-        $retailPrice = $priceItem['retail_price'] ?? $supplyPrice;
+        $retailPrice = $priceItem['retail_price'] ?? ($unitPrice * $quantity);
         $actualPayment = $priceItem['actual_payment'] ?? $retailPrice;
         $now = time();
 
         Db::startTrans();
         try {
-            // 创建订单
+            // 创建订单（供货价在核销时才确定，订单不存储）
             $order = new VoucherOrder();
             $order->user_id = $this->auth->id;
             $order->order_no = $orderNo;
@@ -100,7 +99,6 @@ class Order extends Api
             $order->sku_difference = $skuDifference;
             $order->sku_weight = $skuWeight;
             $order->quantity = $quantity;
-            $order->supply_price = $supplyPrice;
             $order->retail_price = $retailPrice;
             $order->actual_payment = $actualPayment;
             $order->state = 1;  // 待支付
@@ -118,7 +116,6 @@ class Order extends Api
                 'sku_difference' => $skuDifference,
                 'sku_weight' => $skuWeight,
                 'quantity' => $quantity,
-                'supply_price' => $supplyPrice,
                 'retail_price' => $retailPrice,
                 'actual_payment' => $actualPayment,
                 'createtime' => $now,
@@ -208,7 +205,6 @@ class Order extends Api
         $orderNo = 'ORD' . date('YmdHis') . mt_rand(100000, 999999);
 
         $totalQuantity = 0;
-        $totalSupplyPrice = 0;
         $totalRetailPrice = 0;
         $orderItemsData = [];
         $now = time();
@@ -236,8 +232,7 @@ class Order extends Api
                 'shop_id' => $goods->shop_id,
             ]]);
             $priceItem = $priceResult[0] ?? [];
-            $supplyPrice = $priceItem['supply_price'] ?? ($unitPrice * $qty);
-            $retailPrice = $priceItem['retail_price'] ?? $supplyPrice;
+            $retailPrice = $priceItem['retail_price'] ?? ($unitPrice * $qty);
             $itemActualPayment = $priceItem['actual_payment'] ?? $retailPrice;
 
             $orderItemsData[] = [
@@ -250,14 +245,12 @@ class Order extends Api
                 'sku_difference' => $skuDifference,
                 'sku_weight' => $skuWeight,
                 'quantity' => $qty,
-                'supply_price' => $supplyPrice,
                 'retail_price' => $retailPrice,
                 'actual_payment' => $itemActualPayment,
                 'createtime' => $now,
             ];
 
             $totalQuantity += $qty;
-            $totalSupplyPrice += $supplyPrice;
             $totalRetailPrice += $retailPrice;
         }
 
@@ -269,6 +262,7 @@ class Order extends Api
 
         Db::startTrans();
         try {
+            // 创建订单（供货价在核销时才确定，订单不存储）
             $order = new VoucherOrder();
             $order->user_id = $this->auth->id;
             $order->order_no = $orderNo;
@@ -278,7 +272,6 @@ class Order extends Api
             $order->sku_difference = $orderItemsData[0]['sku_difference'] ?? '';
             $order->sku_weight = $orderItemsData[0]['sku_weight'] ?? 0;
             $order->quantity = $totalQuantity;
-            $order->supply_price = $totalSupplyPrice;
             $order->retail_price = $totalRetailPrice;
             $order->actual_payment = $actualPayment;
             $order->state = 1;  // 待支付
@@ -468,23 +461,23 @@ class Order extends Api
 
         // 统一价格字段为数字类型，避免前端出现字符串/数字混用
         $orderData = $order->toArray();
-        $this->castPriceFields($orderData, ['supply_price', 'retail_price', 'coupon_price', 'discount_price', 'actual_payment']);
+        $this->castPriceFields($orderData, ['retail_price', 'coupon_price', 'discount_price', 'actual_payment']);
 
         if (!empty($orderData['goods']) && is_array($orderData['goods'])) {
-            $this->castPriceFields($orderData['goods'], ['price', 'supply_price', 'retail_price', 'coupon_price', 'discount_price', 'actual_payment']);
+            $this->castPriceFields($orderData['goods'], ['price', 'retail_price', 'coupon_price', 'discount_price', 'actual_payment']);
             $orderData['region_city_name'] = isset($orderData['goods']['region_city_name']) ? $orderData['goods']['region_city_name'] : '';
         }
 
         if (!empty($orderData['vouchers']) && is_array($orderData['vouchers'])) {
             foreach ($orderData['vouchers'] as &$voucher) {
-                $this->castPriceFields($voucher, ['supply_price', 'face_value', 'retail_price', 'actual_payment']);
+                $this->castPriceFields($voucher, ['face_value', 'retail_price', 'actual_payment']);
             }
             unset($voucher);
         }
 
         if (!empty($orderData['items']) && is_array($orderData['items'])) {
             foreach ($orderData['items'] as &$item) {
-                $this->castPriceFields($item, ['supply_price', 'retail_price', 'coupon_price', 'discount_price', 'actual_payment']);
+                $this->castPriceFields($item, ['retail_price', 'coupon_price', 'discount_price', 'actual_payment']);
                 if (!isset($orderData['region_city_name']) || $orderData['region_city_name'] === '') {
                     $orderData['region_city_name'] = isset($item['region_city_name']) ? $item['region_city_name'] : '';
                 }
@@ -668,7 +661,7 @@ class Order extends Api
                     'product_name' => $item->goods_title ?: '未知商品',
                     'weight' => isset($item->sku_weight) ? (float)$item->sku_weight : $this->extractWeight($item->goods_title),
                     'quantity' => $item->quantity,
-                    'unit_price' => $item->quantity > 0 ? (float)($item->supply_price / $item->quantity) : 0.0,
+                    'unit_price' => $item->quantity > 0 ? (float)($item->actual_payment / $item->quantity) : 0.0,
                     'subtotal' => (float)$item->actual_payment,
                     'goods_sku_id' => isset($item->goods_sku_id) ? (int)$item->goods_sku_id : 0,
                     'sku_difference' => isset($item->sku_difference) ? (string)$item->sku_difference : '',
@@ -693,7 +686,7 @@ class Order extends Api
                 'product_name' => $order->goods ? $order->goods->title : '未知商品',
                 'weight' => isset($order->sku_weight) ? (float)$order->sku_weight : null,
                 'quantity' => $order->quantity,
-                'unit_price' => $order->quantity > 0 ? (float)($order->supply_price / $order->quantity) : 0.0,
+                'unit_price' => $order->quantity > 0 ? (float)($order->actual_payment / $order->quantity) : 0.0,
                 'subtotal' => (float)$order->actual_payment,
                 'goods_sku_id' => isset($order->goods_sku_id) ? (int)$order->goods_sku_id : 0,
                 'sku_difference' => isset($order->sku_difference) ? (string)$order->sku_difference : '',
@@ -1016,7 +1009,6 @@ class Order extends Api
                         }
                     }
 
-                    $supplyPerUnit = $itemQuantity > 0 ? $item->supply_price / $itemQuantity : 0;
                     $facePerUnit = $itemQuantity > 0 ? $item->actual_payment / $itemQuantity : 0;
                     $goodsSkuId = isset($item->goods_sku_id) ? (int)$item->goods_sku_id : 0;
                     $skuDifference = isset($item->sku_difference) ? (string)$item->sku_difference : '';
@@ -1035,7 +1027,7 @@ class Order extends Api
                         $voucher->goods_image = $goodsImage;
                         $voucher->sku_difference = $skuDifference;
                         $voucher->sku_weight = $skuWeight;
-                        $voucher->supply_price = $supplyPerUnit;
+                        $voucher->supply_price = 0;  // 供货价在核销时确定
                         $voucher->face_value = $facePerUnit;
                         $voucher->valid_start = $now;
                         $voucher->valid_end = $validEnd;
@@ -1065,7 +1057,7 @@ class Order extends Api
                     $voucher->goods_image = $goods->image;
                     $voucher->sku_difference = isset($order->sku_difference) ? (string)$order->sku_difference : '';
                     $voucher->sku_weight = isset($order->sku_weight) ? (float)$order->sku_weight : 0;
-                    $voucher->supply_price = $order->supply_price / $order->quantity;
+                    $voucher->supply_price = 0;  // 供货价在核销时确定
                     $voucher->face_value = $order->actual_payment / $order->quantity;
                     $voucher->valid_start = $now;
                     $voucher->valid_end = $validEnd;

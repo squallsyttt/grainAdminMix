@@ -31,7 +31,6 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
                         {field: 'category.name', title: '分类', align: 'left'},
                         {field: 'order_no', title: '订单号'},
                         {field: 'quantity', title: '数量'},
-                        {field: 'supply_price', title: '供货价', operate: 'BETWEEN'},
                         {field: 'retail_price', title: '零售价', operate: 'BETWEEN'},
                         {field: 'actual_payment', title: '实付金额', operate: 'BETWEEN'},
                         {
