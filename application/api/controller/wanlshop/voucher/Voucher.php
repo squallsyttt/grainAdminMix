@@ -123,6 +123,22 @@ class Voucher extends Api
         // 无论券状态如何，只要存在退款记录就显示（包括申请中、拒绝、成功等）
         $voucher->voucherRefund;
 
+        // 返现信息（如果已生成返利记录则返回）
+        $rebateData = null;
+        if ($voucher->voucherRebate) {
+            $rebateData = $voucher->voucherRebate->toArray();
+            $this->castPriceFields($rebateData, ['supply_price', 'face_value', 'rebate_amount', 'sku_weight', 'original_goods_weight', 'actual_goods_weight']);
+            $rebateData['user_bonus_ratio'] = isset($rebateData['user_bonus_ratio']) ? (float)$rebateData['user_bonus_ratio'] : 0;
+            $rebateData['actual_bonus_ratio'] = isset($rebateData['actual_bonus_ratio']) ? (float)$rebateData['actual_bonus_ratio'] : 0;
+            $rebateData['days_from_payment'] = isset($rebateData['days_from_payment']) ? (int)$rebateData['days_from_payment'] : 0;
+            $rebateData['payment_time'] = isset($rebateData['payment_time']) ? (int)$rebateData['payment_time'] : 0;
+            $rebateData['verify_time'] = isset($rebateData['verify_time']) ? (int)$rebateData['verify_time'] : 0;
+            $rebateData['free_days'] = isset($rebateData['free_days']) ? (int)$rebateData['free_days'] : 0;
+            $rebateData['welfare_days'] = isset($rebateData['welfare_days']) ? (int)$rebateData['welfare_days'] : 0;
+            $rebateData['goods_days'] = isset($rebateData['goods_days']) ? (int)$rebateData['goods_days'] : 0;
+        }
+        $voucher['voucher_rebate'] = $rebateData;
+
         // 地区信息（来自商品）
         $voucher['region_city_name'] = ($voucher->goods && isset($voucher->goods['region_city_name'])) ? $voucher->goods['region_city_name'] : '';
 

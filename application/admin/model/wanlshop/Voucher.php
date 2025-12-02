@@ -147,6 +147,15 @@ class Voucher extends Model
     }
 
     /**
+     * 关联：返利结算记录（与券一对一）
+     * @return \think\model\relation\HasOne
+     */
+    public function voucherRebate()
+    {
+        return $this->hasOne('VoucherRebate', 'voucher_id', 'id');
+    }
+
+    /**
      * 计算属性：券码
      * @param mixed $value
      * @param array $data
