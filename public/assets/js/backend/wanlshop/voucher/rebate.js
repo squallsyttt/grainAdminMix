@@ -27,16 +27,6 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
                 return '-';
             }
             return number.toFixed(2) + '%';
-        },
-        weight: function (value) {
-            if (value === null || value === undefined || value === '') {
-                return '-';
-            }
-            var number = parseFloat(value);
-            if (isNaN(number)) {
-                return '-';
-            }
-            return number.toFixed(2) + ' 斤';
         }
     };
 
@@ -82,9 +72,22 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
                             searchList: stageMap,
                             formatter: Table.api.formatter.normal
                         },
-                        {field: 'rebate_amount', title: '返利金额', operate: 'BETWEEN', formatter: Formatter.money},
                         {field: 'actual_bonus_ratio', title: '实际返利比例', operate: 'BETWEEN', formatter: Formatter.percent},
-                        {field: 'actual_goods_weight', title: '实际货物重量', operate: 'BETWEEN', formatter: Formatter.weight},
+                        {field: 'face_value', title: '返利基数', operate: 'BETWEEN', formatter: Formatter.money},
+                        {
+                            field: 'calculated_rebate',
+                            title: '返利金额',
+                            operate: false,
+                            formatter: function (value, row) {
+                                var faceValue = parseFloat(row.face_value);
+                                var ratio = parseFloat(row.actual_bonus_ratio);
+                                if (isNaN(faceValue) || isNaN(ratio)) {
+                                    return '-';
+                                }
+                                var amount = faceValue * ratio / 100;
+                                return '¥' + amount.toFixed(2);
+                            }
+                        },
                         {
                             field: 'verify_time',
                             title: '核销时间',
@@ -103,6 +106,12 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
                             field: 'status',
                             title: '行状态',
                             searchList: {'normal': '正常', 'hidden': '隐藏'},
+                            formatter: Table.api.formatter.status
+                        },
+                        {
+                            field: 'payment_status',
+                            title: '返现状态',
+                            searchList: {'unpaid': '未打款', 'paid': '已打款'},
                             formatter: Table.api.formatter.status
                         },
                         {

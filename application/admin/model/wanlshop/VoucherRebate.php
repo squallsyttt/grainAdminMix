@@ -23,9 +23,10 @@ class VoucherRebate extends Model
     protected $updateTime = 'updatetime';
     protected $deleteTime = 'deletetime';
 
-    // 追加属性：阶段文本
+    // 追加属性：阶段文本、返现状态
     protected $append = [
-        'stage_text'
+        'stage_text',
+        'payment_status_text'
     ];
 
     /**
@@ -52,6 +53,31 @@ class VoucherRebate extends Model
     {
         $value = $value ? $value : (isset($data['stage']) ? $data['stage'] : '');
         $list = $this->getStageList();
+        return isset($list[$value]) ? $list[$value] : '';
+    }
+
+    /**
+     * 返现状态枚举
+     * @return array
+     */
+    public function getPaymentStatusList()
+    {
+        return [
+            'unpaid' => '未打款',
+            'paid' => '已打款',
+        ];
+    }
+
+    /**
+     * 返现状态文本获取器
+     * @param mixed $value
+     * @param array $data
+     * @return string
+     */
+    public function getPaymentStatusTextAttr($value, $data)
+    {
+        $value = $value ? $value : (isset($data['payment_status']) ? $data['payment_status'] : '');
+        $list = $this->getPaymentStatusList();
         return isset($list[$value]) ? $list[$value] : '';
     }
 
