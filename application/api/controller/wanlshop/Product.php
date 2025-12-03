@@ -12,7 +12,7 @@ use think\Db;
  */
 class Product extends Api
 {
-	protected $noNeedLogin = ['lists', 'goods', 'drawer', 'comment', 'likes', 'stock'];
+	protected $noNeedLogin = ['lists', 'goods', 'drawer', 'comment', 'likes', 'stock', 'skuPrices'];
 	protected $noNeedRight = ['*'];
     
 	protected $excludeFields = "";
@@ -303,6 +303,75 @@ class Product extends Api
 			$this->error(__('对不起当前商品不存在或已下架！'));
 		}
     }
+
+	/**
+	 * 按店铺+类目获取所有SKU价格
+	 *
+	 * @ApiSummary  (WanlShop 获取指定店铺、类目下所有商品SKU价格)
+	 * @ApiMethod   (GET)
+	 *
+	 * @param int $shop_id      店铺ID（必填）
+	 * @param int $category_id  分类ID（必填，包含该分类及其子类目）
+	 */
+	public function skuPrices()
+	{
+		$this->request->filter(['strip_tags']);
+		$shopId = (int)$this->request->get('shop_id', 0);
+		$categoryId = (int)$this->request->get('category_id', 0);
+		if (!$shopId || !$categoryId) {
+			$this->error('shop_id 与 category_id 必填');
+		}
+		// 获取类目及子类目
+		$categoryModel = model('app\api\model\wanlshop\Category');
+		$tree = Tree::instance();
+		$tree->init(collection($categoryModel->field('id,pid,name')->select())->toArray(), 'pid');
+		$categoryIds = [$categoryId];
+		$children = $tree->getChildren($categoryId, true);
+		foreach ($children as $item) {
+			$categoryIds[] = $item['id'];
+		}
+		$categoryIds = array_unique($categoryIds);
+
+		// 查询SKU列表
+		$rows = Db::name('wanlshop_goods')->alias('g')
+			->join('wanlshop_goods_sku s', 's.goods_id = g.id')
+			->where('g.shop_id', $shopId)
+			->where('g.category_id', 'in', $categoryIds)
+			->where('g.status', 'normal')
+			->whereNull('g.deletetime')
+			->where('s.status', 'normal')
+			->whereNull('s.deletetime')
+			->field('g.id AS goods_id,g.title,g.image,g.shop_id,g.category_id,s.id AS sku_id,s.price,s.market_price,s.stock,s.sn,s.thumbnail,s.difference')
+			->order('g.id', 'asc')
+			->select();
+
+		// 组装结果
+		$result = [];
+		foreach ($rows as $row) {
+			$gid = $row['goods_id'];
+			if (!isset($result[$gid])) {
+				$result[$gid] = [
+					'goods_id' => $gid,
+					'title' => $row['title'],
+					'image' => $row['image'],
+					'shop_id' => $row['shop_id'],
+					'category_id' => $row['category_id'],
+					'skus' => []
+				];
+			}
+			$result[$gid]['skus'][] = [
+				'sku_id' => $row['sku_id'],
+				'price' => $row['price'],
+				'market_price' => $row['market_price'],
+				'stock' => $row['stock'],
+				'sn' => $row['sn'],
+				'thumbnail' => $row['thumbnail'],
+				'difference' => $row['difference'] ? explode(',', $row['difference']) : []
+			];
+		}
+
+		$this->success('返回成功', array_values($result));
+	}
 	
 	/**
 	 * 实时查询库存

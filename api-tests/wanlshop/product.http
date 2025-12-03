@@ -61,7 +61,7 @@ Content-Type: application/json
 ### 6. 获取商品详情（需要传入商品 ID）
 ###    将 {{goodsId}} 替换为实际存在的商品 ID
 ### ========================================
-GET {{baseUrl}}{{apiPrefix}}/goods?id=1
+GET {{baseUrl}}{{apiPrefix}}/goods?id=27
 Content-Type: application/json
 
 ### ========================================
@@ -127,4 +127,11 @@ Content-Type: application/json
 ###     说明：在特定分类下搜索包含关键词的商品
 ### ========================================
 GET {{baseUrl}}{{apiPrefix}}/lists?title__like=有机&category_id=106
+Content-Type: application/json
+
+### ========================================
+### 16. 查询店铺+类目下所有 SKU 价格
+###     说明：shop_id=1，category_id=114（包含其子类目），返回商品及其全部 SKU 价格
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/skuPrices?shop_id=1&category_id=114
 Content-Type: application/json
