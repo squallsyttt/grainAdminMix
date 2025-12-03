@@ -293,6 +293,40 @@ class Product extends Api
 				->field('id,title,image,price')
 				->limit(3)
 				->select();
+			// 叠加店铺1的对标价格
+			if ($goods['shop_id'] != 1) {
+				$shopOneGoods = $goodsModel
+					->where(['shop_id' => 1, 'category_id' => $goods['category_id'], 'status' => 'normal'])
+					->field('id,price')
+					->find();
+				if ($shopOneGoods) {
+					$goods['shop1_price'] = $this->calculateShop1Price($goods['price'], $shopOneGoods['price']);
+					$shopOneSkuList = model('app\api\model\wanlshop\GoodsSku')
+						->where(['goods_id' => $shopOneGoods['id'], 'stock' => ['>', 0], 'state' => ['=', 0]])
+						->field('id,difference,price')
+						->select();
+					$shopOneSkuPriceMap = [];
+					foreach ($shopOneSkuList as $shopOneSku) {
+						$differenceKey = implode(',', (array)$shopOneSku['difference']);
+						$shopOneSkuPriceMap[$differenceKey] = $shopOneSku['price'];
+					}
+					// 将 SKU 转为可修改数组再写回，避免间接修改模型抛错
+					$skuList = $goods['sku'];
+					if ($skuList instanceof \think\Collection) {
+						$skuList = $skuList->toArray();
+					} elseif (!is_array($skuList)) {
+						$skuList = [];
+					}
+					foreach ($skuList as &$sku) {
+						$differenceKey = implode(',', (array)$sku['difference']);
+						if (array_key_exists($differenceKey, $shopOneSkuPriceMap)) {
+							$sku['shop1_sku_price'] = $this->calculateShop1Price($sku['price'], $shopOneSkuPriceMap[$differenceKey]);
+						}
+					}
+					unset($sku);
+					$goods['sku'] = $skuList;
+				}
+			}
 			// 浏览+1
 			$goods->setInc('views'); 
 			// 写入访问日志
@@ -675,6 +709,38 @@ class Product extends Api
 		}
 		
 		$this->success('返回成功', $comment);
+	}
+	
+	/**
+	 * 计算店铺1价格展示
+	 *
+	 * @param float|string $currentPrice 当前商品价格
+	 * @param float|string $shopOnePrice 店铺1同类商品价格
+	 * @return string
+	 */
+	private function calculateShop1Price($currentPrice, $shopOnePrice)
+	{
+		$current = (float)$currentPrice;
+		$shopOne = (float)$shopOnePrice;
+		if ($shopOne <= 0) {
+			return $this->formatPrice($current);
+		}
+		$threshold = $shopOne * 0.8;
+		if ($current <= $threshold) {
+			return $this->formatPrice($shopOne);
+		}
+		return $this->formatPrice($current / 0.8);
+	}
+	
+	/**
+	 * 保留两位小数
+	 *
+	 * @param float|string $value
+	 * @return string
+	 */
+	private function formatPrice($value)
+	{
+		return number_format((float)$value, 2, '.', '');
 	}
 	
 	/**
