@@ -62,6 +62,7 @@ class WechatPayment
                 if (empty($config[$key])) {
                     throw new Exception("微信支付配置不完整：{$key} 不能为空");
                 }
+                self::assertString($config[$key], "微信支付配置项 {$key}");
             }
 
             // 2. 加载商户私钥（用于生成请求签名）
@@ -70,14 +71,14 @@ class WechatPayment
 
             // 3. 初始化构建配置
             $buildConfig = [
-                'mchid'      => trim($config['mch_id']),
-                'serial'     => trim($config['serial_no']),
+                'mchid'      => trim((string)$config['mch_id']),
+                'serial'     => trim((string)$config['serial_no']),
                 'privateKey' => $merchantPrivateKeyInstance,
                 'certs'      => [],
             ];
 
             // 4. 加载平台公钥（必需，用于验签）
-            $platformPublicKeyId = trim($config['platform_public_key_id']);
+            $platformPublicKeyId = trim((string)$config['platform_public_key_id']);
             $platformPublicKeyPath = self::resolveFilePath($config['platform_public_key_path'], '平台公钥');
             $platformPublicKeyInstance = Rsa::from('file://' . $platformPublicKeyPath, Rsa::KEY_TYPE_PUBLIC);
             $buildConfig['certs'][$platformPublicKeyId] = $platformPublicKeyInstance;
@@ -86,7 +87,10 @@ class WechatPayment
 
             // 5. 可选：加载平台证书（推荐配置，SDK 优先使用证书验签）
             if (!empty($config['platform_public_cert_serial_no']) && !empty($config['platform_public_cert_path'])) {
-                $platformCertSerialNo = trim($config['platform_public_cert_serial_no']);
+                self::assertString($config['platform_public_cert_serial_no'], '微信支付配置项 platform_public_cert_serial_no');
+                self::assertString($config['platform_public_cert_path'], '微信支付配置项 platform_public_cert_path');
+
+                $platformCertSerialNo = trim((string)$config['platform_public_cert_serial_no']);
                 $platformCertPath = self::resolveFilePath($config['platform_public_cert_path'], '平台证书', false);
 
                 if ($platformCertPath !== null) {
@@ -118,6 +122,17 @@ class WechatPayment
      */
     private static function resolveFilePath($path, $description, $required = true)
     {
+        // 防御：配置项必须是字符串
+        if (!is_string($path)) {
+            $type = gettype($path);
+            $message = "{$description}路径配置异常，期望字符串，实际为 {$type}";
+            Log::error($message);
+            if ($required) {
+                throw new Exception($message);
+            }
+            return null;
+        }
+
         $path = trim($path);
 
         // 如果不是绝对路径，转换为绝对路径
@@ -139,6 +154,23 @@ class WechatPayment
 
         Log::info("{$description}文件：{$path}");
         return $path;
+    }
+
+    /**
+     * 校验配置项必须为字符串
+     *
+     * @param mixed  $value
+     * @param string $label
+     * @throws Exception
+     */
+    private static function assertString($value, string $label)
+    {
+        if (!is_string($value)) {
+            $type = gettype($value);
+            $message = "{$label} 应为字符串，实际为 {$type}";
+            Log::error($message);
+            throw new Exception($message);
+        }
     }
 
     /**
@@ -457,6 +489,7 @@ class WechatPayment
         }
 
         $appid = isset($config['appid']) ? trim($config['appid']) : '';
+        $defaultNotifyUrl = isset($config['transfer_notify_url']) ? trim($config['transfer_notify_url']) : '';
         if ($appid === '') {
             throw new Exception('微信支付配置不完整：appid 不能为空');
         }
@@ -512,6 +545,8 @@ class WechatPayment
         // 可选参数：回调URL
         if (!empty($params['notify_url'])) {
             $body['notify_url'] = (string)$params['notify_url'];
+        } elseif ($defaultNotifyUrl !== '') {
+            $body['notify_url'] = $defaultNotifyUrl;
         }
 
         // 可选参数：用户收款感知

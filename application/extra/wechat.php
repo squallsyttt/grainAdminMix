@@ -58,5 +58,11 @@ return [
             'wechat_payment.refund_notify_url',
             'https://yourdomain.com/api/wanlshop/voucher/order/refundNotify'
         ),
+
+        // 转账回调地址（必须 HTTPS，可通过 .env 覆盖）
+        'transfer_notify_url' => \think\Env::get(
+            'wechat_payment.transfer_notify_url',
+            'https://yourdomain.com/api/wanlshop/voucher/settlement/transferNotify'
+        ),
     ],
 ];

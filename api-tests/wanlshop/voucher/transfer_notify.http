@@ -1,0 +1,43 @@
+### 核销券转账回调接口测试
+@baseUrl = http://127.0.0.1:8000
+@apiPrefix = /api/wanlshop/voucher/settlement/transferNotify
+
+### 1. 正常回调（需替换为微信真实签名与密文后再执行）
+POST {{baseUrl}}{{apiPrefix}}
+Wechatpay-Timestamp: 1700000000
+Wechatpay-Nonce: REPLACE_WITH_NONCE
+Wechatpay-Signature: REPLACE_WITH_SIGNATURE
+Wechatpay-Serial: REPLACE_WITH_SERIAL
+Content-Type: application/json
+
+{
+  "id": "EVT_REPLACE_WITH_EVENT_ID",
+  "create_time": "2025-02-06T12:00:00+08:00",
+  "event_type": "TRANSFER.SUCCESS",
+  "resource_type": "encrypt-resource",
+  "resource": {
+    "algorithm": "AEAD_AES_256_GCM",
+    "ciphertext": "<替换为微信回调提供的ciphertext>",
+    "nonce": "<替换为微信回调提供的nonce>",
+    "associated_data": "transaction"
+  },
+  "summary": "商家转账到零钱回调示例"
+}
+
+### 2. 签名错误示例（应返回 FAIL）
+POST {{baseUrl}}{{apiPrefix}}
+Wechatpay-Timestamp: 1700000001
+Wechatpay-Nonce: invalid-nonce
+Wechatpay-Signature: invalid-signature
+Wechatpay-Serial: invalid-serial
+Content-Type: application/json
+
+{
+  "id": "EVT_INVALID",
+  "resource_type": "encrypt-resource",
+  "resource": {
+    "algorithm": "AEAD_AES_256_GCM",
+    "ciphertext": "INVALID",
+    "nonce": "INVALID"
+  }
+}

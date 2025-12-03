@@ -1,7 +1,8 @@
 ### 核销券结算接口测试(商家端)
 ### 基础配置
-@baseUrl = http://localhost:8000
+@baseUrl = https://grain.griffithres.top
 @token = YOUR_SHOP_TOKEN_HERE
+@userToken = 643ea798-9a3c-4931-8b87-71eff8e9968c
 @shopId = 1
 
 ### 1. 结算列表 - 全部
@@ -35,3 +36,11 @@ token: {{token}}
 ### 8. 结算详情 - ID为空(应失败)
 GET {{baseUrl}}/api/wanlshop/voucher/settlement/detail
 token: {{token}}
+
+### 9. 待确认转账列表（当前用户）
+GET {{baseUrl}}/api/wanlshop/voucher/settlement/pendingTransfers?pagesize=10
+token: {{userToken}}
+
+### 10. 待确认转账列表 - pagesize 超上限（应被限制为50）
+GET {{baseUrl}}/api/wanlshop/voucher/settlement/pendingTransfers?pagesize=100
+token: {{userToken}}

@@ -47,6 +47,8 @@ class SettlementTransferService
     {
         $settlementId = (int)$settlementId;
         $receiverUserId = (int)$receiverUserId;
+        $config = config('wechat.payment');
+        $transferNotifyUrl = isset($config['transfer_notify_url']) ? trim($config['transfer_notify_url']) : '';
 
         if ($settlementId <= 0 || $receiverUserId <= 0) {
             return ['success' => false, 'message' => '参数无效'];
@@ -60,6 +62,11 @@ class SettlementTransferService
 
         Db::startTrans();
         try {
+            // 将警告提升为异常，便于定位 strpos 等类型错误
+            set_error_handler(function ($severity, $message, $file, $line) {
+                throw new \ErrorException($message, 0, $severity, $file, $line);
+            });
+
             $settlement = VoucherSettlement::where('id', $settlementId)->lock(true)->find();
             if (!$settlement) {
                 throw new Exception('结算记录不存在');
@@ -90,7 +97,8 @@ class SettlementTransferService
                 throw new Exception('打款金额无效');
             }
 
-            $outBillNo = date('YmdHis') . rand(1000, 9999);
+            // 业务关联：携带结算ID方便后续回查
+            $outBillNo = 'STL' . date('YmdHis') . $settlementId;
 
             $requestData = [
                 'out_bill_no'      => $outBillNo,
@@ -102,6 +110,9 @@ class SettlementTransferService
                     ['info_type' => '采购商品名称', 'info_content' => '核销券结算款'],
                 ],
             ];
+            if ($transferNotifyUrl !== '') {
+                $requestData['notify_url'] = $transferNotifyUrl;
+            }
 
             // 更新状态为打款中
             $settlement->state = '3';
@@ -110,8 +121,10 @@ class SettlementTransferService
             $result = WechatPayment::transferToWallet($requestData);
 
             // 新版API返回 state=WAIT_USER_CONFIRM 表示等待用户确认
-            $transferState = $result['state'] ?? '';
-            $isSuccess = in_array($transferState, ['WAIT_USER_CONFIRM', 'SUCCESS', 'ACCEPTED']);
+            $transferState = (string)($result['state'] ?? '');
+            $needUserConfirm = in_array($transferState, ['WAIT_USER_CONFIRM', 'ACCEPTED'], true);
+            $isImmediateSuccess = $transferState === 'SUCCESS';
+            $logStatus = $isImmediateSuccess ? 2 : ($needUserConfirm ? 1 : 3); // 1=待确认,2=成功,3=失败
 
             TransferLog::create([
                 'settlement_id' => $settlement->id,
@@ -120,18 +133,21 @@ class SettlementTransferService
                 'transfer_amount' => $amountFen,
                 'receiver_openid' => $receiver['openid'],
                 'receiver_user_id' => $receiverUserId,
-                'status' => $isSuccess ? 2 : 3,
+                'status' => $logStatus,
                 'wechat_batch_id' => $result['transfer_bill_no'] ?? null,
                 'wechat_detail_id' => $result['transfer_bill_no'] ?? null,
-                'fail_reason' => $isSuccess ? null : ($result['fail_reason'] ?? null),
+                'fail_reason' => $isImmediateSuccess || $needUserConfirm ? null : ($result['fail_reason'] ?? null),
                 'request_data' => json_encode($requestData, JSON_UNESCAPED_UNICODE),
                 'response_data' => json_encode($result, JSON_UNESCAPED_UNICODE),
+                'package_info' => isset($result['package_info']) ? json_encode($result['package_info'], JSON_UNESCAPED_UNICODE) : null,
             ]);
 
             // 根据返回状态决定结算状态
-            if ($isSuccess) {
+            if ($isImmediateSuccess) {
                 $settlement->state = '2';
                 $settlement->settlement_time = time();
+            } elseif ($needUserConfirm) {
+                $settlement->state = '3';
             } else {
                 $settlement->state = '4';
             }
@@ -139,9 +155,21 @@ class SettlementTransferService
 
             Db::commit();
 
-            return ['success' => true, 'data' => $result];
+            return [
+                'success' => true,
+                'data' => [
+                    'out_bill_no' => $outBillNo,
+                    'transfer_bill_no' => $result['transfer_bill_no'] ?? null,
+                    'transfer_state' => $transferState,
+                    'need_user_confirm' => $needUserConfirm,
+                    'package_info' => $result['package_info'] ?? null,
+                    'amount' => $amountFen,
+                ]
+            ];
         } catch (Exception $e) {
             Db::rollback();
+
+            Log::error('结算打款异常: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
 
             if ($settlement && $settlement->id) {
                 VoucherSettlement::where('id', $settlement->id)->update([
@@ -164,6 +192,7 @@ class SettlementTransferService
                         'fail_reason' => $e->getMessage(),
                         'request_data' => $requestData ? json_encode($requestData, JSON_UNESCAPED_UNICODE) : null,
                         'response_data' => null,
+                        'package_info' => null,
                     ]);
                 }
             } catch (Exception $logEx) {
@@ -171,6 +200,8 @@ class SettlementTransferService
             }
 
             return ['success' => false, 'message' => $e->getMessage()];
+        } finally {
+            restore_error_handler();
         }
     }
 

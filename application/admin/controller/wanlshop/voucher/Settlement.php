@@ -134,14 +134,14 @@ class Settlement extends Backend
 
             try {
                 $result = $service->transfer((int)$ids, (int)$receiverUserId);
-                if (!empty($result['success'])) {
-                    $this->success('打款成功');
+                if ($result['success']) {
+                    $this->success('打款发起成功', null, $result['data'] ?? []);
                 }
-                $this->error('打款失败：' . ($result['message'] ?? '未知错误'));
+                $this->error('打款失败1：' . ($result['message'] ?? '未知错误'));
             } catch (\think\exception\HttpResponseException $e) {
                 throw $e;
             } catch (\Exception $e) {
-                $this->error('打款失败：' . $e->getMessage());
+                $this->error('打款失败2：' . $e->getMessage());
             }
         }
 

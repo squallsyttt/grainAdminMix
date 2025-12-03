@@ -4,7 +4,7 @@
 
 CREATE TABLE IF NOT EXISTS `grain_wanlshop_payment_callback_log` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
-  `order_type` enum('goods','voucher','groups') COLLATE utf8mb4_general_ci NOT NULL COMMENT '订单类型:goods=商品订单,voucher=核销券订单,groups=拼团订单',
+  `order_type` enum('goods','voucher','groups','voucher_refund','voucher_transfer') COLLATE utf8mb4_general_ci NOT NULL COMMENT '订单类型:goods=商品订单,voucher=核销券订单,voucher_refund=核销券退款,voucher_transfer=核销券转账回调,groups=拼团订单',
   `order_no` varchar(32) COLLATE utf8mb4_general_ci NOT NULL COMMENT '商户订单号',
   `transaction_id` varchar(64) COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '微信支付订单号',
   `trade_state` varchar(32) COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '交易状态(SUCCESS/REFUND/NOTPAY/...)',
@@ -21,4 +21,3 @@ CREATE TABLE IF NOT EXISTS `grain_wanlshop_payment_callback_log` (
   KEY `idx_process_status` (`process_status`),
   KEY `idx_createtime` (`createtime`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='微信支付回调日志表';
-
