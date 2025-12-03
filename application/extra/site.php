@@ -4,7 +4,7 @@ return array (
   'name' => '壕禾大米平台',
   'beian' => '',
   'cdnurl' => '',
-  'version' => '1.0.1',
+  'version' => '1.0.3',
   'timezone' => 'Asia/Shanghai',
   'forbiddenip' => '',
   'languages' => 

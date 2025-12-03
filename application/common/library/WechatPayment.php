@@ -430,6 +430,134 @@ class WechatPayment
     }
 
     /**
+     * 商家转账到零钱（新版API）
+     *
+     * 微信支付 V3 API：POST /v3/fund-app/mch-transfer/transfer-bills
+     * 注意：新版API需要用户确认收款，返回 package_info 供前端调起确认页面
+     *
+     * @param array $params [
+     *   'out_bill_no'          => string 商户单号（必填，唯一）
+     *   'openid'               => string 收款用户OpenID（必填）
+     *   'transfer_amount'      => int    转账金额（单位：分，必填）
+     *   'transfer_remark'      => string 转账备注（必填）
+     *   'transfer_scene_id'    => string 转账场景ID（必填，如 1000=现金营销）
+     *   'notify_url'           => string 回调URL（可选）
+     *   'user_name'            => string 收款人姓名（>=2000元时必填）
+     *   'user_recv_perception' => string 用户收款感知（可选）
+     *   'scene_report_infos'   => array  场景报备信息（必填，至少2项）
+     * ]
+     * @return array
+     * @throws Exception
+     */
+    public static function transferToWallet(array $params)
+    {
+        $config = config('wechat.payment');
+        if (empty($config) || !is_array($config)) {
+            throw new Exception('微信支付配置未设置（wechat.payment）');
+        }
+
+        $appid = isset($config['appid']) ? trim($config['appid']) : '';
+        if ($appid === '') {
+            throw new Exception('微信支付配置不完整：appid 不能为空');
+        }
+
+        // 可选：平台证书路径（用于 user_name 加密）
+        $platformCertPath = !empty($config['platform_public_cert_path'])
+            ? self::resolveFilePath($config['platform_public_cert_path'], '平台证书', false)
+            : null;
+        $platformPublicCert = null;
+        if ($platformCertPath !== null) {
+            $platformPublicCert = Rsa::from('file://' . $platformCertPath, Rsa::KEY_TYPE_PUBLIC);
+        }
+
+        // 参数验证
+        if (empty($params['out_bill_no'])) {
+            throw new Exception('转账参数不完整：out_bill_no 不能为空');
+        }
+        if (empty($params['openid'])) {
+            throw new Exception('转账参数不完整：openid 不能为空');
+        }
+        if (empty($params['transfer_amount']) || (int)$params['transfer_amount'] <= 0) {
+            throw new Exception('转账参数不完整：transfer_amount 必须大于0');
+        }
+        if (empty($params['transfer_remark'])) {
+            throw new Exception('转账参数不完整：transfer_remark 不能为空');
+        }
+
+        // 转账场景ID，默认使用 1000（现金营销）
+        $transferSceneId = !empty($params['transfer_scene_id']) ? (string)$params['transfer_scene_id'] : '1000';
+
+        // 场景报备信息，至少需要2项
+        $sceneReportInfos = [];
+        if (!empty($params['scene_report_infos']) && is_array($params['scene_report_infos'])) {
+            $sceneReportInfos = $params['scene_report_infos'];
+        } else {
+            // 默认报备信息
+            $sceneReportInfos = [
+                ['info_type' => '活动名称', 'info_content' => '核销券结算'],
+                ['info_type' => '奖励说明', 'info_content' => '商家结算打款'],
+            ];
+        }
+
+        $body = [
+            'appid'                       => $appid,
+            'out_bill_no'                 => (string)$params['out_bill_no'],
+            'transfer_scene_id'           => $transferSceneId,
+            'openid'                      => (string)$params['openid'],
+            'transfer_amount'             => (int)$params['transfer_amount'],
+            'transfer_remark'             => (string)$params['transfer_remark'],
+            'transfer_scene_report_infos' => $sceneReportInfos,
+        ];
+
+        // 可选参数：回调URL
+        if (!empty($params['notify_url'])) {
+            $body['notify_url'] = (string)$params['notify_url'];
+        }
+
+        // 可选参数：用户收款感知
+        if (!empty($params['user_recv_perception'])) {
+            $body['user_recv_perception'] = (string)$params['user_recv_perception'];
+        }
+
+        // 可选参数：收款人姓名（>=2000元时必填，需加密）
+        if (!empty($params['user_name'])) {
+            if ($platformPublicCert === null) {
+                throw new Exception('转账参数不完整：缺少平台证书，无法加密 user_name');
+            }
+            $body['user_name'] = Rsa::encrypt((string)$params['user_name'], $platformPublicCert);
+        }
+
+        Log::info('微信转账请求（新版API）：' . json_encode($body, JSON_UNESCAPED_UNICODE));
+
+        try {
+            $instance = self::getInstance();
+            $response = $instance->chain('v3/fund-app/mch-transfer/transfer-bills')->post(['json' => $body]);
+
+            $result = json_decode($response->getBody(), true);
+
+            Log::info('微信转账成功：' . json_encode($result, JSON_UNESCAPED_UNICODE));
+
+            return $result;
+
+        } catch (\GuzzleHttp\Exception\RequestException $e) {
+            $responseBody = '';
+            if ($e->hasResponse()) {
+                $response = $e->getResponse();
+                $responseBody = (string)$response->getBody();
+            }
+            $message = '微信转账请求失败：' . $e->getMessage();
+            if ($responseBody !== '') {
+                $message .= ' | 响应：' . $responseBody;
+            }
+            Log::error($message);
+            throw new Exception($message);
+        } catch (\Exception $e) {
+            Log::error('微信转账失败：' . $e->getMessage());
+            throw new Exception('微信转账失败：' . $e->getMessage());
+        }
+    }
+
+    /**
      * 申请退款
      *
      * 微信支付 V3 API：POST /v3/refund/domestic/refunds

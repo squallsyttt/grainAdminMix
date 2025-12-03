@@ -30,7 +30,7 @@ class VoucherSettlement extends Model
 
     /**
      * 状态枚举
-     * 1=待结算, 2=已结算
+     * 1=待结算, 2=已结算, 3=打款中, 4=打款失败
      * @return array
      */
     public function getStateList()
@@ -38,6 +38,8 @@ class VoucherSettlement extends Model
         return [
             '1' => '待结算',
             '2' => '已结算',
+            '3' => '打款中',
+            '4' => '打款失败',
         ];
     }
 
