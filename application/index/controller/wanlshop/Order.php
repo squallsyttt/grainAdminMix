@@ -47,12 +47,12 @@ class Order extends Wanlshop
             list($where, $sort, $order, $offset, $limit) = $this->buildparams();
 
             $total = $this->model
-                ->with(['voucher' => function($query){ $query->with(['goods']); }, 'user', 'shop'])
+                ->with(['voucher' => function($query){ $query->with(['goods']); }, 'user', 'shop', 'settlement'])
                 ->where($where)
                 ->count();
 
             $list = $this->model
-                ->with(['voucher' => function($query){ $query->with(['goods']); }, 'user', 'shop'])
+                ->with(['voucher' => function($query){ $query->with(['goods']); }, 'user', 'shop', 'settlement'])
                 ->where($where)
                 ->order($sort, $order)
                 ->limit($offset, $limit)
@@ -63,6 +63,14 @@ class Order extends Wanlshop
                 $row->getRelation('shop')->visible(['id', 'shopname']);
                 if ($row->voucher) {
                     $row->getRelation('voucher')->visible(['id', 'voucher_no', 'goods_title', 'state', 'goods']);
+                }
+                if ($row->settlement) {
+                    $row->getRelation('settlement')->visible(['id', 'settlement_no', 'state', 'shop_amount', 'settlement_time']);
+                    // 添加结算状态文字
+                    $stateMap = ['1' => '待结算', '2' => '已结算', '3' => '打款中', '4' => '打款失败'];
+                    $row['settlement_state_text'] = $stateMap[$row->settlement->state] ?? '未知';
+                } else {
+                    $row['settlement_state_text'] = '未生成';
                 }
                 // 统一商品展示字段，优先使用核销记录自身的商品标题
                 $row['shop_goods_title'] = $row['shop_goods_title'] ?: ($row->voucher ? $row->voucher->goods_title : '');
@@ -88,7 +96,7 @@ class Order extends Wanlshop
         $where = $voucherNo ? ['voucher_no' => $voucherNo] : ['id' => $id];
 
         $row = $this->model
-            ->with(['voucher' => function($query){ $query->with(['goods']); }, 'user', 'shop'])
+            ->with(['voucher' => function($query){ $query->with(['goods']); }, 'user', 'shop', 'settlement'])
             ->where($where)
             ->find();
 
@@ -104,6 +112,14 @@ class Order extends Wanlshop
         // 兼容前端模板所需的城市信息
         $goods = $row->voucher && $row->voucher->goods ? $row->voucher->goods : null;
         $row['region_city_name'] = $goods && isset($goods['region_city_name']) ? $goods['region_city_name'] : '';
+
+        // 结算状态文字
+        if ($row->settlement) {
+            $stateMap = ['1' => '待结算', '2' => '已结算', '3' => '打款中', '4' => '打款失败'];
+            $row['settlement_state_text'] = $stateMap[$row->settlement->state] ?? '未知';
+        } else {
+            $row['settlement_state_text'] = '未生成';
+        }
 
         $this->view->assign("row", $row);
         return $this->view->fetch();

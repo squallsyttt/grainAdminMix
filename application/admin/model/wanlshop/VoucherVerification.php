@@ -80,4 +80,13 @@ class VoucherVerification extends Model
     {
         return $this->belongsTo('Shop', 'shop_id', 'id');
     }
+
+    /**
+     * 关联：结算记录
+     * @return \think\model\relation\HasOne
+     */
+    public function settlement()
+    {
+        return $this->hasOne('VoucherSettlement', 'voucher_id', 'voucher_id');
+    }
 }
