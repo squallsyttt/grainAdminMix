@@ -21,6 +21,7 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'template', 'jquery-j
             var $quickRange = $(".wanl-quick-range");
             var quickSearch = '';
             var $searchInput = $(".wanl-search-input");
+            var settlementState = 'all'; // 结算状态筛选
             if (defaultRange) {
                 filterData.createtime = defaultRange;
             }
@@ -101,6 +102,12 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'template', 'jquery-j
 					} else {
 						delete params.search;
 					}
+					// 添加结算状态筛选参数
+					if (settlementState && settlementState !== 'all') {
+						params.settlement_state = settlementState;
+					} else {
+						delete params.settlement_state;
+					}
 					params.filter = JSON.stringify(filter);
 					params.op = JSON.stringify(op);
 					return params;
@@ -167,6 +174,17 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'template', 'jquery-j
 				$timeInput.val(rangeValue);
 				applyFilter(rangeValue);
 			});
+			// 结算状态筛选Tab点击事件
+			$(document).on("click", "#settlement-state-tabs .state-tab", function () {
+				var $this = $(this);
+				var state = $this.data("state");
+				// 更新Tab样式
+				$("#settlement-state-tabs .state-tab").removeClass("active");
+				$this.addClass("active");
+				// 更新筛选状态并刷新表格
+				settlementState = state;
+				table.bootstrapTable('refresh', {pageNumber: 1});
+			});
 			// 查询
 			$(document).on("click", ".btn-filter", function () {
 				applyFilter($.trim($timeInput.val()));
@@ -181,6 +199,10 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'template', 'jquery-j
 				} else {
 					$timeInput.val('');
 				}
+				// 重置结算状态筛选
+				settlementState = 'all';
+				$("#settlement-state-tabs .state-tab").removeClass("active");
+				$("#settlement-state-tabs .state-tab[data-state='all']").addClass("active");
 				applyFilter($.trim($timeInput.val()));
 			});
 			// 数据加载完成后渲染到自定义表格
@@ -191,7 +213,7 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'template', 'jquery-j
 				for (var i = 0; i < rows.length; i++) {
 					html += tpl({item: rows[i], i: i});
 				}
-				$dataList.html(html || '<tr><td colspan="7" style="text-align:center;color:#6b7280;padding:40px;">暂无数据</td></tr>');
+				$dataList.html(html || '<tr><td colspan="8" style="text-align:center;color:#6b7280;padding:40px;">暂无数据</td></tr>');
 				// 刷新统计面板
 				var stats = data && data.stats ? data.stats : null;
 				if (stats) {

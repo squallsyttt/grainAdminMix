@@ -144,6 +144,75 @@
 		border-color: rgba(14, 165, 233, 0.6);
 		box-shadow: 0 10px 22px -16px rgba(14, 165, 233, 0.65);
 	}
+	/* 结算状态筛选Tab */
+	.wanl-state-tabs {
+		display: flex;
+		gap: 8px;
+		margin-bottom: 14px;
+		flex-wrap: wrap;
+	}
+	.wanl-state-tabs .state-tab {
+		padding: 8px 16px;
+		border-radius: 10px;
+		border: 1px solid var(--wanl-border);
+		background: #fff;
+		color: var(--wanl-muted);
+		font-weight: 600;
+		font-size: 13px;
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+	.wanl-state-tabs .state-tab:hover {
+		border-color: var(--wanl-primary);
+		color: var(--wanl-primary);
+	}
+	.wanl-state-tabs .state-tab.active {
+		background: var(--wanl-primary);
+		color: #fff;
+		border-color: var(--wanl-primary);
+	}
+	.wanl-state-tabs .state-tab .count {
+		display: inline-block;
+		min-width: 20px;
+		padding: 2px 6px;
+		border-radius: 10px;
+		background: rgba(0,0,0,0.1);
+		font-size: 11px;
+		margin-left: 4px;
+	}
+	.wanl-state-tabs .state-tab.active .count {
+		background: rgba(255,255,255,0.3);
+	}
+	/* 结算状态标签样式 */
+	.wanl-settlement-state {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		padding: 4px 10px;
+		border-radius: 6px;
+		font-size: 12px;
+		font-weight: 600;
+	}
+	.wanl-settlement-state.state-pending {
+		background: #fef3c7;
+		color: #92400e;
+	}
+	.wanl-settlement-state.state-success {
+		background: #d1fae5;
+		color: #065f46;
+	}
+	.wanl-settlement-state.state-processing {
+		background: #dbeafe;
+		color: #1e40af;
+	}
+	.wanl-settlement-state.state-failed {
+		background: #fee2e2;
+		color: #991b1b;
+	}
+	.wanl-settlement-state.state-none {
+		background: #f3f4f6;
+		color: #6b7280;
+	}
 	.wanl-table-wrap {
 		background: var(--wanl-surface);
 		border: 1px solid var(--wanl-border);
@@ -244,13 +313,14 @@
 		border-bottom: none;
 	}
 	/* 列宽 */
-	.wanl-data-table .col-product { width: 22%; }
-	.wanl-data-table .col-code { width: 22%; }
+	.wanl-data-table .col-product { width: 20%; }
+	.wanl-data-table .col-code { width: 18%; }
 	.wanl-data-table .col-amount { width: 8%; }
-	.wanl-data-table .col-method { width: 10%; }
-	.wanl-data-table .col-user { width: 12%; }
-	.wanl-data-table .col-time { width: 16%; }
-	.wanl-data-table .col-action { width: 10%; }
+	.wanl-data-table .col-settlement { width: 10%; }
+	.wanl-data-table .col-method { width: 8%; }
+	.wanl-data-table .col-user { width: 10%; }
+	.wanl-data-table .col-time { width: 14%; }
+	.wanl-data-table .col-action { width: 12%; }
 	.wanl-product-inline {
 		display: flex;
 		align-items: center;
@@ -391,6 +461,25 @@
 			</form>
 		</div>
 
+		<!-- 结算状态筛选Tab -->
+		<div class="wanl-state-tabs" id="settlement-state-tabs">
+			<button type="button" class="state-tab active" data-state="all">
+				<i class="fa fa-list"></i> 全部
+			</button>
+			<button type="button" class="state-tab" data-state="2">
+				<i class="fa fa-check-circle"></i> 已到账
+			</button>
+			<button type="button" class="state-tab" data-state="1">
+				<i class="fa fa-clock-o"></i> 待结算
+			</button>
+			<button type="button" class="state-tab" data-state="3">
+				<i class="fa fa-spinner"></i> 打款中
+			</button>
+			<button type="button" class="state-tab" data-state="4">
+				<i class="fa fa-times-circle"></i> 打款失败
+			</button>
+		</div>
+
 		<div class="wanl-table-wrap widget-body no-padding">
 			<div class="wanl-table-head">
 				<h4 class="title">核销记录列表</h4>
@@ -408,6 +497,7 @@
 						<th class="col-product">商品</th>
 						<th class="col-code">核销码</th>
 						<th class="col-amount">金额</th>
+						<th class="col-settlement">结算状态</th>
 						<th class="col-method">核销方式</th>
 						<th class="col-user">用户</th>
 						<th class="col-time">时间</th>
@@ -422,6 +512,19 @@
 </div>
 <script type="text/html" id="itemtpl">
 	<% var goods = item.voucher && item.voucher.goods ? item.voucher.goods : {}; %>
+	<%
+		// 结算状态样式映射
+		var settlementStateClass = 'state-none';
+		var settlementStateIcon = 'fa-question-circle';
+		if (item.settlement && item.settlement.state) {
+			switch(item.settlement.state) {
+				case '1': settlementStateClass = 'state-pending'; settlementStateIcon = 'fa-clock-o'; break;
+				case '2': settlementStateClass = 'state-success'; settlementStateIcon = 'fa-check-circle'; break;
+				case '3': settlementStateClass = 'state-processing'; settlementStateIcon = 'fa-spinner fa-spin'; break;
+				case '4': settlementStateClass = 'state-failed'; settlementStateIcon = 'fa-times-circle'; break;
+			}
+		}
+	%>
 	<tr>
 		<td>
 			<div class="wanl-product-inline">
@@ -439,6 +542,12 @@
 		</td>
 		<td>
 			<span class="wanl-amount">￥<%= item.supply_price || '0.00' %></span>
+		</td>
+		<td>
+			<span class="wanl-settlement-state <%= settlementStateClass %>">
+				<i class="fa <%= settlementStateIcon %>"></i>
+				<%= item.settlement_state_text || '未生成' %>
+			</span>
 		</td>
 		<td>
 			<span class="wanl-pill"><i class="fa fa-qrcode"></i> <%= item.verify_method_text || '-' %></span>

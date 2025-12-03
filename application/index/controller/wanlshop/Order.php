@@ -41,20 +41,52 @@ class Order extends Wanlshop
                 return $this->selectpage();
             }
 
+            // 结算状态筛选参数
+            $settlementState = $this->request->get('settlement_state', '');
+
             // 统计数据计算（在 buildparams 之前，避免模型被污染）
             $stats = $this->calculateStats();
 
             list($where, $sort, $order, $offset, $limit) = $this->buildparams();
 
-            $total = $this->model
-                ->with(['voucher' => function($query){ $query->with(['goods']); }, 'user', 'shop', 'settlement'])
-                ->where($where)
-                ->count();
+            // 主表别名（relationSearch 模式下 ThinkPHP 使用模型类名的 snake_case 作为别名）
+            $mainAlias = 'voucher_verification';
+            $settlementTable = 'grain_wanlshop_voucher_settlement';
 
-            $list = $this->model
+            // 构建基础查询
+            $query = $this->model
+                ->alias($mainAlias)
                 ->with(['voucher' => function($query){ $query->with(['goods']); }, 'user', 'shop', 'settlement'])
-                ->where($where)
-                ->order($sort, $order)
+                ->where($where);
+
+            // 按结算状态筛选（需要关联查询）
+            if ($settlementState !== '' && $settlementState !== 'all') {
+                if ($settlementState === '0') {
+                    // 未生成结算记录
+                    $query->whereRaw("NOT EXISTS (SELECT 1 FROM {$settlementTable} WHERE {$settlementTable}.voucher_id = {$mainAlias}.voucher_id AND {$settlementTable}.deletetime IS NULL)");
+                } else {
+                    // 指定结算状态
+                    $query->whereRaw("EXISTS (SELECT 1 FROM {$settlementTable} WHERE {$settlementTable}.voucher_id = {$mainAlias}.voucher_id AND {$settlementTable}.state = '{$settlementState}' AND {$settlementTable}.deletetime IS NULL)");
+                }
+            }
+
+            $total = $query->count();
+
+            // 重新构建查询（count后query状态改变）
+            $query = $this->model
+                ->alias($mainAlias)
+                ->with(['voucher' => function($query){ $query->with(['goods']); }, 'user', 'shop', 'settlement'])
+                ->where($where);
+
+            if ($settlementState !== '' && $settlementState !== 'all') {
+                if ($settlementState === '0') {
+                    $query->whereRaw("NOT EXISTS (SELECT 1 FROM {$settlementTable} WHERE {$settlementTable}.voucher_id = {$mainAlias}.voucher_id AND {$settlementTable}.deletetime IS NULL)");
+                } else {
+                    $query->whereRaw("EXISTS (SELECT 1 FROM {$settlementTable} WHERE {$settlementTable}.voucher_id = {$mainAlias}.voucher_id AND {$settlementTable}.state = '{$settlementState}' AND {$settlementTable}.deletetime IS NULL)");
+                }
+            }
+
+            $list = $query->order($sort, $order)
                 ->limit($offset, $limit)
                 ->select();
 
