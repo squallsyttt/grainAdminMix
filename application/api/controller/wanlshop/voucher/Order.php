@@ -998,6 +998,9 @@ class Order extends Api
                         continue;
                     }
 
+                    // 更新商品销量
+                    Goods::where('id', $item->goods_id)->setInc('sales', $itemQuantity);
+
                     // 补充商品信息
                     $goodsTitle = $item->goods_title;
                     $goodsImage = $item->goods_image;
@@ -1044,6 +1047,9 @@ class Order extends Api
                 if (!$goods) {
                     throw new Exception('商品不存在');
                 }
+                // 更新商品销量
+                Goods::where('id', $order->goods_id)->setInc('sales', $order->quantity);
+
                 for ($i = 0; $i < $order->quantity; $i++) {
                     $voucher = new Voucher();
                     $voucher->voucher_no = $this->generateVoucherNo();
