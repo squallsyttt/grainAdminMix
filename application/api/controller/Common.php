@@ -17,7 +17,7 @@ use think\Hook;
  */
 class Common extends Api
 {
-    protected $noNeedLogin = ['init', 'captcha'];
+    protected $noNeedLogin = ['init', 'captcha', 'upload'];
     protected $noNeedRight = '*';
 
     public function _initialize()
