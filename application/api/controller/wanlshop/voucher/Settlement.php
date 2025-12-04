@@ -107,6 +107,7 @@ class Settlement extends Api
      * @ApiMethod   (GET)
      * @ApiParams   (name="status", type="string", required=false, description="状态筛选：1=待确认,2=成功,3=失败,all=全部，默认1")
      * @ApiParams   (name="pagesize", type="integer", required=false, description="每页数量，默认10，最大50")
+     * @ApiParams   (name="order_type", type="string", required=false, description="业务类型：settlement=结算，rebate=返利，all=全部，默认settlement")
      */
     public function pendingTransfers()
     {
@@ -127,8 +128,22 @@ class Settlement extends Api
 
         // 状态筛选：1=待确认,2=成功,3=失败,all=全部
         $status = $this->request->get('status', '1');
+        $orderType = $this->request->get('order_type', TransferLog::ORDER_TYPE_SETTLEMENT);
+
+        $orderTypes = [
+            TransferLog::ORDER_TYPE_SETTLEMENT,
+            TransferLog::ORDER_TYPE_REBATE,
+            'all'
+        ];
+        if (!in_array($orderType, $orderTypes, true)) {
+            $orderType = TransferLog::ORDER_TYPE_SETTLEMENT;
+        }
 
         $query = TransferLog::where('receiver_user_id', $userId);
+
+        if ($orderType !== 'all') {
+            $query->where('order_type', $orderType);
+        }
 
         if ($status !== 'all') {
             $statusVal = (int)$status;
