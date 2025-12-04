@@ -45,6 +45,17 @@ class Voucher extends Api
         $payload = $list->toArray();
 
         if (!empty($payload['data']) && is_array($payload['data'])) {
+            // 批量查询已评价的核销券ID
+            $voucherIds = array_column($payload['data'], 'id');
+            $commentedIds = [];
+            if ($voucherIds) {
+                $commentedIds = Db::name('wanlshop_goods_comment')
+                    ->where('user_id', $this->auth->id)
+                    ->where('order_type', 'voucher')
+                    ->where('order_id', 'in', $voucherIds)
+                    ->column('order_id');
+            }
+
             foreach ($payload['data'] as &$data) {
                 // 统一券本身的金额/数值类型
                 $this->castPriceFields($data, ['supply_price', 'face_value', 'retail_price', 'coupon_price', 'discount_price', 'actual_payment', 'weight']);
@@ -73,6 +84,9 @@ class Voucher extends Api
                     $data['rule_welfare_days'] = 0;
                     $data['rule_goods_days'] = 0;
                 }
+
+                // 是否已评价（仅已核销状态才有意义）
+                $data['has_comment'] = in_array($data['id'], $commentedIds);
             }
             unset($data);
         }
