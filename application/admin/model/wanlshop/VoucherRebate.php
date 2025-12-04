@@ -56,6 +56,12 @@ class VoucherRebate extends Model
         return isset($list[$value]) ? $list[$value] : '';
     }
 
+    // 打款状态常量
+    const PAYMENT_STATUS_UNPAID = 'unpaid';     // 未打款
+    const PAYMENT_STATUS_PENDING = 'pending';   // 打款中
+    const PAYMENT_STATUS_PAID = 'paid';         // 已打款
+    const PAYMENT_STATUS_FAILED = 'failed';     // 打款失败
+
     /**
      * 返现状态枚举
      * @return array
@@ -63,9 +69,44 @@ class VoucherRebate extends Model
     public function getPaymentStatusList()
     {
         return [
-            'unpaid' => '未打款',
-            'paid' => '已打款',
+            self::PAYMENT_STATUS_UNPAID => '未打款',
+            self::PAYMENT_STATUS_PENDING => '打款中',
+            self::PAYMENT_STATUS_PAID => '已打款',
+            self::PAYMENT_STATUS_FAILED => '打款失败',
         ];
+    }
+
+    /**
+     * 判断是否可以打款
+     * 条件：1.付款时间超过7天 2.未打款或打款失败 3.已核销
+     * @return bool
+     */
+    public function canTransfer()
+    {
+        $sevenDaysAgo = time() - 7 * 86400;
+        return $this->payment_time < $sevenDaysAgo
+            && in_array($this->payment_status, [self::PAYMENT_STATUS_UNPAID, self::PAYMENT_STATUS_FAILED])
+            && $this->verify_time > 0;
+    }
+
+    /**
+     * 计算返利金额（分）
+     * @return int
+     */
+    public function calculateRebateAmountFen()
+    {
+        $amount = bcmul($this->face_value, $this->actual_bonus_ratio, 4);
+        $amount = bcdiv($amount, 100, 2);
+        return (int)bcmul($amount, 100, 0);
+    }
+
+    /**
+     * 关联：打款日志
+     * @return \think\model\relation\HasMany
+     */
+    public function transferLogs()
+    {
+        return $this->hasMany('\\app\\common\\model\\TransferLog', 'rebate_id', 'id');
     }
 
     /**

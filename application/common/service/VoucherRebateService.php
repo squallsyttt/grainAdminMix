@@ -96,11 +96,11 @@ class VoucherRebateService
             $actualGoodsWeight = 0;
         }
 
-        // 7. 计算返利金额
+        // 7. 计算返利金额（基于面值计算）
         $actualBonusRatio = round(max(0, $actualBonusRatio), 2);
         $actualGoodsWeight = round(max(0, $actualGoodsWeight), 2);
-        $supplyPrice = $shopSupplyPrice !== null ? round((float)$shopSupplyPrice, 2) : round((float)$voucher->supply_price, 2);
-        $rebateAmount = round($supplyPrice * ($actualBonusRatio / 100), 2);
+        $faceValue = round((float)$voucher->face_value, 2);
+        $rebateAmount = round($faceValue * ($actualBonusRatio / 100), 2);
 
         return [
             'stage' => $stage,

@@ -3,6 +3,7 @@ namespace app\api\controller\wanlshop\voucher;
 
 use app\common\controller\Api;
 use app\admin\model\wanlshop\VoucherSettlement;
+use app\admin\model\wanlshop\VoucherRebate;
 use app\common\library\WechatPayment;
 use app\common\model\PaymentCallbackLog;
 use app\common\model\TransferLog;
@@ -154,6 +155,7 @@ class Settlement extends Api
 
     /**
      * 微信转账回调（商家转账到零钱）
+     * 支持结算打款（STL前缀）和返利打款（RBT前缀）
      *
      * @ApiSummary  (微信转账回调通知)
      * @ApiMethod   (POST)
@@ -208,11 +210,17 @@ class Settlement extends Api
                 return json(['code' => 'SUCCESS', 'message' => '']);
             }
 
+            // 根据 out_bill_no 前缀判断业务类型
+            $orderType = 'voucher_transfer';
+            if (strpos($outBillNo, 'RBT') === 0) {
+                $orderType = 'rebate_transfer';
+            }
+
             // 记录回调日志（若存在则复用）
             $callbackLog = PaymentCallbackLog::where('transaction_id', $transferBillNo)->find();
             if (!$callbackLog) {
                 $callbackLog = PaymentCallbackLog::recordCallback([
-                    'order_type'       => 'voucher_transfer',
+                    'order_type'       => $orderType,
                     'order_no'         => $outBillNo,
                     'transaction_id'   => $transferBillNo,
                     'trade_state'      => $state,
@@ -237,13 +245,6 @@ class Settlement extends Api
                 throw new Exception('转账日志不存在');
             }
 
-            $settlement = VoucherSettlement::where('id', $transferLog->settlement_id)
-                ->lock(true)
-                ->find();
-            if (!$settlement) {
-                throw new Exception('结算记录不存在');
-            }
-
             $needUserConfirm = in_array($state, ['WAIT_USER_CONFIRM', 'ACCEPTED'], true);
             $isSuccess = $state === 'SUCCESS';
 
@@ -251,28 +252,22 @@ class Settlement extends Api
             $transferLog->wechat_detail_id = $transferBillNo ?: $transferLog->wechat_detail_id;
             $transferLog->response_data = json_encode($resource, JSON_UNESCAPED_UNICODE);
 
-            if ($isSuccess) {
-                $transferLog->status = 2;
-                $transferLog->fail_reason = null;
-                $settlement->state = '2';
-                $settlement->settlement_time = time();
-            } elseif ($needUserConfirm) {
-                $transferLog->status = 1;
-                $transferLog->fail_reason = null;
-                $settlement->state = '3';
+            // 根据业务类型分别处理
+            if ($transferLog->order_type === TransferLog::ORDER_TYPE_REBATE) {
+                // 返利打款回调
+                $this->handleRebateCallback($transferLog, $isSuccess, $needUserConfirm, $resource);
             } else {
-                $transferLog->status = 3;
-                $transferLog->fail_reason = $resource['fail_reason'] ?? ($resource['fail_reason_desc'] ?? null);
-                $settlement->state = '4';
+                // 结算打款回调
+                $this->handleSettlementCallback($transferLog, $isSuccess, $needUserConfirm, $resource);
             }
-
-            $transferLog->save();
-            $settlement->save();
 
             Db::commit();
 
             $callbackLog->markProcessed('success', [
-                'settlement_id' => $settlement->id,
+                'order_type' => $transferLog->order_type,
+                'business_id' => $transferLog->order_type === TransferLog::ORDER_TYPE_REBATE
+                    ? $transferLog->rebate_id
+                    : $transferLog->settlement_id,
                 'state' => $state
             ]);
 
@@ -286,7 +281,7 @@ class Settlement extends Api
                     $callbackLog->markProcessed('fail', ['error' => $e->getMessage()]);
                 } else {
                     PaymentCallbackLog::recordCallback([
-                        'order_type'       => 'voucher_transfer',
+                        'order_type'       => $orderType ?? 'voucher_transfer',
                         'order_no'         => $outBillNo,
                         'transaction_id'   => $transferBillNo,
                         'trade_state'      => $state,
@@ -300,5 +295,78 @@ class Settlement extends Api
             }
             return json(['code' => 'FAIL', 'message' => $e->getMessage()]);
         }
+    }
+
+    /**
+     * 处理结算打款回调
+     *
+     * @param TransferLog $transferLog 转账日志
+     * @param bool $isSuccess 是否成功
+     * @param bool $needUserConfirm 是否需要用户确认
+     * @param array $resource 回调资源数据
+     * @throws Exception
+     */
+    protected function handleSettlementCallback($transferLog, $isSuccess, $needUserConfirm, $resource)
+    {
+        $settlement = VoucherSettlement::where('id', $transferLog->settlement_id)
+            ->lock(true)
+            ->find();
+        if (!$settlement) {
+            throw new Exception('结算记录不存在');
+        }
+
+        if ($isSuccess) {
+            $transferLog->status = TransferLog::STATUS_SUCCESS;
+            $transferLog->fail_reason = null;
+            $settlement->state = '2';
+            $settlement->settlement_time = time();
+        } elseif ($needUserConfirm) {
+            $transferLog->status = TransferLog::STATUS_PENDING;
+            $transferLog->fail_reason = null;
+            $settlement->state = '3';
+        } else {
+            $transferLog->status = TransferLog::STATUS_FAILED;
+            $transferLog->fail_reason = $resource['fail_reason'] ?? ($resource['fail_reason_desc'] ?? null);
+            $settlement->state = '4';
+        }
+
+        $transferLog->save();
+        $settlement->save();
+    }
+
+    /**
+     * 处理返利打款回调
+     *
+     * @param TransferLog $transferLog 转账日志
+     * @param bool $isSuccess 是否成功
+     * @param bool $needUserConfirm 是否需要用户确认
+     * @param array $resource 回调资源数据
+     * @throws Exception
+     */
+    protected function handleRebateCallback($transferLog, $isSuccess, $needUserConfirm, $resource)
+    {
+        $rebate = VoucherRebate::where('id', $transferLog->rebate_id)
+            ->lock(true)
+            ->find();
+        if (!$rebate) {
+            throw new Exception('返利记录不存在');
+        }
+
+        if ($isSuccess) {
+            $transferLog->status = TransferLog::STATUS_SUCCESS;
+            $transferLog->fail_reason = null;
+            $rebate->payment_status = VoucherRebate::PAYMENT_STATUS_PAID;
+        } elseif ($needUserConfirm) {
+            $transferLog->status = TransferLog::STATUS_PENDING;
+            $transferLog->fail_reason = null;
+            $rebate->payment_status = VoucherRebate::PAYMENT_STATUS_PENDING;
+        } else {
+            $transferLog->status = TransferLog::STATUS_FAILED;
+            $transferLog->fail_reason = $resource['fail_reason'] ?? ($resource['fail_reason_desc'] ?? null);
+            $rebate->payment_status = VoucherRebate::PAYMENT_STATUS_FAILED;
+        }
+
+        $transferLog->save();
+        $rebate->save();
     }
 }
