@@ -1,0 +1,972 @@
+<style type="text/css">
+    [v-cloak] { display: none }
+
+    .price-trend-container {
+        padding: 0;
+    }
+
+    /* 页面标签切换 */
+    .view-tabs {
+        display: flex;
+        gap: 0;
+        margin-bottom: 20px;
+        background: #fff;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .view-tabs .tab-item {
+        flex: 1;
+        padding: 15px 20px;
+        text-align: center;
+        cursor: pointer;
+        font-size: 15px;
+        font-weight: 500;
+        color: #666;
+        border-bottom: 3px solid transparent;
+        transition: all 0.2s;
+    }
+
+    .view-tabs .tab-item:hover {
+        background: #f8f9fa;
+        color: #3c8dbc;
+    }
+
+    .view-tabs .tab-item.active {
+        color: #3c8dbc;
+        border-bottom-color: #3c8dbc;
+        background: #f0f7fc;
+    }
+
+    .view-tabs .tab-item i {
+        margin-right: 8px;
+    }
+
+    /* 筛选区域 */
+    .filter-section {
+        background: #fff;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .filter-section .filter-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        gap: 15px;
+    }
+
+    .filter-section .filter-item {
+        flex: 1;
+        min-width: 180px;
+    }
+
+    .filter-section .filter-item label {
+        display: block;
+        font-size: 13px;
+        color: #666;
+        margin-bottom: 6px;
+        font-weight: 500;
+    }
+
+    .filter-section .filter-item select,
+    .filter-section .filter-item input {
+        width: 100%;
+        height: 36px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 0 12px;
+        font-size: 14px;
+        transition: border-color 0.2s;
+    }
+
+    .filter-section .filter-item select:focus,
+    .filter-section .filter-item input:focus {
+        border-color: #3c8dbc;
+        outline: none;
+    }
+
+    .filter-section .btn-search {
+        height: 36px;
+        padding: 0 24px;
+        background: linear-gradient(135deg, #3c8dbc, #367fa9);
+        border: none;
+        color: #fff;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.2s;
+    }
+
+    .filter-section .btn-search:hover {
+        background: linear-gradient(135deg, #367fa9, #2d6a8a);
+        transform: translateY(-1px);
+    }
+
+    .filter-section .btn-search:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    /* 规格选择器 */
+    .spec-selector {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 8px;
+    }
+
+    .spec-selector .spec-tag {
+        padding: 6px 14px;
+        background: #f5f5f5;
+        border: 1px solid #e0e0e0;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 13px;
+        transition: all 0.2s;
+        user-select: none;
+    }
+
+    .spec-selector .spec-tag:hover {
+        background: #e8f4fc;
+        border-color: #3c8dbc;
+    }
+
+    .spec-selector .spec-tag.active {
+        background: #3c8dbc;
+        border-color: #3c8dbc;
+        color: #fff;
+    }
+
+    /* 统计卡片 - 大卡片 */
+    .overview-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    .overview-card {
+        background: #fff;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .overview-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+    }
+
+    .overview-card.platform::before {
+        background: linear-gradient(90deg, #3c8dbc, #5faee3);
+    }
+
+    .overview-card.merchant::before {
+        background: linear-gradient(90deg, #f39c12, #f5b041);
+    }
+
+    .overview-card.diff::before {
+        background: linear-gradient(90deg, #00a65a, #2ecc71);
+    }
+
+    .overview-card.info::before {
+        background: linear-gradient(90deg, #9b59b6, #8e44ad);
+    }
+
+    .overview-card .card-icon {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        font-size: 40px;
+        color: rgba(0,0,0,0.05);
+    }
+
+    .overview-card .card-label {
+        font-size: 13px;
+        color: #888;
+        margin-bottom: 8px;
+    }
+
+    .overview-card .card-value {
+        font-size: 28px;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .overview-card.platform .card-value {
+        color: #3c8dbc;
+    }
+
+    .overview-card.merchant .card-value {
+        color: #f39c12;
+    }
+
+    .overview-card.diff .card-value.positive {
+        color: #00a65a;
+    }
+
+    .overview-card.diff .card-value.negative {
+        color: #dd4b39;
+    }
+
+    .overview-card .card-sub {
+        font-size: 12px;
+        color: #999;
+        margin-top: 5px;
+    }
+
+    /* 统计卡片 - 小卡片 */
+    .summary-cards {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    .summary-card {
+        flex: 1;
+        min-width: 200px;
+        background: #fff;
+        border-radius: 8px;
+        padding: 18px 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .summary-card .card-title {
+        font-size: 13px;
+        color: #888;
+        margin-bottom: 8px;
+    }
+
+    .summary-card .card-value {
+        font-size: 24px;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .summary-card .card-value.platform {
+        color: #3c8dbc;
+    }
+
+    .summary-card .card-value.merchant {
+        color: #f39c12;
+    }
+
+    .summary-card .card-value.positive {
+        color: #00a65a;
+    }
+
+    .summary-card .card-value.negative {
+        color: #dd4b39;
+    }
+
+    .summary-card .card-sub {
+        font-size: 12px;
+        color: #999;
+        margin-top: 4px;
+    }
+
+    /* 图表区域 */
+    .chart-section {
+        background: #fff;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .chart-section .chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .chart-section .chart-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .chart-section .chart-legend {
+        display: flex;
+        gap: 20px;
+    }
+
+    .chart-section .legend-item {
+        display: flex;
+        align-items: center;
+        font-size: 13px;
+        color: #666;
+    }
+
+    .chart-section .legend-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 6px;
+    }
+
+    .chart-section .legend-dot.platform {
+        background: #3c8dbc;
+    }
+
+    .chart-section .legend-dot.merchant {
+        background: #f39c12;
+    }
+
+    .chart-section .legend-dot.range {
+        background: rgba(243, 156, 18, 0.2);
+        border: 1px solid #f39c12;
+    }
+
+    .chart-container {
+        height: 400px;
+        position: relative;
+    }
+
+    /* 分类统计表格 */
+    .category-table-section {
+        background: #fff;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .category-table-section .section-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 15px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .category-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .category-table th,
+    .category-table td {
+        padding: 12px 15px;
+        text-align: left;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .category-table th {
+        background: #fafafa;
+        font-weight: 500;
+        color: #666;
+        font-size: 13px;
+    }
+
+    .category-table td {
+        font-size: 14px;
+        color: #333;
+    }
+
+    .category-table tr:hover td {
+        background: #f9f9f9;
+    }
+
+    .category-table .price {
+        font-weight: 600;
+    }
+
+    .category-table .price.platform {
+        color: #3c8dbc;
+    }
+
+    .category-table .price.merchant {
+        color: #f39c12;
+    }
+
+    .category-table .diff.positive {
+        color: #00a65a;
+    }
+
+    .category-table .diff.negative {
+        color: #dd4b39;
+    }
+
+    .category-table .btn-detail {
+        padding: 4px 12px;
+        background: #3c8dbc;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+    }
+
+    .category-table .btn-detail:hover {
+        background: #367fa9;
+    }
+
+    /* 详情表格 */
+    .detail-section {
+        background: #fff;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .detail-section .section-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 15px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .detail-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .detail-table th,
+    .detail-table td {
+        padding: 12px 15px;
+        text-align: left;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .detail-table th {
+        background: #fafafa;
+        font-weight: 500;
+        color: #666;
+        font-size: 13px;
+    }
+
+    .detail-table td {
+        font-size: 14px;
+        color: #333;
+    }
+
+    .detail-table tr:hover td {
+        background: #f9f9f9;
+    }
+
+    .detail-table .price {
+        font-weight: 600;
+    }
+
+    .detail-table .platform-tag {
+        display: inline-block;
+        padding: 2px 8px;
+        background: #e8f4fc;
+        color: #3c8dbc;
+        border-radius: 4px;
+        font-size: 12px;
+    }
+
+    .detail-table .merchant-tag {
+        display: inline-block;
+        padding: 2px 8px;
+        background: #fef6e8;
+        color: #f39c12;
+        border-radius: 4px;
+        font-size: 12px;
+    }
+
+    /* 加载状态 */
+    .loading-mask {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255,255,255,0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10;
+    }
+
+    .loading-spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #3c8dbc;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    /* 空状态 */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #999;
+    }
+
+    .empty-state i {
+        font-size: 48px;
+        margin-bottom: 15px;
+        color: #ddd;
+    }
+
+    .empty-state p {
+        font-size: 14px;
+    }
+
+    /* 规格标签页 */
+    .spec-tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+        flex-wrap: wrap;
+    }
+
+    .spec-tabs .spec-tab {
+        padding: 8px 16px;
+        background: #f5f5f5;
+        border: 1px solid #e0e0e0;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.2s;
+    }
+
+    .spec-tabs .spec-tab:hover {
+        background: #e8f4fc;
+        border-color: #3c8dbc;
+    }
+
+    .spec-tabs .spec-tab.active {
+        background: #3c8dbc;
+        border-color: #3c8dbc;
+        color: #fff;
+    }
+
+    /* 公式说明区域 */
+    .formula-section {
+        background: #fff;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        border-left: 4px solid #3c8dbc;
+    }
+
+    .formula-section .section-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+    }
+
+    .formula-section .section-title i {
+        margin-right: 8px;
+        color: #3c8dbc;
+    }
+
+    .formula-section .toggle-btn {
+        margin-left: auto;
+        padding: 4px 12px;
+        background: #f5f5f5;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        color: #666;
+    }
+
+    .formula-section .toggle-btn:hover {
+        background: #e8f4fc;
+        border-color: #3c8dbc;
+        color: #3c8dbc;
+    }
+
+    .formula-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 15px;
+    }
+
+    .formula-item {
+        background: #f9f9f9;
+        border-radius: 6px;
+        padding: 15px;
+    }
+
+    .formula-item .formula-name {
+        font-size: 13px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+    }
+
+    .formula-item .formula-name .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 8px;
+    }
+
+    .formula-item .formula-name .dot.platform { background: #3c8dbc; }
+    .formula-item .formula-name .dot.merchant { background: #f39c12; }
+    .formula-item .formula-name .dot.diff { background: #00a65a; }
+    .formula-item .formula-name .dot.range { background: #9b59b6; }
+
+    .formula-item .formula-expr {
+        font-family: 'Consolas', 'Monaco', monospace;
+        font-size: 13px;
+        color: #e74c3c;
+        background: #fff;
+        padding: 8px 12px;
+        border-radius: 4px;
+        margin-bottom: 8px;
+        border: 1px solid #eee;
+    }
+
+    .formula-item .formula-desc {
+        font-size: 12px;
+        color: #888;
+        line-height: 1.6;
+    }
+
+    .formula-item .formula-example {
+        font-size: 12px;
+        color: #666;
+        background: #fff;
+        padding: 6px 10px;
+        border-radius: 4px;
+        margin-top: 8px;
+        border-left: 3px solid #3c8dbc;
+    }
+
+    /* 响应式 */
+    @media (max-width: 768px) {
+        .filter-section .filter-row {
+            flex-direction: column;
+        }
+
+        .filter-section .filter-item {
+            width: 100%;
+        }
+
+        .overview-cards {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .summary-cards {
+            flex-direction: column;
+        }
+
+        .chart-container {
+            height: 300px;
+        }
+
+        .view-tabs {
+            flex-direction: column;
+        }
+
+        .view-tabs .tab-item {
+            border-bottom: none;
+            border-left: 3px solid transparent;
+        }
+
+        .view-tabs .tab-item.active {
+            border-left-color: #3c8dbc;
+        }
+    }
+</style>
+
+<div id="pricetrend-app" class="price-trend-container" v-cloak>
+    <!-- 视图切换标签 -->
+    <div class="view-tabs">
+        <div class="tab-item" :class="{ active: currentView === 'overview' }" @click="switchView('overview')">
+            <i class="fa fa-dashboard"></i> 全品类概览
+        </div>
+        <div class="tab-item" :class="{ active: currentView === 'category' }" @click="switchView('category')">
+            <i class="fa fa-th-list"></i> 分类详情
+        </div>
+    </div>
+
+    <!-- ============ 全品类概览视图 ============ -->
+    <div v-show="currentView === 'overview'">
+        <!-- 日期筛选 -->
+        <div class="filter-section">
+            <div class="filter-row">
+                <div class="filter-item">
+                    <label>开始日期</label>
+                    <input type="date" v-model="overviewStartDate">
+                </div>
+                <div class="filter-item">
+                    <label>结束日期</label>
+                    <input type="date" v-model="overviewEndDate">
+                </div>
+                <div class="filter-item" style="flex: 0 0 auto;">
+                    <label>&nbsp;</label>
+                    <button class="btn-search" @click="fetchOverviewData" :disabled="overviewLoading">
+                        <i class="fa fa-refresh" :class="{ 'fa-spin': overviewLoading }"></i> 刷新数据
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 总体统计卡片 -->
+        <div class="overview-cards" v-if="overviewData">
+            <div class="overview-card platform">
+                <i class="fa fa-building card-icon"></i>
+                <div class="card-label">平台均价</div>
+                <div class="card-value">￥{{overviewData.total_stats.platform_avg || '--'}}</div>
+                <div class="card-sub">平台概念店商品均价</div>
+            </div>
+            <div class="overview-card merchant">
+                <i class="fa fa-users card-icon"></i>
+                <div class="card-label">商家均价</div>
+                <div class="card-value">￥{{overviewData.total_stats.merchant_avg || '--'}}</div>
+                <div class="card-sub">{{overviewData.total_stats.merchant_count}} 家入驻商家</div>
+            </div>
+            <div class="overview-card diff">
+                <i class="fa fa-exchange card-icon"></i>
+                <div class="card-label">价差比例</div>
+                <div class="card-value" :class="overviewData.total_stats.diff_percentage >= 0 ? 'positive' : 'negative'">
+                    {{overviewData.total_stats.diff_percentage !== null ? (overviewData.total_stats.diff_percentage >= 0 ? '+' : '') + overviewData.total_stats.diff_percentage + '%' : '--'}}
+                </div>
+                <div class="card-sub">平台价格 vs 商家均价</div>
+            </div>
+            <div class="overview-card info">
+                <i class="fa fa-cubes card-icon"></i>
+                <div class="card-label">数据覆盖</div>
+                <div class="card-value">{{overviewData.total_stats.category_count}}</div>
+                <div class="card-sub">{{overviewData.total_stats.goods_count}} 个商品</div>
+            </div>
+        </div>
+
+        <!-- 分类统计表格 -->
+        <div class="category-table-section" v-if="overviewData && overviewData.category_stats && overviewData.category_stats.length > 0">
+            <div class="section-title">
+                <i class="fa fa-table"></i>
+                各分类价格对比
+            </div>
+            <table class="category-table">
+                <thead>
+                    <tr>
+                        <th>分类名称</th>
+                        <th>平台均价</th>
+                        <th>商家均价</th>
+                        <th>商家最低</th>
+                        <th>商家最高</th>
+                        <th>价差</th>
+                        <th>入驻商家</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="cat in overviewData.category_stats" :key="cat.category_id">
+                        <td>{{cat.category_name}}</td>
+                        <td class="price platform">￥{{cat.platform_avg ? parseFloat(cat.platform_avg).toFixed(2) : '--'}}</td>
+                        <td class="price merchant">￥{{cat.merchant_avg ? parseFloat(cat.merchant_avg).toFixed(2) : '--'}}</td>
+                        <td>￥{{cat.merchant_min ? parseFloat(cat.merchant_min).toFixed(2) : '--'}}</td>
+                        <td>￥{{cat.merchant_max ? parseFloat(cat.merchant_max).toFixed(2) : '--'}}</td>
+                        <td>
+                            <span v-if="cat.platform_avg && cat.merchant_avg" class="diff" :class="(cat.platform_avg - cat.merchant_avg) >= 0 ? 'positive' : 'negative'">
+                                {{((cat.platform_avg - cat.merchant_avg) >= 0 ? '+' : '') + ((cat.platform_avg - cat.merchant_avg) / cat.merchant_avg * 100).toFixed(1)}}%
+                            </span>
+                            <span v-else>--</span>
+                        </td>
+                        <td>{{cat.merchant_shop_count}} 家</td>
+                        <td>
+                            <button class="btn-detail" @click="viewCategoryDetail(cat.category_id, cat.category_name)">
+                                <i class="fa fa-search"></i> 查看
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ============ 分类详情视图 ============ -->
+    <div v-show="currentView === 'category'">
+        <!-- 筛选区域 -->
+        <div class="filter-section">
+            <div class="filter-row">
+                <div class="filter-item">
+                    <label>选择分类</label>
+                    <select v-model="selectedCategory" @change="onCategoryChange">
+                        <option value="">请选择分类</option>
+                        <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{cat.name}}</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <label>开始日期</label>
+                    <input type="date" v-model="startDate">
+                </div>
+                <div class="filter-item">
+                    <label>结束日期</label>
+                    <input type="date" v-model="endDate">
+                </div>
+                <div class="filter-item" style="flex: 0 0 auto;">
+                    <label>&nbsp;</label>
+                    <button class="btn-search" @click="fetchData" :disabled="loading || !selectedCategory">
+                        <i class="fa fa-search"></i> 查询
+                    </button>
+                </div>
+            </div>
+
+            <!-- 规格选择器 -->
+            <div v-if="specList.length > 0" style="margin-top: 15px;">
+                <label style="display: block; font-size: 13px; color: #666; margin-bottom: 8px; font-weight: 500;">
+                    选择规格 <span style="color: #999; font-weight: normal;">(可多选，不选则显示全部)</span>
+                </label>
+                <div class="spec-selector">
+                    <span
+                        v-for="spec in specList"
+                        :key="spec.value"
+                        class="spec-tag"
+                        :class="{ active: selectedSpecs.includes(spec.value) }"
+                        @click="toggleSpec(spec.value)"
+                    >
+                        {{spec.label}}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 统计卡片 -->
+        <div class="summary-cards" v-if="summary && Object.keys(summary).length > 0">
+            <div class="summary-card" v-for="(data, spec) in summary" :key="spec">
+                <div class="card-title">{{spec}} 规格统计</div>
+                <div class="card-value platform">
+                    ￥{{data.avg_platform_price !== null ? data.avg_platform_price : '--'}}
+                </div>
+                <div class="card-sub">平台均价</div>
+                <div style="margin-top: 10px;">
+                    <span class="card-value merchant" style="font-size: 18px;">
+                        ￥{{data.avg_merchant_price !== null ? data.avg_merchant_price : '--'}}
+                    </span>
+                    <span class="card-sub" style="margin-left: 5px;">商家均价</span>
+                </div>
+                <div style="margin-top: 8px;" v-if="data.diff_percentage !== null">
+                    <span
+                        class="card-value"
+                        :class="data.diff_percentage >= 0 ? 'positive' : 'negative'"
+                        style="font-size: 16px;"
+                    >
+                        {{data.diff_percentage >= 0 ? '+' : ''}}{{data.diff_percentage}}%
+                    </span>
+                    <span class="card-sub" style="margin-left: 5px;">价差比例</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 图表区域 -->
+        <div class="chart-section" v-if="chartData && chartData.length > 0">
+            <div class="chart-header">
+                <div class="chart-title">
+                    <i class="fa fa-line-chart"></i>
+                    {{categoryName}} - 价格趋势图
+                </div>
+                <div class="chart-legend">
+                    <div class="legend-item">
+                        <span class="legend-dot platform"></span>
+                        平台价格
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot merchant"></span>
+                        商家均价
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot range"></span>
+                        商家价格区间
+                    </div>
+                </div>
+            </div>
+
+            <!-- 规格标签页（多规格时显示） -->
+            <div class="spec-tabs" v-if="chartData.length > 1">
+                <span
+                    v-for="(data, index) in chartData"
+                    :key="data.spec"
+                    class="spec-tab"
+                    :class="{ active: activeChartIndex === index }"
+                    @click="activeChartIndex = index"
+                >
+                    {{data.spec}}
+                </span>
+            </div>
+
+            <div class="chart-container" style="position: relative;">
+                <div id="price-chart" style="width: 100%; height: 400px;"></div>
+                <div class="loading-mask" v-if="loading">
+                    <div class="loading-spinner"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 空状态 -->
+        <div class="chart-section" v-if="!loading && (!chartData || chartData.length === 0) && hasSearched">
+            <div class="empty-state">
+                <i class="fa fa-bar-chart"></i>
+                <p>暂无数据，请选择分类并点击查询</p>
+            </div>
+        </div>
+
+        <!-- 详情表格 -->
+        <div class="detail-section" v-if="detailList && detailList.length > 0">
+            <div class="section-title">
+                <i class="fa fa-list"></i>
+                当前在售SKU明细
+                <button class="btn btn-sm btn-default pull-right" @click="fetchDetailList" style="margin-top: -5px;">
+                    <i class="fa fa-refresh"></i> 刷新
+                </button>
+            </div>
+            <table class="detail-table">
+                <thead>
+                    <tr>
+                        <th>店铺</th>
+                        <th>商品</th>
+                        <th>规格</th>
+                        <th>价格</th>
+                        <th>更新时间</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="item in detailList" :key="item.id">
+                        <td>
+                            <span v-if="item.shop_id == 1" class="platform-tag">{{item.shop_name}}</span>
+                            <span v-else class="merchant-tag">{{item.shop_name}}</span>
+                        </td>
+                        <td>{{item.goods_title}}</td>
+                        <td>{{item.difference}}</td>
+                        <td class="price">￥{{item.price}}</td>
+                        <td>{{item.update_time}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 将分类数据传递给前端
+    var categoriesData = {:json_encode($categories)};
+</script>

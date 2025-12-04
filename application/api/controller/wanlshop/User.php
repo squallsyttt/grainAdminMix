@@ -380,6 +380,42 @@ class User extends Api
     }
 
     /**
+     * 更新基础用户信息（仅昵称、头像）
+     * @ApiMethod   (POST)
+     * @param string $nickname 昵称
+     * @param string $avatar   头像地址
+     */
+    public function updateBasic()
+    {
+		// 仅允许昵称与头像的最小更新
+		$this->request->filter(['trim', 'strip_tags']);
+		if (!$this->request->isPost()) {
+			$this->error(__('非法请求'));
+		}
+
+		$nickname = $this->request->post('nickname', '');
+		$avatar = $this->request->post('avatar', '');
+		if ($nickname === '' && $avatar === '') {
+			$this->error(__('Invalid parameters'));
+		}
+
+		$user = $this->auth->getUser();
+		if ($nickname !== '') {
+			$user->nickname = $nickname;
+		}
+		if ($avatar !== '') {
+			$user->avatar = $avatar;
+		}
+
+		$user->save();
+		$this->success('更新成功', [
+			'id' => $user->id,
+			'nickname' => $user->nickname,
+			'avatar' => $user->avatar
+		]);
+    }
+
+    /**
      * 修改手机号
      * @ApiMethod   (POST)
      * @param string $email   手机号

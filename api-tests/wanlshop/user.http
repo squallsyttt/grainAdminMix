@@ -60,3 +60,38 @@ token: {{token}}
   "account": "only_account_no_password"
 }
 
+### ========================================
+### 5. 更新基础信息 - 成功（昵称+头像）
+### 路由：POST {{apiPrefix}}/updateBasic
+### 期望：返回更新后的昵称与头像
+### ========================================
+POST {{baseUrl}}{{apiPrefix}}/updateBasic
+Content-Type: application/json
+token: {{token}}
+
+{
+  "nickname": "新昵称示例",
+  "avatar": "https://img.example.com/avatar/new.png"
+}
+
+### ========================================
+### 6. 更新基础信息 - 仅改昵称
+### 期望：头像保持原值
+### ========================================
+POST {{baseUrl}}{{apiPrefix}}/updateBasic
+Content-Type: application/json
+token: {{token}}
+
+{
+  "nickname": "仅改昵称"
+}
+
+### ========================================
+### 7. 更新基础信息 - 参数为空
+### 期望：返回错误（Invalid parameters）
+### ========================================
+POST {{baseUrl}}{{apiPrefix}}/updateBasic
+Content-Type: application/json
+token: {{token}}
+
+{}
