@@ -215,17 +215,20 @@
 											<div class="form-group wanl-specs">
 												<label class="control-label col-xs-12 col-sm-2">{:__('产品属性')}:</label>
 												<div class="col-xs-12 col-sm-8">
-													<div class="input-group add-option">
+													<!-- 仅平台店铺可新增属性 -->
+													<div class="input-group add-option" v-if="isPlatform">
 														<input type="text" class="form-control" ref="specs-name" placeholder="多个产品属性以空格隔开">
 														<span class="input-group-addon pointer" @click="spuAdd">新增属性</span>
 													</div>
-							
+
 													<div class="panel panel-default" v-for="(item, i) in spu" :key="i">
 														<header class="panel-heading">
 															<b>{{item}}</b>
-															<span class="remove" title="移除" @click="spuRemove(i)">×</span>
+															<!-- 仅平台店铺可删除属性 -->
+															<span class="remove" title="移除" @click="spuRemove(i)" v-if="isPlatform">×</span>
 														</header>
-														<div class="row">
+														<!-- 仅平台店铺可编辑规格 -->
+														<div class="row" v-if="isPlatform">
 															<div class="col-md-5 col-sm-5 col-xs-5">
 																<div class="input-group">
 																	<input type="text" class="form-control" :ref="'specs-name-' + i" placeholder="多规格以空格隔开">
@@ -235,6 +238,14 @@
 															<div class="col-md-7 col-sm-7 col-xs-7">
 																<div class="wanl-specs-tag" v-for="(v, j) in spuItem[i]" :key="j">
 																	{{v}}<span class="remove" title="移除" @click="skuRemove(i, j)">×</span>
+																</div>
+															</div>
+														</div>
+														<!-- 非平台店铺只显示规格值 -->
+														<div class="row" v-else>
+															<div class="col-md-12">
+																<div class="wanl-specs-tag" v-for="(v, j) in spuItem[i]" :key="j" style="cursor:default;">
+																	{{v}}
 																</div>
 															</div>
 														</div>
@@ -281,7 +292,8 @@
 																	</tr>
 																</tbody>
 															</table>
-															<div @click="skuBatch()">
+															<!-- 仅平台店铺显示批量设置选项 -->
+															<div @click="skuBatch()" v-if="isPlatform">
 																<span v-if="batch == 0">
 																	是否要批量设置？
 																</span>
@@ -291,8 +303,9 @@
 															</div>
 														</div>
 													</div>
-							
-													<div class="batch" v-show="batch == 1">
+
+													<!-- 仅平台店铺显示批量设置面板 -->
+													<div class="batch" v-show="batch == 1 && isPlatform">
 														<div class="input-group">
 															<div class="input-group-addon">现价 ￥</div>
 															<input type="number" class="form-control" id="batch-price" placeholder="一键设置现价">

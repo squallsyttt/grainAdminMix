@@ -91,10 +91,10 @@
 						<!-- 移动端一级菜单 -->
 						<div class="mobilenav visible-xs"> </div>
 						<!--如果想始终显示子菜单,则给ul加上show-submenu类即可,当multiplenav开启的情况下默认为展开-->
-						<ul class="sidebar-menu ">
-							<li class="treeview {:in_array($config.controllername,['wanlshop.console'])?'active':''}">
-								<a href="{:url('index/wanlshop.console/index')}">
-									<i class="fa fa-dashboard fa-fw"></i> <span>控制台</span>
+				<ul class="sidebar-menu ">
+					<li class="treeview {:in_array($config.controllername,['wanlshop.console'])?'active':''}">
+						<a href="{:url('index/wanlshop.console/index')}">
+							<i class="fa fa-dashboard fa-fw"></i> <span>控制台</span>
 									<span class="pull-right-container"><small class="label pull-right bg-blue">hot</small></span>
 								</a>
 							</li>
@@ -117,22 +117,24 @@
 									</li>
 								</ul>
 							</li>
-							<li class="treeview {:in_array($config.controllername,['wanlshop.goods'])?'active':''}">
-								<a href="javascript:;">
-									<i class="fa fa-shopping-bag fa-fw"></i> <span>商品管理</span>
-									<span class="pull-right-container"><i class="fa fa-angle-left"></i> </span>
+					<li class="treeview {:in_array($config.controllername,['wanlshop.goods'])?'active':''}">
+						<a href="javascript:;">
+							<i class="fa fa-shopping-bag fa-fw"></i> <span>商品管理</span>
+							<span class="pull-right-container"><i class="fa fa-angle-left"></i> </span>
+						</a>
+						<ul class="treeview-menu {:in_array($config.controllername,['wanlshop.goods'])?'menu-open':''}" style="display: {:in_array($config.controllername,['wanlshop.goods'])?'block':'none'};">
+							{if condition="$shop.id eq 1"}
+							<li class="{$config.controllername.'.'.$config.actionname == 'wanlshop.goods.add'?'active':''}">
+								<a href="{:url('index/wanlshop.goods/add')}">
+									<i class="fa fa-circle-o fa-fw"></i><span>发布商品</span>
 								</a>
-								<ul class="treeview-menu {:in_array($config.controllername,['wanlshop.goods'])?'menu-open':''}" style="display: {:in_array($config.controllername,['wanlshop.goods'])?'block':'none'};">
-									<li class="{$config.controllername.'.'.$config.actionname == 'wanlshop.goods.add'?'active':''}">
-										<a href="{:url('index/wanlshop.goods/add')}">
-											<i class="fa fa-circle-o fa-fw"></i><span>发布商品</span>
-										</a>
-									</li>
-									<li class="{$config.controllername.'.'.$config.actionname == 'wanlshop.goods.index'?'active':''}">
-										<a href="{:url('index/wanlshop.goods/index')}">
-											<i class="fa fa-circle-o fa-fw"></i><span>出售中的商品</span>
-										</a>
-									</li>
+							</li>
+							{/if}
+							<li class="{$config.controllername.'.'.$config.actionname == 'wanlshop.goods.index'?'active':''}">
+								<a href="{:url('index/wanlshop.goods/index')}">
+									<i class="fa fa-circle-o fa-fw"></i><span>出售中的商品</span>
+								</a>
+							</li>
 									<li class="{$config.controllername.'.'.$config.actionname == 'wanlshop.goods.stock'?'active':''}">
 										<a href="{:url('index/wanlshop.goods/stock')}">
 											<i class="fa fa-circle-o fa-fw"></i><span>仓库中的商品</span>
@@ -203,17 +205,19 @@
 							<a href="#" class="sidebar-toggle" data-toggle="offcanvas" role="button">
 								<span class="sr-only">{:__('Toggle navigation')}</span><!-- 边栏切换按钮-->
 							</a>
-							<div class="navbar-custom-menu">
-								<ul class="nav navbar-nav">
-									<!-- <li> <a href="{:url('index/wanlshop.console/index')}"><i class="fa fa-home" style="font-size:14px;"></i></a> </li> -->
-									<li class="dropdown">
-										<a href="#" class="dropdown-toggle" data-toggle="dropdown">
-											<i class="fa fa-paper-plane margin-r-5"></i>
-										</a>
-										<ul class="dropdown-menu wipecache">
-											<li><a href="{:url('index/wanlshop.goods/add')}"><i class="fa fa-circle-o"></i> 发布商品</a></li>
-										</ul>
-									</li>
+						<div class="navbar-custom-menu">
+							<ul class="nav navbar-nav">
+								<!-- <li> <a href="{:url('index/wanlshop.console/index')}"><i class="fa fa-home" style="font-size:14px;"></i></a> </li> -->
+								{if condition="$shop.id eq 1"}
+								<li class="dropdown">
+									<a href="#" class="dropdown-toggle" data-toggle="dropdown">
+										<i class="fa fa-paper-plane margin-r-5"></i>
+									</a>
+									<ul class="dropdown-menu wipecache">
+										<li><a href="{:url('index/wanlshop.goods/add')}"><i class="fa fa-circle-o"></i> 发布商品</a></li>
+									</ul>
+								</li>
+								{/if}
 									<!-- 即时通讯  open-->
 									<li class="dropdown messages-menu" v-cloak>
 										<a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-expanded="true">
