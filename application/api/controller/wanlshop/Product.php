@@ -240,7 +240,7 @@ class Product extends Api
 			// 查询商品
 			$goods = $goodsModel
 				->where(['id' => $id])
-				->field('id,category_id,shop_category_id,brand_id,freight_id,shop_id,title,image,images,flag,content,category_attribute,activity_type,price,sales,payment,comment,praise,moderate,negative,like,views,status')
+				->field('id,category_id,shop_category_id,brand_id,freight_id,shop_id,region_city_code,title,image,images,flag,content,category_attribute,activity_type,price,sales,payment,comment,praise,moderate,negative,like,views,status')
 				->find();
             // 浏览+1 & 报错
         if($goods && $goods['status'] == 'normal'){
@@ -296,7 +296,12 @@ class Product extends Api
 			// 叠加店铺1的对标价格
 			if ($goods['shop_id'] != 1) {
 				$shopOneGoods = $goodsModel
-					->where(['shop_id' => 1, 'category_id' => $goods['category_id'], 'status' => 'normal'])
+					->where([
+						'shop_id' => 1,
+						'category_id' => $goods['category_id'],
+						'region_city_code' => $goods['region_city_code'] ?: '',
+						'status' => 'normal'
+					])
 					->field('id,price')
 					->find();
 				if ($shopOneGoods) {
