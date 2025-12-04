@@ -45,6 +45,8 @@ class Goods extends Wanlshop
      */
     public function index()
     {
+        // 出售中商品不显示同步按钮
+        $this->view->assign("showSyncButton", false);
         //当前是否为关联查询
         $this->relationSearch = true;
         //设置过滤方法
@@ -188,6 +190,8 @@ class Goods extends Wanlshop
      */
     public function stock()
     {
+        // 仓库中商品显示同步按钮
+        $this->view->assign("showSyncButton", true);
         return $this->view->fetch('wanlshop/goods/index');
     }
     
