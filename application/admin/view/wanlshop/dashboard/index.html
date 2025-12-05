@@ -1,287 +1,562 @@
 <style type="text/css">
 [v-cloak] { display: none }
-.bg-card-blue{ background: linear-gradient(-125deg, #57bdbf, #2f9de2); color: #ffffff; }
-.bg-card-red{ background: linear-gradient(-125deg, #ff7d7d, #fb2c95); color: #ffffff; }
-.bg-card-violet { background: linear-gradient(-113deg, #c543d8, #925cc3); color: #ffffff; }
-.bg-card-primary { background: linear-gradient(-141deg, #ecca1b, #f39526); color: #ffffff; }
 
-.wanlcard .small-box,.panel{ border-radius: 10px; }
-.wanlcard .small-box > .inner{ padding: 15px 22px; }
-.wanlcard .small-box > .inner p:last-child{ font-size: 12px; }
-.wanlcard .small-box p{ font-size: 14px; margin: 10px 0; }
-.wanlcard .small-box h3{ font-weight: 100; }
-.wanlcard .small-box .icon{ color: rgba(255, 255, 255, 0.16); right: 22px; }
-.small-box .icon{ font-size: 80px; }
+/* 全局大模块样式 */
+.dashboard-module {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+  margin-bottom: 32px;
+  overflow: hidden;
+}
+.dashboard-module:last-child { margin-bottom: 0; }
 
-/* 新版看板卡片样式 */
-.dashboard-section{ margin-top: 15px; }
-.stat-card{ background: #fff; border: 1px solid #eef0f4; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.05); padding: 16px 18px; height: 100%; }
-.stat-title{ font-size: 14px; color: #6b7280; display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-.stat-main{ font-size: 22px; font-weight: 600; color: #1f2d3d; line-height: 1.2; }
-.stat-sub{ font-size: 12px; color: #9ca3af; margin-top: 4px; }
-.stat-grid{ display: flex; flex-wrap: wrap; margin-top: 6px; }
-.stat-item{ width: 33.333%; margin-top: 12px; }
-.stat-item.w-50{ width: 50%; }
-.stat-label{ font-size: 12px; color: #6b7280; }
-.stat-value{ font-size: 16px; font-weight: 600; color: #111827; }
+/* 模块头部 */
+.module-header {
+  padding: 20px 32px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.module-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.module-title i {
+  font-size: 20px;
+  opacity: 0.7;
+}
+.module-subtitle {
+  font-size: 13px;
+  color: #9ca3af;
+  font-weight: 400;
+}
 
-.panel-statistics h4 { color: #555; font-weight: bold; font-size: 18px; }
-.panel-statistics thead{ color: #777777; }
-.vertical{ vertical-align: middle; }
-.table > thead > tr > th, .table > thead > tr > td, .table > tbody > tr > th, .table > tbody > tr > td{ padding: 12px 0; font-weight: initial; }
-.table > tbody > tr > td:first-child { color: #666666; }
+/* 模块内容 */
+.module-body {
+  padding: 24px 32px 28px;
+}
+
+/* 概览卡片区 */
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  padding: 24px 32px;
+}
+.overview-card {
+  border-radius: 12px;
+  padding: 20px 24px;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+  min-height: 120px;
+}
+.overview-card .icon {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 64px;
+  opacity: 0.15;
+}
+.overview-card .label {
+  font-size: 14px;
+  opacity: 0.9;
+  margin-bottom: 8px;
+}
+.overview-card .value {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 8px;
+}
+.overview-card .desc {
+  font-size: 13px;
+  opacity: 0.8;
+}
+.bg-card-blue { background: linear-gradient(135deg, #2f9de2, #57bdbf); }
+.bg-card-red { background: linear-gradient(135deg, #fb2c95, #ff7d7d); }
+.bg-card-violet { background: linear-gradient(135deg, #925cc3, #c543d8); }
+.bg-card-primary { background: linear-gradient(135deg, #f39526, #ecca1b); }
+
+/* 财务数据网格 */
+.finance-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+}
+.finance-item {
+  padding: 24px 32px;
+  border-right: 1px solid #f0f0f0;
+  text-align: center;
+}
+.finance-item:last-child { border-right: none; }
+.finance-label {
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+.finance-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1f2937;
+  line-height: 1.2;
+  margin-bottom: 8px;
+}
+.finance-desc {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+/* 业务数据双栏 */
+.business-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.business-section {
+  padding: 24px 32px;
+}
+.business-section:first-child {
+  border-right: 1px solid #f0f0f0;
+}
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f5f5f5;
+}
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #374151;
+}
+.section-unit {
+  font-size: 12px;
+  color: #9ca3af;
+}
+.data-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px 24px;
+}
+.data-item {
+  text-align: left;
+}
+.data-label {
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 6px;
+}
+.data-value {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+}
+
+/* 运营状态三栏 */
+.ops-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+.ops-section {
+  padding: 24px 32px;
+  border-right: 1px solid #f0f0f0;
+}
+.ops-section:last-child { border-right: none; }
+.ops-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f5f5f5;
+}
+.ops-data {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.ops-item .data-label {
+  margin-bottom: 4px;
+}
+.ops-item .data-value {
+  font-size: 15px;
+}
+
+/* 列表模块 */
+.list-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+.list-section {
+  padding: 24px 32px;
+  border-right: 1px solid #f0f0f0;
+}
+.list-section:last-child { border-right: none; }
+.list-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 16px;
+}
+.list-table {
+  width: 100%;
+}
+.list-table thead {
+  color: #6b7280;
+  font-size: 13px;
+}
+.list-table th, .list-table td {
+  padding: 10px 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.list-table tbody tr {
+  border-bottom: 1px solid #f5f5f5;
+}
+.list-table tbody tr:last-child { border-bottom: none; }
+.list-table tbody td:first-child { color: #666; }
+
+/* 响应式 */
+@media (max-width: 1200px) {
+  .overview-grid { grid-template-columns: repeat(2, 1fr); }
+  .finance-grid { grid-template-columns: repeat(2, 1fr); }
+  .finance-item:nth-child(2) { border-right: none; }
+  .finance-item:nth-child(1), .finance-item:nth-child(2) { border-bottom: 1px solid #f0f0f0; }
+}
+@media (max-width: 992px) {
+  .business-split { grid-template-columns: 1fr; }
+  .business-section:first-child { border-right: none; border-bottom: 1px solid #f0f0f0; }
+  .ops-grid { grid-template-columns: 1fr; }
+  .ops-section { border-right: none; border-bottom: 1px solid #f0f0f0; }
+  .ops-section:last-child { border-bottom: none; }
+  .list-grid { grid-template-columns: 1fr; }
+  .list-section { border-right: none; border-bottom: 1px solid #f0f0f0; }
+  .list-section:last-child { border-bottom: none; }
+}
+@media (max-width: 768px) {
+  .overview-grid { grid-template-columns: 1fr; }
+  .finance-grid { grid-template-columns: 1fr; }
+  .finance-item { border-right: none; border-bottom: 1px solid #f0f0f0; }
+  .finance-item:last-child { border-bottom: none; }
+  .data-grid { grid-template-columns: repeat(2, 1fr); }
+  .module-header, .module-body { padding-left: 20px; padding-right: 20px; }
+  .overview-grid, .finance-item, .business-section, .ops-section, .list-section { padding-left: 20px; padding-right: 20px; }
+}
 </style>
-<div class="alert alert-success-light">
-	<i class="fa fa-warning"></i> 温馨提示：后台订单列表仅供查看，如需发货、修改订单信息，或需要添加新商家，请注册账户登录 <a target="_blank" href="/index/wanlshop.console">进入商家后台</a> 操作
+
+<div class="alert alert-success-light" style="margin-bottom: 24px; border-radius: 12px;">
+    <i class="fa fa-warning"></i> 温馨提示：后台订单列表仅供查看，如需发货、修改订单信息，或需要添加新商家，请注册账户登录 <a target="_blank" href="/index/wanlshop.console">进入商家后台</a> 操作
 </div>
-<div class="dashboard-section row wanlcard">
-    <div class="col-lg-3 col-xs-6">
-        <div class="small-box bg-card-blue">
-            <div class="inner">
-                <p>店铺</p>
-                <h3>{$totalShop}</h3>
-                <p>商城店铺总数量</p>
-            </div>
+
+<!-- 模块1：概览区 -->
+<div class="dashboard-module">
+    <div class="overview-grid">
+        <div class="overview-card bg-card-blue">
             <div class="icon"><i class="fa fa-sitemap"></i></div>
+            <div class="label">店铺</div>
+            <div class="value">{$totalShop}</div>
+            <div class="desc">商城店铺总数量</div>
         </div>
-    </div>
-    <div class="col-lg-3 col-xs-6">
-        <div class="small-box bg-card-red">
-            <div class="inner">
-                <p>商品</p>
-                <h3>{$totalGoods}</h3>
-                <p>商城店铺商品总和</p>
-            </div>
+        <div class="overview-card bg-card-red">
             <div class="icon"><i class="fa fa-shopping-cart"></i></div>
+            <div class="label">商品</div>
+            <div class="value">{$totalGoods}</div>
+            <div class="desc">商城店铺商品总和</div>
         </div>
-    </div>
-    <div class="col-lg-3 col-xs-6">
-        <div class="small-box bg-card-violet">
-            <div class="inner">
-                <p>会员</p>
-                <h3>{$totalUser}</h3>
-                <p>平台注册会员总数</p>
-            </div>
+        <div class="overview-card bg-card-violet">
             <div class="icon"><i class="fa fa-user-circle"></i></div>
+            <div class="label">会员</div>
+            <div class="value">{$totalUser}</div>
+            <div class="desc">平台注册会员总数</div>
         </div>
-    </div>
-    <div class="col-lg-3 col-xs-6">
-        <div class="small-box bg-card-primary">
-            <div class="inner">
-                <p>今日会员</p>
-                <h3>{$totalDayUser}</h3>
-                <p>今日新增用户数量</p>
-            </div>
+        <div class="overview-card bg-card-primary">
             <div class="icon"><i class="fa fa-user"></i></div>
+            <div class="label">今日会员</div>
+            <div class="value">{$totalDayUser}</div>
+            <div class="desc">今日新增用户数量</div>
         </div>
     </div>
 </div>
 
-<!-- 流水与利润 -->
-<div class="dashboard-section row">
-    <div class="col-sm-3 col-xs-6">
-        <div class="stat-card">
-            <div class="stat-title">核销券总流水</div>
-            <div class="stat-main">￥{$platformTotalAmount|sprintf='%.2f',###}</div>
-            <div class="stat-sub">实付金额（含退款订单）</div>
-        </div>
+<!-- 模块2：财务概览 -->
+<div class="dashboard-module">
+    <div class="module-header">
+        <h3 class="module-title"><i class="fa fa-line-chart"></i> 财务概览</h3>
+        <span class="module-subtitle">核销券业务数据统计</span>
     </div>
-    <div class="col-sm-3 col-xs-6">
-        <div class="stat-card">
-            <div class="stat-title">今日流水</div>
-            <div class="stat-main">￥{$platformTodayAmount|sprintf='%.2f',###}</div>
-            <div class="stat-sub">今日付款订单</div>
+    <div class="finance-grid">
+        <div class="finance-item">
+            <div class="finance-label">核销券总流水</div>
+            <div class="finance-value">￥{$platformTotalAmount|sprintf='%.2f',###}</div>
+            <div class="finance-desc">实付金额（含退款订单）</div>
         </div>
-    </div>
-    <div class="col-sm-3 col-xs-6">
-        <div class="stat-card">
-            <div class="stat-title">平台利润累计</div>
-            <div class="stat-main">￥{$platformProfitTotal|sprintf='%.2f',###}</div>
-            <div class="stat-sub">结算记录 platform_amount 汇总</div>
+        <div class="finance-item">
+            <div class="finance-label">今日流水</div>
+            <div class="finance-value">￥{$platformTodayAmount|sprintf='%.2f',###}</div>
+            <div class="finance-desc">今日付款订单</div>
         </div>
-    </div>
-    <div class="col-sm-3 col-xs-6">
-        <div class="stat-card">
-            <div class="stat-title">已结算利润</div>
-            <div class="stat-main">￥{$platformProfitSettled|sprintf='%.2f',###}</div>
-            <div class="stat-sub">state=已结算</div>
+        <div class="finance-item">
+            <div class="finance-label">平台利润累计</div>
+            <div class="finance-value">￥{$platformProfitTotal|sprintf='%.2f',###}</div>
+            <div class="finance-desc">结算记录汇总</div>
         </div>
-    </div>
-</div>
-
-<!-- 订单与券概览 -->
-<div class="dashboard-section row">
-    <div class="col-sm-6">
-        <div class="stat-card">
-            <div class="stat-title">核销券订单 <span class="stat-sub">单位：单 / 元</span></div>
-            <div class="stat-grid">
-                <div class="stat-item"><div class="stat-label">总订单</div><div class="stat-value">{$totalVoucherOrder} 单</div></div>
-                <div class="stat-item"><div class="stat-label">已支付</div><div class="stat-value">{$paidVoucherOrder} 单</div></div>
-                <div class="stat-item"><div class="stat-label">待支付</div><div class="stat-value">{$unpaidVoucherOrder} 单</div></div>
-                <div class="stat-item"><div class="stat-label">已取消</div><div class="stat-value">{$cancelVoucherOrder} 单</div></div>
-                <div class="stat-item"><div class="stat-label">今日新增</div><div class="stat-value">{$todayVoucherOrder} 单</div></div>
-                <div class="stat-item"><div class="stat-label">今日流水</div><div class="stat-value">￥{$platformTodayAmount|sprintf='%.2f',###}</div></div>
-            </div>
-        </div>
-    </div>
-    <div class="col-sm-6">
-        <div class="stat-card">
-            <div class="stat-title">核销券 <span class="stat-sub">单位：张 / 元</span></div>
-            <div class="stat-grid">
-                <div class="stat-item"><div class="stat-label">总券量</div><div class="stat-value">{$totalVoucher} 张</div></div>
-                <div class="stat-item"><div class="stat-label">待核销</div><div class="stat-value">{$voucherUnused} 张</div></div>
-                <div class="stat-item"><div class="stat-label">已核销</div><div class="stat-value">{$voucherVerified} 张</div></div>
-                <div class="stat-item"><div class="stat-label">今日核销</div><div class="stat-value">{$voucherVerifiedTodayCount} 张</div></div>
-                <div class="stat-item"><div class="stat-label">今日核销额</div><div class="stat-value">￥{$voucherVerifiedTodayAmount|sprintf='%.2f',###}</div></div>
-                <div class="stat-item"><div class="stat-label">累计核销额</div><div class="stat-value">￥{$voucherVerifiedAmount|sprintf='%.2f',###}</div></div>
-                <div class="stat-item"><div class="stat-label">已过期</div><div class="stat-value">{$voucherExpired} 张</div></div>
-                <div class="stat-item"><div class="stat-label">退款中/已退</div><div class="stat-value">{$voucherRefunded} 张</div></div>
-                <div class="stat-item"><div class="stat-label">今日核销记录</div><div class="stat-value">{$todayVerificationCount} 条</div></div>
-            </div>
+        <div class="finance-item">
+            <div class="finance-label">已结算利润</div>
+            <div class="finance-value">￥{$platformProfitSettled|sprintf='%.2f',###}</div>
+            <div class="finance-desc">state=已结算</div>
         </div>
     </div>
 </div>
 
-<!-- 结算 / 返利 / 退款 -->
-<div class="dashboard-section row">
-    <div class="col-sm-4 col-xs-12">
-        <div class="stat-card">
-            <div class="stat-title">结算</div>
-            <div class="stat-grid">
-                <div class="stat-item w-50"><div class="stat-label">待结算</div><div class="stat-value">{$settlementPendingCount} 笔 / ￥{$settlementPendingAmount|sprintf='%.2f',###}</div></div>
-                <div class="stat-item w-50"><div class="stat-label">已结算</div><div class="stat-value">{$settlementPaidCount} 笔 / ￥{$settlementPaidAmount|sprintf='%.2f',###}</div></div>
-                <div class="stat-item w-50"><div class="stat-label">打款中</div><div class="stat-value">{$settlementPayingCount} 笔</div></div>
-                <div class="stat-item w-50"><div class="stat-label">打款失败</div><div class="stat-value">{$settlementFailedCount} 笔</div></div>
+<!-- 模块3：业务数据 -->
+<div class="dashboard-module">
+    <div class="module-header">
+        <h3 class="module-title"><i class="fa fa-bar-chart"></i> 业务数据</h3>
+    </div>
+    <div class="business-split">
+        <div class="business-section">
+            <div class="section-header">
+                <span class="section-title">核销券订单</span>
+                <span class="section-unit">单位：单 / 元</span>
+            </div>
+            <div class="data-grid">
+                <div class="data-item">
+                    <div class="data-label">总订单</div>
+                    <div class="data-value">{$totalVoucherOrder} 单</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-label">已支付</div>
+                    <div class="data-value">{$paidVoucherOrder} 单</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-label">待支付</div>
+                    <div class="data-value">{$unpaidVoucherOrder} 单</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-label">已取消</div>
+                    <div class="data-value">{$cancelVoucherOrder} 单</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-label">今日新增</div>
+                    <div class="data-value">{$todayVoucherOrder} 单</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-label">今日流水</div>
+                    <div class="data-value">￥{$platformTodayAmount|sprintf='%.2f',###}</div>
+                </div>
             </div>
         </div>
-    </div>
-    <div class="col-sm-4 col-xs-12">
-        <div class="stat-card">
-            <div class="stat-title">返利</div>
-            <div class="stat-grid">
-                <div class="stat-item w-50"><div class="stat-label">累计返利</div><div class="stat-value">￥{$rebateTotalAmount|sprintf='%.2f',###}</div></div>
-                <div class="stat-item w-50"><div class="stat-label">已打款</div><div class="stat-value">{$rebatePaidCount} 笔 / ￥{$rebatePaidAmount|sprintf='%.2f',###}</div></div>
-                <div class="stat-item w-50"><div class="stat-label">待打款</div><div class="stat-value">{$rebatePendingCount} 笔 / ￥{$rebatePendingAmount|sprintf='%.2f',###}</div></div>
-                <div class="stat-item w-50"><div class="stat-label">打款失败</div><div class="stat-value">{$rebateFailedCount} 笔</div></div>
+        <div class="business-section">
+            <div class="section-header">
+                <span class="section-title">核销券</span>
+                <span class="section-unit">单位：张 / 元</span>
+            </div>
+            <div class="data-grid">
+                <div class="data-item">
+                    <div class="data-label">总券量</div>
+                    <div class="data-value">{$totalVoucher} 张</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-label">待核销</div>
+                    <div class="data-value">{$voucherUnused} 张</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-label">已核销</div>
+                    <div class="data-value">{$voucherVerified} 张</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-label">今日核销</div>
+                    <div class="data-value">{$voucherVerifiedTodayCount} 张</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-label">今日核销额</div>
+                    <div class="data-value">￥{$voucherVerifiedTodayAmount|sprintf='%.2f',###}</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-label">累计核销额</div>
+                    <div class="data-value">￥{$voucherVerifiedAmount|sprintf='%.2f',###}</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-label">已过期</div>
+                    <div class="data-value">{$voucherExpired} 张</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-label">退款中/已退</div>
+                    <div class="data-value">{$voucherRefunded} 张</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-label">今日核销记录</div>
+                    <div class="data-value">{$todayVerificationCount} 条</div>
+                </div>
             </div>
         </div>
-    </div>
-    <div class="col-sm-4 col-xs-12">
-        <div class="stat-card">
-            <div class="stat-title">退款</div>
-            <div class="stat-grid">
-                <div class="stat-item w-50"><div class="stat-label">申请中</div><div class="stat-value">{$refundApplyingCount} 笔</div></div>
-                <div class="stat-item w-50"><div class="stat-label">已同意</div><div class="stat-value">{$refundAgreeCount} 笔</div></div>
-                <div class="stat-item w-50"><div class="stat-label">已拒绝</div><div class="stat-value">{$refundRefuseCount} 笔</div></div>
-                <div class="stat-item w-50"><div class="stat-label">退款成功</div><div class="stat-value">{$refundSuccessCount} 笔 / ￥{$refundSuccessAmount|sprintf='%.2f',###}</div></div>
-                <div class="stat-item w-50"><div class="stat-label">今日退款成功</div><div class="stat-value">￥{$refundTodayAmount|sprintf='%.2f',###}</div></div>
-            </div>
-        </div>
-    </div>
-</div>
-<!-- 列表 -->
-<div class="row wanllist">
-	<div class="col-xs-12 col-sm-4">
-	    <div class="panel panel-default panel-intro panel-statistics">
-	        <div class="panel-body">
-	            <h4>TOP10 销量</h4>
-	            <table class="table" style="width:100%">
-	                <thead>
-	                <tr>
-	                    <th class="text-left">商品名称</th>
-	                    <th class="text-right" width="50px">销量</th>
-	                </tr>
-	                </thead>
-	                <tbody>
-	                	{foreach name="goodsTopList" id="item" empty="<tr><td colspan='2' class='text-center'>暂无数据</td></tr>"}
-	                	<tr>
-	                		<td class="vertical text-left">
-								{$key+1}. {$item.title}
-	                		</td>
-	                		<td class="vertical text-right">
-	                			{$item.sales}
-	                		</td>
-	                	</tr>
-	                	{/foreach}
-	                </tbody>
-	            </table>
-	        </div>
-	    </div>
-	</div>
-    <div id="wanlshop" v-cloak>
-    	<div class="col-xs-12 col-sm-4">
-    	    <div class="panel panel-default panel-intro panel-statistics">
-    	        <div class="panel-body">
-    	            <h4>新申请店铺</h4>
-    	            <table class="table" style="width:100%">
-    	                <thead>
-    	                <tr>
-    						<th align="left">店铺名</th>
-    						<th class="text-center">类型</th>
-							<th class="text-center">状态</th>
-    						<th width="96px" class="text-center">操作</th>
-    	                </tr>
-    	                </thead>
-    	                <tbody>
-    						<tr v-for="(item, index) in shopAuthList"  :key="index">
-    							<td class="vertical text-left" @click="shopDetails(index)">
-    								{{item.shopname}}
-    							</td>
-    							<td class="vertical text-center">
-    								{{shopState[item.state]}}
-    							</td>
-								<td class="vertical text-center">
-									{{shopVerify[item.verify]}}
-								</td>
-    							<td class="vertical text-right">
-    								<span class="btn btn-xs btn-success btn-editone" @click="shopAgree(index)"> <i class="fa fa-check"></i> </span>
-    								<span class="btn btn-xs btn-danger btn-editone" @click="shopRefuse(index)"> <i class="fa fa-times"></i> </span>
-    								<span class="btn btn-xs btn-info btn-editone" @click="shopDetails(index)"> <i class="fa fa-eye"></i> </span>
-    							</td>
-    						</tr>
-							<tr><td colspan='4' class='text-center' v-if="shopAuthList.length == 0">暂无数据</td></tr>
-    					</tbody>
-    	            </table>
-    	        </div>
-    	    </div>
-    	</div>
-    	<div class="col-xs-12 col-sm-4">
-    	    <div class="panel panel-default panel-intro panel-statistics">
-    	        <div class="panel-body">
-    	            <h4>介入退款</h4>
-    	            <table class="table" style="width:100%">
-    	                <thead>
-    	                <tr>
-    	                    <th>订单号</th>
-    						<th class="text-center">金额</th>
-    						<th class="text-center">状态</th>
-    	                    <th width="96px" class="text-center">操作</th>
-    	                </tr>
-    	                </thead>
-    	                <tbody>
-    	                	<tr v-for="(item, index) in refundList" :key="index">
-    	                		<td class="vertical text-left" @click="refundDetails(index)">
-    	                			{{item.pay.order_no}}
-    	                		</td>
-    							<td class="vertical text-center">
-    								{{item.price}}
-    							</td>
-    	                		<td class="vertical text-center">
-    	                			{{refundState[item.state]}}
-    	                		</td>
-    	                		<td class="vertical text-right">
-    								<span class="btn btn-xs btn-info btn-editone" @click="refundDetails(index)"> <i class="fa fa-eye"></i> </span>
-    								<span class="btn btn-xs btn-success btn-editone" @click="refundAgree(index)"> <i class="fa fa-check"></i> </span>
-    								<span class="btn btn-xs btn-danger btn-editone" @click="refundRefuse(index)"> <i class="fa fa-times"></i> </span>
-    	                		</td>
-    	                	</tr>
-							<tr><td colspan='4' class='text-center' v-if="refundList.length == 0">暂无数据</td></tr>
-    	                </tbody>
-    	            </table>
-    	        </div>
-    	    </div>
-    	</div>
     </div>
 </div>
 
-<div class="wanlshop" style="height: 20px;"> </div>
+<!-- 模块4：运营状态 -->
+<div class="dashboard-module">
+    <div class="module-header">
+        <h3 class="module-title"><i class="fa fa-cogs"></i> 运营状态</h3>
+    </div>
+    <div class="ops-grid">
+        <div class="ops-section">
+            <div class="ops-title">结算</div>
+            <div class="ops-data">
+                <div class="ops-item">
+                    <div class="data-label">待结算</div>
+                    <div class="data-value">{$settlementPendingCount} 笔 / ￥{$settlementPendingAmount|sprintf='%.2f',###}</div>
+                </div>
+                <div class="ops-item">
+                    <div class="data-label">已结算</div>
+                    <div class="data-value">{$settlementPaidCount} 笔 / ￥{$settlementPaidAmount|sprintf='%.2f',###}</div>
+                </div>
+                <div class="ops-item">
+                    <div class="data-label">打款中</div>
+                    <div class="data-value">{$settlementPayingCount} 笔</div>
+                </div>
+                <div class="ops-item">
+                    <div class="data-label">打款失败</div>
+                    <div class="data-value">{$settlementFailedCount} 笔</div>
+                </div>
+            </div>
+        </div>
+        <div class="ops-section">
+            <div class="ops-title">返利</div>
+            <div class="ops-data">
+                <div class="ops-item">
+                    <div class="data-label">累计返利</div>
+                    <div class="data-value">￥{$rebateTotalAmount|sprintf='%.2f',###}</div>
+                </div>
+                <div class="ops-item">
+                    <div class="data-label">已打款</div>
+                    <div class="data-value">{$rebatePaidCount} 笔 / ￥{$rebatePaidAmount|sprintf='%.2f',###}</div>
+                </div>
+                <div class="ops-item">
+                    <div class="data-label">待打款</div>
+                    <div class="data-value">{$rebatePendingCount} 笔 / ￥{$rebatePendingAmount|sprintf='%.2f',###}</div>
+                </div>
+                <div class="ops-item">
+                    <div class="data-label">打款失败</div>
+                    <div class="data-value">{$rebateFailedCount} 笔</div>
+                </div>
+            </div>
+        </div>
+        <div class="ops-section">
+            <div class="ops-title">退款</div>
+            <div class="ops-data">
+                <div class="ops-item">
+                    <div class="data-label">申请中</div>
+                    <div class="data-value">{$refundApplyingCount} 笔</div>
+                </div>
+                <div class="ops-item">
+                    <div class="data-label">已同意</div>
+                    <div class="data-value">{$refundAgreeCount} 笔</div>
+                </div>
+                <div class="ops-item">
+                    <div class="data-label">已拒绝</div>
+                    <div class="data-value">{$refundRefuseCount} 笔</div>
+                </div>
+                <div class="ops-item">
+                    <div class="data-label">退款成功</div>
+                    <div class="data-value">{$refundSuccessCount} 笔 / ￥{$refundSuccessAmount|sprintf='%.2f',###}</div>
+                </div>
+                <div class="ops-item">
+                    <div class="data-label">今日退款</div>
+                    <div class="data-value">￥{$refundTodayAmount|sprintf='%.2f',###}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 模块5：数据列表 -->
+<div class="dashboard-module" id="wanlshop" v-cloak>
+    <div class="module-header">
+        <h3 class="module-title"><i class="fa fa-list"></i> 数据列表</h3>
+    </div>
+    <div class="list-grid">
+        <div class="list-section">
+            <div class="list-title">TOP10 销量</div>
+            <table class="list-table">
+                <thead>
+                    <tr>
+                        <th class="text-left">商品名称</th>
+                        <th class="text-right" width="60px">销量</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {foreach name="goodsTopList" id="item" empty="<tr><td colspan='2' class='text-center' style='color:#999;padding:20px 0;'>暂无数据</td></tr>"}
+                    <tr>
+                        <td class="text-left">{$key+1}. {$item.title}</td>
+                        <td class="text-right">{$item.sales}</td>
+                    </tr>
+                    {/foreach}
+                </tbody>
+            </table>
+        </div>
+        <div class="list-section">
+            <div class="list-title">新申请店铺</div>
+            <table class="list-table">
+                <thead>
+                    <tr>
+                        <th class="text-left">店铺名</th>
+                        <th class="text-center">类型</th>
+                        <th class="text-center">状态</th>
+                        <th width="96px" class="text-center">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="(item, index) in shopAuthList" :key="index">
+                        <td class="text-left" @click="shopDetails(index)">{{item.shopname}}</td>
+                        <td class="text-center">{{shopState[item.state]}}</td>
+                        <td class="text-center">{{shopVerify[item.verify]}}</td>
+                        <td class="text-right">
+                            <span class="btn btn-xs btn-success" @click="shopAgree(index)"><i class="fa fa-check"></i></span>
+                            <span class="btn btn-xs btn-danger" @click="shopRefuse(index)"><i class="fa fa-times"></i></span>
+                            <span class="btn btn-xs btn-info" @click="shopDetails(index)"><i class="fa fa-eye"></i></span>
+                        </td>
+                    </tr>
+                    <tr v-if="shopAuthList.length == 0"><td colspan='4' class='text-center' style='color:#999;padding:20px 0;'>暂无数据</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="list-section">
+            <div class="list-title">介入退款</div>
+            <table class="list-table">
+                <thead>
+                    <tr>
+                        <th class="text-left">订单号</th>
+                        <th class="text-center">金额</th>
+                        <th class="text-center">状态</th>
+                        <th width="96px" class="text-center">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="(item, index) in refundList" :key="index">
+                        <td class="text-left" @click="refundDetails(index)">{{item.pay.order_no}}</td>
+                        <td class="text-center">{{item.price}}</td>
+                        <td class="text-center">{{refundState[item.state]}}</td>
+                        <td class="text-right">
+                            <span class="btn btn-xs btn-info" @click="refundDetails(index)"><i class="fa fa-eye"></i></span>
+                            <span class="btn btn-xs btn-success" @click="refundAgree(index)"><i class="fa fa-check"></i></span>
+                            <span class="btn btn-xs btn-danger" @click="refundRefuse(index)"><i class="fa fa-times"></i></span>
+                        </td>
+                    </tr>
+                    <tr v-if="refundList.length == 0"><td colspan='4' class='text-center' style='color:#999;padding:20px 0;'>暂无数据</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div style="height: 32px;"></div>
