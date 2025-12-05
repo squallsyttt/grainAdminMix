@@ -16,6 +16,7 @@ define(['jquery', 'bootstrap', 'backend', 'vue', 'echarts', 'echarts-theme'], fu
                     overviewEndDate: '',
                     overviewSelectedCity: '',
                     expandedCategories: [],  // 展开的分类ID列表
+                    showFormula: false,  // 是否显示公式说明
 
                     // 城市列表
                     cityList: [],

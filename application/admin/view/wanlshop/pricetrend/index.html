@@ -790,9 +790,13 @@
         font-size: 15px;
         font-weight: 600;
         color: #333;
-        margin-bottom: 15px;
+        margin-bottom: 0;
         display: flex;
         align-items: center;
+    }
+
+    .formula-section .section-title.expanded {
+        margin-bottom: 15px;
     }
 
     .formula-section .section-title i {
@@ -950,6 +954,56 @@
                     <button class="btn-search" @click="fetchOverviewData" :disabled="overviewLoading">
                         <i class="fa fa-refresh" :class="{ 'fa-spin': overviewLoading }"></i> 刷新数据
                     </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 公式说明模块 -->
+        <div class="formula-section">
+            <div class="section-title" :class="{ expanded: showFormula }" @click="showFormula = !showFormula" style="cursor: pointer;">
+                <i class="fa fa-info-circle"></i>
+                数据指标说明
+                <button class="toggle-btn">
+                    <i class="fa" :class="showFormula ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                    {{ showFormula ? '收起' : '展开' }}
+                </button>
+            </div>
+            <div class="formula-list" v-show="showFormula">
+                <div class="formula-item">
+                    <div class="formula-name"><span class="dot platform"></span>平台均价</div>
+                    <div class="formula-expr">AVG(平台SKU价格)</div>
+                    <div class="formula-desc">统计 shop_id = 1（平台概念店）的所有在售SKU价格的算术平均值</div>
+                    <div class="formula-example">示例：平台有3个SKU，价格分别为100、120、110，则平台均价 = (100+120+110)/3 = 110</div>
+                </div>
+                <div class="formula-item">
+                    <div class="formula-name"><span class="dot merchant"></span>商家均价</div>
+                    <div class="formula-expr">AVG(商家SKU价格)</div>
+                    <div class="formula-desc">统计 shop_id ≠ 1（入驻商家）的所有在售SKU价格的算术平均值</div>
+                    <div class="formula-example">示例：商家有4个SKU，价格分别为95、100、105、100，则商家均价 = (95+100+105+100)/4 = 100</div>
+                </div>
+                <div class="formula-item">
+                    <div class="formula-name"><span class="dot diff"></span>价差比例</div>
+                    <div class="formula-expr">(平台均价 - 商家均价) / 商家均价 × 100%</div>
+                    <div class="formula-desc">平台价格相对于商家价格的溢价/折价比例，正数表示平台价格高于商家，负数表示低于商家</div>
+                    <div class="formula-example">示例：平台均价110，商家均价100，则价差比例 = (110-100)/100 × 100% = +10%</div>
+                </div>
+                <div class="formula-item">
+                    <div class="formula-name"><span class="dot range"></span>商家最低/最高</div>
+                    <div class="formula-expr">MIN(商家SKU价格) / MAX(商家SKU价格)</div>
+                    <div class="formula-desc">所有入驻商家在售SKU中的最低价格和最高价格</div>
+                    <div class="formula-example">示例：商家SKU价格为95、100、105、100，则最低=95，最高=105</div>
+                </div>
+                <div class="formula-item">
+                    <div class="formula-name"><span class="dot" style="background: #9b59b6;"></span>数据覆盖</div>
+                    <div class="formula-expr">COUNT(DISTINCT category_id) / COUNT(sku_id)</div>
+                    <div class="formula-desc">统计有在售SKU的商品分类数量，以及所有在售SKU的总数量</div>
+                    <div class="formula-example">示例：玉米分类有3个SKU，大豆分类有2个SKU，则覆盖2个分类，共5个SKU</div>
+                </div>
+                <div class="formula-item">
+                    <div class="formula-name"><span class="dot" style="background: #f39c12;"></span>入驻商家</div>
+                    <div class="formula-expr">COUNT(DISTINCT shop_id) WHERE shop_id ≠ 1</div>
+                    <div class="formula-desc">统计有在售SKU的入驻商家数量（不含平台概念店）</div>
+                    <div class="formula-example">示例：3家商家各有商品在售，则入驻商家 = 3</div>
                 </div>
             </div>
         </div>
