@@ -347,6 +347,223 @@
         box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     }
 
+    /* 分类SKU明细模块 */
+    .category-sku-section {
+        background: #fff;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .category-sku-section .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .category-sku-section .section-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .category-sku-section .section-title i {
+        margin-right: 8px;
+        color: #9b59b6;
+    }
+
+    .category-sku-section .section-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .category-sku-section .btn-expand-all,
+    .category-sku-section .btn-collapse-all {
+        padding: 6px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background: #fff;
+        color: #666;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .category-sku-section .btn-expand-all:hover,
+    .category-sku-section .btn-collapse-all:hover {
+        background: #f5f5f5;
+        border-color: #3c8dbc;
+        color: #3c8dbc;
+    }
+
+    .category-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+        gap: 15px;
+    }
+
+    .category-card {
+        border: 1px solid #e8e8e8;
+        border-radius: 8px;
+        overflow: hidden;
+        background: #fff;
+    }
+
+    .category-header {
+        display: flex;
+        align-items: center;
+        padding: 15px;
+        background: linear-gradient(135deg, #fafafa, #f5f5f5);
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .category-header:hover {
+        background: linear-gradient(135deg, #f0f7fc, #e8f4fc);
+    }
+
+    .category-info {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .category-name {
+        font-size: 15px;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .sku-badge {
+        background: #9b59b6;
+        color: #fff;
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    .category-prices {
+        display: flex;
+        gap: 8px;
+        margin-right: 15px;
+    }
+
+    .price-tag {
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    .price-tag.platform {
+        background: #e8f4fc;
+        color: #3c8dbc;
+    }
+
+    .price-tag.merchant {
+        background: #fef6e8;
+        color: #f39c12;
+    }
+
+    .expand-icon {
+        color: #999;
+        font-size: 14px;
+        transition: transform 0.2s;
+    }
+
+    .sku-list {
+        border-top: 1px solid #e8e8e8;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .sku-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .sku-table th,
+    .sku-table td {
+        padding: 10px 12px;
+        text-align: left;
+        border-bottom: 1px solid #f0f0f0;
+        font-size: 13px;
+    }
+
+    .sku-table th {
+        background: #fafafa;
+        color: #888;
+        font-weight: 500;
+        position: sticky;
+        top: 0;
+    }
+
+    .sku-table td {
+        color: #333;
+    }
+
+    .sku-table tr:hover td {
+        background: #f9f9f9;
+    }
+
+    .shop-tag {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 3px;
+        font-size: 11px;
+        white-space: nowrap;
+    }
+
+    .shop-tag.platform {
+        background: #e8f4fc;
+        color: #3c8dbc;
+    }
+
+    .shop-tag.merchant {
+        background: #fef6e8;
+        color: #f39c12;
+    }
+
+    .goods-title {
+        max-width: 200px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .city-name {
+        color: #666;
+        font-size: 12px;
+    }
+
+    .sku-spec {
+        color: #888;
+    }
+
+    .sku-price {
+        font-weight: 600;
+        color: #333;
+    }
+
+    .empty-sku {
+        padding: 30px;
+        text-align: center;
+        color: #999;
+        font-size: 13px;
+    }
+
+    @media (max-width: 992px) {
+        .category-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
     .category-table-section .section-title {
         font-size: 16px;
         font-weight: 600;
@@ -721,6 +938,13 @@
                     <label>结束日期</label>
                     <input type="date" v-model="overviewEndDate">
                 </div>
+                <div class="filter-item">
+                    <label>城市</label>
+                    <select v-model="overviewSelectedCity">
+                        <option value="">全部城市</option>
+                        <option v-for="city in cityList" :key="city.name" :value="city.name">{{ city.name }}</option>
+                    </select>
+                </div>
                 <div class="filter-item" style="flex: 0 0 auto;">
                     <label>&nbsp;</label>
                     <button class="btn-search" @click="fetchOverviewData" :disabled="overviewLoading">
@@ -755,8 +979,68 @@
             <div class="overview-card info">
                 <i class="fa fa-cubes card-icon"></i>
                 <div class="card-label">数据覆盖</div>
-                <div class="card-value">{{overviewData.total_stats.category_count}}</div>
-                <div class="card-sub">{{overviewData.total_stats.goods_count}} 个商品</div>
+                <div class="card-value">{{overviewData.total_stats.category_count}} 个分类</div>
+                <div class="card-sub">共 {{overviewData.total_stats.sku_count}} 个SKU</div>
+            </div>
+        </div>
+
+        <!-- 分类SKU明细模块 -->
+        <div class="category-sku-section" v-if="overviewData && overviewData.category_stats && overviewData.category_stats.length > 0">
+            <div class="section-header">
+                <div class="section-title">
+                    <i class="fa fa-th-large"></i>
+                    分类SKU明细
+                </div>
+                <div class="section-actions">
+                    <button class="btn-expand-all" @click="expandAllCategories">
+                        <i class="fa fa-expand"></i> 全部展开
+                    </button>
+                    <button class="btn-collapse-all" @click="collapseAllCategories">
+                        <i class="fa fa-compress"></i> 全部收起
+                    </button>
+                </div>
+            </div>
+            <div class="category-grid">
+                <div v-for="cat in overviewData.category_stats" :key="cat.category_id" class="category-card">
+                    <!-- 分类头部 -->
+                    <div class="category-header" @click="toggleCategoryExpand(cat.category_id)">
+                        <div class="category-info">
+                            <span class="category-name">{{cat.category_name}}</span>
+                            <span class="sku-badge">{{cat.sku_count}} SKU</span>
+                        </div>
+                        <div class="category-prices">
+                            <span class="price-tag platform" v-if="cat.platform_avg">平台 ￥{{parseFloat(cat.platform_avg).toFixed(2)}}</span>
+                            <span class="price-tag merchant" v-if="cat.merchant_avg">商家 ￥{{parseFloat(cat.merchant_avg).toFixed(2)}}</span>
+                        </div>
+                        <i class="fa expand-icon" :class="expandedCategories.includes(cat.category_id) ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                    </div>
+                    <!-- SKU列表 -->
+                    <div class="sku-list" v-show="expandedCategories.includes(cat.category_id)">
+                        <table class="sku-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 100px;">店铺</th>
+                                    <th style="width: 80px;">城市</th>
+                                    <th>商品名称</th>
+                                    <th style="width: 120px;">规格</th>
+                                    <th style="width: 80px;">价格</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="sku in cat.sku_list" :key="sku.id">
+                                    <td>
+                                        <span class="shop-tag" :class="sku.shop_id == 1 ? 'platform' : 'merchant'">{{sku.shop_name}}</span>
+                                    </td>
+                                    <td class="city-name">{{sku.city_name || '--'}}</td>
+                                    <td class="goods-title" :title="sku.goods_title">{{sku.goods_title}}</td>
+                                    <td class="sku-spec">{{sku.difference}}</td>
+                                    <td class="sku-price">￥{{sku.price}}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div v-if="!cat.sku_list || cat.sku_list.length === 0" class="empty-sku">暂无SKU数据</div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -814,6 +1098,13 @@
                     <select v-model="selectedCategory" @change="onCategoryChange">
                         <option value="">请选择分类</option>
                         <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{cat.name}}</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <label>城市</label>
+                    <select v-model="selectedCity">
+                        <option value="">全部城市</option>
+                        <option v-for="city in cityList" :key="city.name" :value="city.name">{{ city.name }}</option>
                     </select>
                 </div>
                 <div class="filter-item">

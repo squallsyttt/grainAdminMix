@@ -14,7 +14,7 @@ use think\Db;
  */
 class Pricetrend extends Backend
 {
-    protected $noNeedRight = ['getCategoryList', 'getSpecList', 'getTrendData', 'getOverviewData'];
+    protected $noNeedRight = ['getCategoryList', 'getSpecList', 'getTrendData', 'getOverviewData', 'getCityList'];
 
     /**
      * 主页面
@@ -42,14 +42,11 @@ class Pricetrend extends Backend
         return $this->view->fetch();
     }
 
-    /**
-     * 获取全品类概览数据 (AJAX)
-     * 默认显示的总体统计
-     */
     public function getOverviewData()
     {
         $startDate = $this->request->param('start_date', '');
         $endDate = $this->request->param('end_date', '');
+        $cityName = $this->request->param('city_name', '');
 
         // 默认显示最近30天
         if (!$startDate) {
@@ -75,7 +72,7 @@ class Pricetrend extends Backend
         }
 
         // 1. 获取各分类的当前在售价格统计（只统计上架商品）
-        $categoryStats = Db::name('wanlshop_goods_sku')
+        $categoryStatsQuery = Db::name('wanlshop_goods_sku')
             ->alias('sku')
             ->join("{$prefix}wanlshop_goods g", "sku.goods_id = g.id", 'INNER')
             ->join("{$prefix}wanlshop_category c", "c.id = g.category_id", 'INNER')
@@ -83,7 +80,13 @@ class Pricetrend extends Backend
             ->where('g.status', 'normal')  // 只统计上架商品
             ->where('sku.deletetime', null)
             ->where('sku.state', '0')
-            ->where('sku.price', '>', 0)
+            ->where('sku.price', '>', 0);
+
+        if ($cityName !== '') {
+            $categoryStatsQuery->where('g.region_city_name', $cityName);
+        }
+
+        $categoryStats = $categoryStatsQuery
             ->group('g.category_id')
             ->field([
                 'g.category_id',
@@ -94,20 +97,76 @@ class Pricetrend extends Backend
                 'MAX(CASE WHEN g.shop_id != 1 THEN sku.price ELSE NULL END) as merchant_max',
                 'COUNT(DISTINCT CASE WHEN g.shop_id = 1 THEN g.id ELSE NULL END) as platform_goods_count',
                 'COUNT(DISTINCT CASE WHEN g.shop_id != 1 THEN g.id ELSE NULL END) as merchant_goods_count',
-                'COUNT(DISTINCT CASE WHEN g.shop_id != 1 THEN g.shop_id ELSE NULL END) as merchant_shop_count'
+                'COUNT(DISTINCT CASE WHEN g.shop_id != 1 THEN g.shop_id ELSE NULL END) as merchant_shop_count',
+                'COUNT(sku.id) as sku_count'
             ])
             ->order('c.weigh DESC')
             ->select();
 
+        // 1.1 获取每个分类下的SKU明细
+        $categoryIds = array_column($categoryStats, 'category_id');
+        $skuDetails = [];
+        if (!empty($categoryIds)) {
+            $skuDetailQuery = Db::name('wanlshop_goods_sku')
+                ->alias('sku')
+                ->join("{$prefix}wanlshop_goods g", "sku.goods_id = g.id", 'INNER')
+                ->join("{$prefix}wanlshop_shop s", "s.id = g.shop_id", 'LEFT')
+                ->where('g.category_id', 'in', $categoryIds)
+                ->where('g.deletetime', null)
+                ->where('g.status', 'normal')
+                ->where('sku.deletetime', null)
+                ->where('sku.state', '0')
+                ->where('sku.price', '>', 0);
+
+            if ($cityName !== '') {
+                $skuDetailQuery->where('g.region_city_name', $cityName);
+            }
+
+            $skuList = $skuDetailQuery
+                ->field([
+                    'sku.id',
+                    'g.category_id',
+                    'g.shop_id',
+                    'CASE WHEN g.shop_id = 1 THEN "平台概念店" ELSE IFNULL(s.shopname, "未知店铺") END as shop_name',
+                    'g.region_city_name as city_name',
+                    'g.title as goods_title',
+                    'sku.difference',
+                    'sku.price'
+                ])
+                ->order('g.category_id ASC, g.shop_id ASC, sku.price ASC')
+                ->select();
+
+            // 按分类ID分组
+            foreach ($skuList as $sku) {
+                $catId = $sku['category_id'];
+                if (!isset($skuDetails[$catId])) {
+                    $skuDetails[$catId] = [];
+                }
+                $skuDetails[$catId][] = $sku;
+            }
+        }
+
+        // 将SKU明细附加到分类统计中
+        foreach ($categoryStats as &$cat) {
+            $cat['sku_list'] = isset($skuDetails[$cat['category_id']]) ? $skuDetails[$cat['category_id']] : [];
+        }
+        unset($cat);
+
         // 2. 获取按日期聚合的全品类价格趋势（只统计上架商品的SKU更新记录）
-        $dailyTrend = Db::name('wanlshop_goods_sku')
+        $dailyTrendQuery = Db::name('wanlshop_goods_sku')
             ->alias('sku')
             ->join("{$prefix}wanlshop_goods g", "sku.goods_id = g.id", 'INNER')
             ->where('g.deletetime', null)
             ->where('g.status', 'normal')  // 只统计上架商品
             ->where('sku.deletetime', null)
             ->where('sku.updatetime', 'between', [$startTime, $endTime])
-            ->where('sku.price', '>', 0)
+            ->where('sku.price', '>', 0);
+
+        if ($cityName !== '') {
+            $dailyTrendQuery->where('g.region_city_name', $cityName);
+        }
+
+        $dailyTrend = $dailyTrendQuery
             ->group('update_date')
             ->field([
                 'FROM_UNIXTIME(sku.updatetime, "%Y-%m-%d") as update_date',
@@ -155,19 +214,26 @@ class Pricetrend extends Backend
         }
 
         // 3. 计算总体统计（只统计上架商品）
-        $totalStats = Db::name('wanlshop_goods_sku')
+        $totalStatsQuery = Db::name('wanlshop_goods_sku')
             ->alias('sku')
             ->join("{$prefix}wanlshop_goods g", "sku.goods_id = g.id", 'INNER')
             ->where('g.deletetime', null)
             ->where('g.status', 'normal')  // 只统计上架商品
             ->where('sku.deletetime', null)
             ->where('sku.state', '0')
-            ->where('sku.price', '>', 0)
+            ->where('sku.price', '>', 0);
+
+        if ($cityName !== '') {
+            $totalStatsQuery->where('g.region_city_name', $cityName);
+        }
+
+        $totalStats = $totalStatsQuery
             ->field([
                 'AVG(CASE WHEN g.shop_id = 1 THEN sku.price ELSE NULL END) as platform_avg',
                 'AVG(CASE WHEN g.shop_id != 1 THEN sku.price ELSE NULL END) as merchant_avg',
                 'COUNT(DISTINCT g.category_id) as category_count',
                 'COUNT(DISTINCT g.id) as goods_count',
+                'COUNT(sku.id) as sku_count',
                 'COUNT(DISTINCT CASE WHEN g.shop_id != 1 THEN g.shop_id ELSE NULL END) as merchant_count'
             ])
             ->find();
@@ -189,6 +255,7 @@ class Pricetrend extends Backend
                 'diff_percentage' => $diffPercentage,
                 'category_count' => $totalStats['category_count'],
                 'goods_count' => $totalStats['goods_count'],
+                'sku_count' => $totalStats['sku_count'],
                 'merchant_count' => $totalStats['merchant_count']
             ],
             'category_stats' => $categoryStats,
@@ -222,11 +289,31 @@ class Pricetrend extends Backend
     }
 
     /**
-     * 获取指定分类下的规格列表 (AJAX)
+     * 获取有商品的城市列表 (AJAX)
      */
+    public function getCityList()
+    {
+        $prefix = Config::get('database.prefix');
+
+        $cities = Db::name('wanlshop_goods')
+            ->alias('g')
+            ->join("{$prefix}wanlshop_goods_sku sku", "sku.goods_id = g.id AND sku.deletetime IS NULL AND sku.state = '0'", 'INNER')
+            ->where('g.deletetime', null)
+            ->where('g.status', 'normal')
+            ->where('g.region_city_name', 'neq', '')
+            ->where('g.region_city_name', 'exp', 'IS NOT NULL')
+            ->group('g.region_city_code, g.region_city_name')
+            ->field('g.region_city_code as code, g.region_city_name as name')
+            ->order('g.region_city_name ASC')
+            ->select();
+
+        $this->success('', null, $cities);
+    }
+
     public function getSpecList()
     {
         $categoryId = $this->request->param('category_id', 0, 'intval');
+        $cityName = $this->request->param('city_name', '');
 
         if (!$categoryId) {
             $this->error('请选择分类');
@@ -242,7 +329,13 @@ class Pricetrend extends Backend
             ->where('g.deletetime', null)
             ->where('g.status', 'normal')  // 只统计上架商品
             ->where('sku.deletetime', null)
-            ->where('sku.state', '0')  // 在售SKU
+            ->where('sku.state', '0');  // 在售SKU
+
+        if ($cityName !== '') {
+            $specs->where('g.region_city_name', $cityName);
+        }
+
+        $specs = $specs
             ->group('sku.difference')
             ->field('sku.difference')
             ->order('sku.difference ASC')
@@ -259,17 +352,13 @@ class Pricetrend extends Backend
         $this->success('', null, $result);
     }
 
-    /**
-     * 获取价格趋势数据 (AJAX)
-     *
-     * 这个接口返回价格变动历史，以日期为维度
-     */
     public function getTrendData()
     {
         $categoryId = $this->request->param('category_id', 0, 'intval');
         $specs = $this->request->param('specs', '');  // 逗号分隔的规格列表
         $startDate = $this->request->param('start_date', '');
         $endDate = $this->request->param('end_date', '');
+        $cityName = $this->request->param('city_name', '');
 
         if (!$categoryId) {
             $this->error('请选择分类');
@@ -306,6 +395,10 @@ class Pricetrend extends Backend
             $query->where('sku.difference', 'in', $specList);
         }
 
+        if ($cityName !== '') {
+            $query->where('g.region_city_name', $cityName);
+        }
+
         // 获取原始数据
         $rawData = $query->field([
             'sku.id',
@@ -323,9 +416,14 @@ class Pricetrend extends Backend
         $result = $this->aggregatePriceData($rawData, $startDate, $endDate, $specList);
 
         // 获取分类名称
-        $categoryName = Db::name('wanlshop_category')
-            ->where('id', $categoryId)
-            ->value('name');
+        $categoryQuery = Db::name('wanlshop_category')->alias('c')->where('c.id', $categoryId);
+        if ($cityName !== '') {
+            $categoryQuery->join("{$prefix}wanlshop_goods g", "g.category_id = c.id", 'INNER')
+                ->where('g.deletetime', null)
+                ->where('g.status', 'normal')
+                ->where('g.region_city_name', $cityName);
+        }
+        $categoryName = $categoryQuery->value('c.name');
 
         $this->success('', null, [
             'category_name' => $categoryName,
@@ -524,15 +622,12 @@ class Pricetrend extends Backend
         ];
     }
 
-    /**
-     * 获取详细数据列表 (AJAX)
-     * 用于展示具体每个店铺每个SKU的价格明细
-     */
     public function getDetailList()
     {
         $categoryId = $this->request->param('category_id', 0, 'intval');
         $spec = $this->request->param('spec', '');
         $date = $this->request->param('date', '');
+        $cityName = $this->request->param('city_name', '');
 
         if (!$categoryId) {
             $this->error('请选择分类');
@@ -553,6 +648,10 @@ class Pricetrend extends Backend
 
         if ($spec) {
             $query->where('sku.difference', $spec);
+        }
+
+        if ($cityName !== '') {
+            $query->where('g.region_city_name', $cityName);
         }
 
         $list = $query->field([

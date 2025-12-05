@@ -14,10 +14,16 @@ define(['jquery', 'bootstrap', 'backend', 'vue', 'echarts', 'echarts-theme'], fu
                     overviewLoading: false,
                     overviewStartDate: '',
                     overviewEndDate: '',
+                    overviewSelectedCity: '',
+                    expandedCategories: [],  // 展开的分类ID列表
+
+                    // 城市列表
+                    cityList: [],
 
                     // 分类详情数据
                     categories: categoriesData || [],
                     selectedCategory: '',
+                    selectedCity: '',
                     specList: [],
                     selectedSpecs: [],
                     startDate: '',
@@ -68,6 +74,9 @@ define(['jquery', 'bootstrap', 'backend', 'vue', 'echarts', 'echarts-theme'], fu
 
                         // 默认加载全品类概览数据
                         self.fetchOverviewData();
+
+                        // 加载城市列表
+                        self.fetchCityList();
                     });
                 },
 
@@ -99,6 +108,30 @@ define(['jquery', 'bootstrap', 'backend', 'vue', 'echarts', 'echarts-theme'], fu
                         this.currentView = view;
                     },
 
+                    // 切换分类展开/折叠
+                    toggleCategoryExpand: function(categoryId) {
+                        var index = this.expandedCategories.indexOf(categoryId);
+                        if (index > -1) {
+                            this.expandedCategories.splice(index, 1);
+                        } else {
+                            this.expandedCategories.push(categoryId);
+                        }
+                    },
+
+                    // 全部展开
+                    expandAllCategories: function() {
+                        if (this.overviewData && this.overviewData.category_stats) {
+                            this.expandedCategories = this.overviewData.category_stats.map(function(cat) {
+                                return cat.category_id;
+                            });
+                        }
+                    },
+
+                    // 全部收起
+                    collapseAllCategories: function() {
+                        this.expandedCategories = [];
+                    },
+
                     // 查看分类详情
                     viewCategoryDetail: function(categoryId, categoryName) {
                         this.selectedCategory = categoryId;
@@ -119,7 +152,8 @@ define(['jquery', 'bootstrap', 'backend', 'vue', 'echarts', 'echarts-theme'], fu
                             url: 'wanlshop/pricetrend/getOverviewData',
                             data: {
                                 start_date: this.overviewStartDate,
-                                end_date: this.overviewEndDate
+                                end_date: this.overviewEndDate,
+                                city_name: this.overviewSelectedCity
                             }
                         }, function(data, ret) {
                             self.overviewLoading = false;
@@ -128,6 +162,20 @@ define(['jquery', 'bootstrap', 'backend', 'vue', 'echarts', 'echarts-theme'], fu
                         }, function(data, ret) {
                             self.overviewLoading = false;
                             Toastr.error(ret.msg);
+                            return false;
+                        });
+                    },
+
+                    // 获取城市列表
+                    fetchCityList: function() {
+                        var self = this;
+                        Fast.api.ajax({
+                            url: 'wanlshop/pricetrend/getCityList'
+                        }, function(data, ret) {
+                            self.cityList = data;
+                            return false;
+                        }, function(data, ret) {
+                            console.log('获取城市列表失败');
                             return false;
                         });
                     },
@@ -149,7 +197,8 @@ define(['jquery', 'bootstrap', 'backend', 'vue', 'echarts', 'echarts-theme'], fu
                         Fast.api.ajax({
                             url: 'wanlshop/pricetrend/getSpecList',
                             data: {
-                                category_id: this.selectedCategory
+                                category_id: this.selectedCategory,
+                                city_name: this.selectedCity
                             }
                         }, function(data, ret) {
                             self.specList = data;
@@ -187,7 +236,8 @@ define(['jquery', 'bootstrap', 'backend', 'vue', 'echarts', 'echarts-theme'], fu
                                 category_id: this.selectedCategory,
                                 specs: this.selectedSpecs.join(','),
                                 start_date: this.startDate,
-                                end_date: this.endDate
+                                end_date: this.endDate,
+                                city_name: this.selectedCity
                             }
                         }, function(data, ret) {
                             self.loading = false;
@@ -230,7 +280,8 @@ define(['jquery', 'bootstrap', 'backend', 'vue', 'echarts', 'echarts-theme'], fu
                             url: 'wanlshop/pricetrend/getDetailList',
                             data: {
                                 category_id: this.selectedCategory,
-                                spec: spec
+                                spec: spec,
+                                city_name: this.selectedCity
                             }
                         }, function(data, ret) {
                             self.detailList = data;
