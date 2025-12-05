@@ -226,6 +226,47 @@
         margin-top: 5px;
     }
 
+    .overview-card .card-detail {
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px dashed #e8e8e8;
+    }
+
+    .overview-card .detail-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 12px;
+        margin-bottom: 6px;
+    }
+
+    .overview-card .detail-label {
+        color: #999;
+    }
+
+    .overview-card .detail-value {
+        color: #666;
+        font-weight: 500;
+    }
+
+    .overview-card .detail-value.positive {
+        color: #00a65a;
+    }
+
+    .overview-card .detail-value.negative {
+        color: #dd4b39;
+    }
+
+    .overview-card .detail-formula {
+        margin-top: 8px;
+        padding: 6px 8px;
+        background: rgba(0,0,0,0.03);
+        border-radius: 4px;
+        font-size: 11px;
+        color: #888;
+        font-family: 'Consolas', 'Monaco', monospace;
+    }
+
     /* 统计卡片 - 小卡片 */
     .summary-cards {
         display: flex;
@@ -1234,13 +1275,37 @@
                 <i class="fa fa-building card-icon"></i>
                 <div class="card-label">平台均价</div>
                 <div class="card-value">￥{{overviewData.total_stats.platform_avg || '--'}}</div>
-                <div class="card-sub">平台概念店商品均价</div>
+                <div class="card-detail">
+                    <div class="detail-row">
+                        <span class="detail-label">样本数</span>
+                        <span class="detail-value">{{overviewData.total_stats.platform_sku_count}} 个SKU</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">价格区间</span>
+                        <span class="detail-value">￥{{overviewData.total_stats.platform_min || '--'}} ~ ￥{{overviewData.total_stats.platform_max || '--'}}</span>
+                    </div>
+                    <div class="detail-formula">AVG(平台所有在售SKU价格)</div>
+                </div>
             </div>
             <div class="overview-card merchant">
                 <i class="fa fa-users card-icon"></i>
                 <div class="card-label">商家均价</div>
                 <div class="card-value">￥{{overviewData.total_stats.merchant_avg || '--'}}</div>
-                <div class="card-sub">{{overviewData.total_stats.merchant_count}} 家入驻商家</div>
+                <div class="card-detail">
+                    <div class="detail-row">
+                        <span class="detail-label">样本数</span>
+                        <span class="detail-value">{{overviewData.total_stats.merchant_sku_count}} 个SKU</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">价格区间</span>
+                        <span class="detail-value">￥{{overviewData.total_stats.merchant_min || '--'}} ~ ￥{{overviewData.total_stats.merchant_max || '--'}}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">来源</span>
+                        <span class="detail-value">{{overviewData.total_stats.merchant_count}} 家商家 / {{overviewData.total_stats.city_count}} 个城市</span>
+                    </div>
+                    <div class="detail-formula">AVG(商家所有在售SKU价格)</div>
+                </div>
             </div>
             <div class="overview-card diff">
                 <i class="fa fa-exchange card-icon"></i>
@@ -1248,13 +1313,39 @@
                 <div class="card-value" :class="overviewData.total_stats.diff_percentage >= 0 ? 'positive' : 'negative'">
                     {{overviewData.total_stats.diff_percentage !== null ? (overviewData.total_stats.diff_percentage >= 0 ? '+' : '') + overviewData.total_stats.diff_percentage + '%' : '--'}}
                 </div>
-                <div class="card-sub">平台价格 vs 商家均价</div>
+                <div class="card-detail">
+                    <div class="detail-row">
+                        <span class="detail-label">绝对价差</span>
+                        <span class="detail-value" :class="overviewData.total_stats.price_diff >= 0 ? 'positive' : 'negative'">
+                            {{overviewData.total_stats.price_diff !== null ? (overviewData.total_stats.price_diff >= 0 ? '+' : '') + '￥' + overviewData.total_stats.price_diff : '--'}}
+                        </span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">含义</span>
+                        <span class="detail-value">{{overviewData.total_stats.diff_percentage > 0 ? '平台比商家贵' : (overviewData.total_stats.diff_percentage < 0 ? '平台比商家便宜' : '价格持平')}}</span>
+                    </div>
+                    <div class="detail-formula">(平台均价 - 商家均价) / 商家均价 × 100%</div>
+                </div>
             </div>
             <div class="overview-card info">
                 <i class="fa fa-cubes card-icon"></i>
                 <div class="card-label">数据覆盖</div>
                 <div class="card-value">{{overviewData.total_stats.category_count}} 个分类</div>
-                <div class="card-sub">共 {{overviewData.total_stats.sku_count}} 个SKU</div>
+                <div class="card-detail">
+                    <div class="detail-row">
+                        <span class="detail-label">平台SKU</span>
+                        <span class="detail-value">{{overviewData.total_stats.platform_sku_count}} 个</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">商家SKU</span>
+                        <span class="detail-value">{{overviewData.total_stats.merchant_sku_count}} 个</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">SKU总计</span>
+                        <span class="detail-value">{{overviewData.total_stats.sku_count}} 个</span>
+                    </div>
+                    <div class="detail-formula">统计所有上架商品的在售SKU</div>
+                </div>
             </div>
         </div>
 

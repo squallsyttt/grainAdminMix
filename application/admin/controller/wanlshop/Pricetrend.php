@@ -337,10 +337,17 @@ class Pricetrend extends Backend
             ->field([
                 'AVG(CASE WHEN g.shop_id = 1 THEN sku.price ELSE NULL END) as platform_avg',
                 'AVG(CASE WHEN g.shop_id != 1 THEN sku.price ELSE NULL END) as merchant_avg',
+                'MIN(CASE WHEN g.shop_id = 1 THEN sku.price ELSE NULL END) as platform_min',
+                'MAX(CASE WHEN g.shop_id = 1 THEN sku.price ELSE NULL END) as platform_max',
+                'MIN(CASE WHEN g.shop_id != 1 THEN sku.price ELSE NULL END) as merchant_min',
+                'MAX(CASE WHEN g.shop_id != 1 THEN sku.price ELSE NULL END) as merchant_max',
+                'COUNT(CASE WHEN g.shop_id = 1 THEN sku.id ELSE NULL END) as platform_sku_count',
+                'COUNT(CASE WHEN g.shop_id != 1 THEN sku.id ELSE NULL END) as merchant_sku_count',
                 'COUNT(DISTINCT g.category_id) as category_count',
                 'COUNT(DISTINCT g.id) as goods_count',
                 'COUNT(sku.id) as sku_count',
-                'COUNT(DISTINCT CASE WHEN g.shop_id != 1 THEN g.shop_id ELSE NULL END) as merchant_count'
+                'COUNT(DISTINCT CASE WHEN g.shop_id != 1 THEN g.shop_id ELSE NULL END) as merchant_count',
+                'COUNT(DISTINCT CASE WHEN g.shop_id != 1 THEN g.region_city_name ELSE NULL END) as city_count'
             ])
             ->find();
 
@@ -356,13 +363,20 @@ class Pricetrend extends Backend
             'date_range' => ['start' => $startDate, 'end' => $endDate],
             'total_stats' => [
                 'platform_avg' => $totalStats['platform_avg'] ? round($totalStats['platform_avg'], 2) : null,
+                'platform_min' => $totalStats['platform_min'] ? round($totalStats['platform_min'], 2) : null,
+                'platform_max' => $totalStats['platform_max'] ? round($totalStats['platform_max'], 2) : null,
+                'platform_sku_count' => intval($totalStats['platform_sku_count']),
                 'merchant_avg' => $totalStats['merchant_avg'] ? round($totalStats['merchant_avg'], 2) : null,
+                'merchant_min' => $totalStats['merchant_min'] ? round($totalStats['merchant_min'], 2) : null,
+                'merchant_max' => $totalStats['merchant_max'] ? round($totalStats['merchant_max'], 2) : null,
+                'merchant_sku_count' => intval($totalStats['merchant_sku_count']),
                 'price_diff' => $priceDiff,
                 'diff_percentage' => $diffPercentage,
                 'category_count' => $totalStats['category_count'],
                 'goods_count' => $totalStats['goods_count'],
                 'sku_count' => $totalStats['sku_count'],
-                'merchant_count' => $totalStats['merchant_count']
+                'merchant_count' => $totalStats['merchant_count'],
+                'city_count' => $totalStats['city_count']
             ],
             'category_stats' => $categoryStats,
             'price_diff_summary' => isset($priceDiffSummary) ? $priceDiffSummary : [],
