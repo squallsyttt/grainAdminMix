@@ -234,8 +234,9 @@ class Goods extends Wanlshop
                     $this->model->region_city_code = $regionCode;
                     $this->model->region_city_name = $regionName;
                 } else {
-                    $this->model->region_city_code = null;
-                    $this->model->region_city_name = $this->shop->city;
+                    // 非平台店铺固定使用配送城市，防止被店铺城市覆盖
+                    $this->model->region_city_code = $this->shop->delivery_city_code ?: null;
+                    $this->model->region_city_name = $this->shop->delivery_city_name ?: $this->shop->city;
                 }
                 $this->model->content = $params['content'];
                 $this->model->price = min($params['price']);
@@ -295,7 +296,7 @@ class Goods extends Wanlshop
 		// 打开方式
 		$this->assignconfig("isdialog", IS_DIALOG);
 		$this->assignconfig('regionCityCode', $this->shop->id == 1 ? '' : '');
-		$this->assignconfig('regionCityName', $this->shop->id == 1 ? '' : $this->shop->city);
+		$this->assignconfig('regionCityName', $this->shop->id == 1 ? '' : ($this->shop->delivery_city_name ?: $this->shop->city));
 		$this->view->assign("row", $row);
 		return $this->view->fetch();
 	}
@@ -343,8 +344,9 @@ class Goods extends Wanlshop
 						$data['region_city_code'] = $regionCode;
 						$data['region_city_name'] = $regionName;
 					} else {
-						$data['region_city_code'] = $row['region_city_code'];
-						$data['region_city_name'] = $this->shop->city;
+						// 非平台店铺使用配送城市，避免被店铺城市字段覆盖
+						$data['region_city_code'] = $this->shop->delivery_city_code ?: $row['region_city_code'];
+						$data['region_city_name'] = $this->shop->delivery_city_name ?: $this->shop->city;
 					}
 					$data['price'] = min($data['price']);
                     $result = $row->allowField(true)->save($data);
@@ -434,8 +436,8 @@ class Goods extends Wanlshop
         $this->assignconfig('categoryId', $row['category_id']);
         $this->assignconfig('attribute', json_decode($row['category_attribute']));
         $this->view->assign("row", $row);
-        $this->assignconfig('regionCityCode', $row['region_city_code'] ? $row['region_city_code'] : '');
-        $this->assignconfig('regionCityName', $row['region_city_name'] ? $row['region_city_name'] : $this->shop->city);
+        $this->assignconfig('regionCityCode', $row['region_city_code'] ? $row['region_city_code'] : ($this->shop->delivery_city_code ?: ''));
+        $this->assignconfig('regionCityName', $row['region_city_name'] ? $row['region_city_name'] : ($this->shop->delivery_city_name ?: $this->shop->city));
         return $this->view->fetch();
     }
     
