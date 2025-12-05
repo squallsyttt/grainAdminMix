@@ -1,201 +1,180 @@
 <style type="text/css">
-	[v-cloak] { display: none }
-	.bg-card-blue{
-		background: linear-gradient(-125deg, #57bdbf, #2f9de2);
-		color: #ffffff;
-	}
-	.bg-card-red{
-		background: linear-gradient(-125deg, #ff7d7d, #fb2c95);
-		color: #ffffff;
-	}
-	.bg-card-violet {
-	    background: linear-gradient(-113deg, #c543d8, #925cc3);
-		color: #ffffff;
-	}
-	.bg-card-primary {
-	    background: linear-gradient(-141deg, #ecca1b, #f39526);
-		color: #ffffff;
-	}
-	.wanlcard .small-box,.panel{
-		border-radius: 10px;
-	}
-	.wanlcard .small-box > .inner{
-		padding: 15px 22px;
-	}
-	.wanlcard .small-box > .inner p:last-child{
-		font-size: 12px;
-	}
-	.wanlcard .small-box p{
-		font-size: 14px;
-		margin: 10px 0;
-	}
-	.wanlcard .small-box h3{
-		font-weight: 100;
-	}
-	.wanlcard .small-box .icon{
-		color: rgba(255, 255, 255, 0.16);
-		right: 22px;
-	}
-	
-	.small-box .icon{
-		font-size: 80px;
-	}
-	
-	.panel-statistics h3 {
-	    font-weight: 500;
-	    font-size: 14px;
-	    color: #333;
-		margin-top: 9.2px;
-	}
-	
-	.panel-statistics h4{
-		color: #666;
-		font-weight: 400;
-		font-size: 14px;
-	}
-	.panel-btn{
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		margin-top: -9px;
-	}
-	.wanl-order .panel{
-		background: linear-gradient(-125deg, #57bdbf, #2f9de2);
-	}
-	.wanl-order .panel h3{
-		font-weight: 500;
-	}
-	.wanl-order .panel h3, .wanl-order .panel h4{
-		color: #ffffff;
-	}
-	.wanl-order .pull-left .fa{
-		color: #ffffff;
-		font-size: 30px;
-	}
-	.wanllist .panel-statistics h4 {
-	    color: #555;
-	    font-weight: bold;
-	    font-size: 18px;
-	}
-	.wanllist .panel-statistics thead{
-		color: #777777;
-	}
-	.vertical{
-		vertical-align: middle;
-	}
-	
-	.table > thead > tr > th, 
-	.table > thead > tr > td, 
-	.table > tbody > tr > th, 
-	.table > tbody > tr > td
-	{
-		padding: 12px 0;
-		font-weight: initial;
-	}
-	
-	.table > tbody > tr > td:first-child {
-		color: #666666;
-	}
+[v-cloak] { display: none }
+.bg-card-blue{ background: linear-gradient(-125deg, #57bdbf, #2f9de2); color: #ffffff; }
+.bg-card-red{ background: linear-gradient(-125deg, #ff7d7d, #fb2c95); color: #ffffff; }
+.bg-card-violet { background: linear-gradient(-113deg, #c543d8, #925cc3); color: #ffffff; }
+.bg-card-primary { background: linear-gradient(-141deg, #ecca1b, #f39526); color: #ffffff; }
+
+.wanlcard .small-box,.panel{ border-radius: 10px; }
+.wanlcard .small-box > .inner{ padding: 15px 22px; }
+.wanlcard .small-box > .inner p:last-child{ font-size: 12px; }
+.wanlcard .small-box p{ font-size: 14px; margin: 10px 0; }
+.wanlcard .small-box h3{ font-weight: 100; }
+.wanlcard .small-box .icon{ color: rgba(255, 255, 255, 0.16); right: 22px; }
+.small-box .icon{ font-size: 80px; }
+
+/* 新版看板卡片样式 */
+.dashboard-section{ margin-top: 15px; }
+.stat-card{ background: #fff; border: 1px solid #eef0f4; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.05); padding: 16px 18px; height: 100%; }
+.stat-title{ font-size: 14px; color: #6b7280; display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.stat-main{ font-size: 22px; font-weight: 600; color: #1f2d3d; line-height: 1.2; }
+.stat-sub{ font-size: 12px; color: #9ca3af; margin-top: 4px; }
+.stat-grid{ display: flex; flex-wrap: wrap; margin-top: 6px; }
+.stat-item{ width: 33.333%; margin-top: 12px; }
+.stat-item.w-50{ width: 50%; }
+.stat-label{ font-size: 12px; color: #6b7280; }
+.stat-value{ font-size: 16px; font-weight: 600; color: #111827; }
+
+.panel-statistics h4 { color: #555; font-weight: bold; font-size: 18px; }
+.panel-statistics thead{ color: #777777; }
+.vertical{ vertical-align: middle; }
+.table > thead > tr > th, .table > thead > tr > td, .table > tbody > tr > th, .table > tbody > tr > td{ padding: 12px 0; font-weight: initial; }
+.table > tbody > tr > td:first-child { color: #666666; }
 </style>
 <div class="alert alert-success-light">
 	<i class="fa fa-warning"></i> 温馨提示：后台订单列表仅供查看，如需发货、修改订单信息，或需要添加新商家，请注册账户登录 <a target="_blank" href="/index/wanlshop.console">进入商家后台</a> 操作
 </div>
-<div class="row wanlcard">
+<div class="dashboard-section row wanlcard">
     <div class="col-lg-3 col-xs-6">
         <div class="small-box bg-card-blue">
             <div class="inner">
-				<p>店铺</p>
+                <p>店铺</p>
                 <h3>{$totalShop}</h3>
                 <p>商城店铺总数量</p>
             </div>
-            <div class="icon">
-                <i class="fa fa-sitemap"></i>
-            </div>
+            <div class="icon"><i class="fa fa-sitemap"></i></div>
         </div>
     </div>
     <div class="col-lg-3 col-xs-6">
         <div class="small-box bg-card-red">
             <div class="inner">
-    			<p>商品</p>
-    			<h3>{$totalGoods}</h3>
-    			<p>商城店铺商品总和</p>
+                <p>商品</p>
+                <h3>{$totalGoods}</h3>
+                <p>商城店铺商品总和</p>
             </div>
-            <div class="icon">
-                <i class="fa fa-shopping-cart"></i>
-            </div>
+            <div class="icon"><i class="fa fa-shopping-cart"></i></div>
         </div>
     </div>
-	<div class="col-lg-3 col-xs-6">
-	    <div class="small-box bg-card-violet">
-	        <div class="inner">
-				<p>会员</p>
-	            <h3>{$totalUser}</h3>
-	            <p>平台注册会员总数</p>
-	        </div>
-	        <div class="icon">
-	            <i class="fa fa-user-circle"></i>
-	        </div>
-	    </div>
-	</div>
-	<div class="col-lg-3 col-xs-6">
-	    <div class="small-box bg-card-primary">
-	        <div class="inner">
-				<p>今日会员</p>
-	            <h3>{$totalDayUser}</h3>
-	            <p>今日新增用户数量</p>
-	        </div>
-	        <div class="icon">
-	            <i class="fa fa-user"></i>
-	        </div>
-	    </div>
-	</div>
-</div>
-<!-- 资金 -->
-<div class="row">
-    <div class="col-xs-12">
-        <div class="row">
-            <div class="col-xs-3" style="margin-bottom:15px;">
-                <div class="panel panel-default panel-intro panel-statistics">
-                    <div class="panel-body">
-                        <h3>平台总流水</h3>
-                        <h4>￥{$MoneyPaySum|sprintf='%.2f',###}</h4>
-                    </div>
-                </div>
+    <div class="col-lg-3 col-xs-6">
+        <div class="small-box bg-card-violet">
+            <div class="inner">
+                <p>会员</p>
+                <h3>{$totalUser}</h3>
+                <p>平台注册会员总数</p>
             </div>
-			<div class="col-xs-3" style="margin-bottom:15px;">
-			    <div class="panel panel-default panel-intro panel-statistics">
-			        <div class="panel-body">
-			            <h3>今日订单金额</h3>
-			            <h4>￥{$MoneyLogDayPay|sprintf='%.2f',###}</h4>
-			        </div>
-			    </div>
-			</div>
-            <div class="col-xs-3" style="margin-bottom:15px;">
-                <div class="panel panel-default panel-intro panel-statistics">
-                    <div class="panel-body">
-                        <h3>今日核销金额</h3>
-                        <h4>￥{$MoneyLogDayVerify|sprintf='%.2f',###}</h4>
-                    </div>
-                </div>
+            <div class="icon"><i class="fa fa-user-circle"></i></div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-xs-6">
+        <div class="small-box bg-card-primary">
+            <div class="inner">
+                <p>今日会员</p>
+                <h3>{$totalDayUser}</h3>
+                <p>今日新增用户数量</p>
             </div>
-			<div class="col-xs-3" style="margin-bottom:15px;">
-			    <div class="panel panel-default panel-intro panel-statistics">
-			        <div class="panel-body">
-			            <h3>总订单数</h3>
-			            <h4>{$totalOrder} 单</h4>
-			        </div>
-			    </div>
-			</div>
+            <div class="icon"><i class="fa fa-user"></i></div>
         </div>
     </div>
 </div>
-<!-- 百度图标 -->
-<div class="row">
-    <div class="col-xs-12 col-sm-12">
-        <div class="panel">
-            <div class="panel-body">
-                <div id="echarts_order" style="height: 360px; -webkit-tap-highlight-color: transparent; user-select: none; position: relative;" _echarts_instance_="ec_1605807574556"><div style="position: relative; width: 416px; height: 360px; padding: 0px; margin: 0px; border-width: 0px; cursor: default;"><canvas data-zr-dom-id="zr_0" width="416" height="360" style="position: absolute; left: 0px; top: 0px; width: 416px; height: 360px; user-select: none; -webkit-tap-highlight-color: rgba(0, 0, 0, 0); padding: 0px; margin: 0px; border-width: 0px;"></canvas></div><div style="position: absolute; display: none; border-style: solid; white-space: nowrap; z-index: 9999999; transition: left 0.4s cubic-bezier(0.23, 1, 0.32, 1) 0s, top 0.4s cubic-bezier(0.23, 1, 0.32, 1) 0s; background-color: rgba(50, 50, 50, 0.7); border-width: 0px; border-color: rgb(51, 51, 51); border-radius: 4px; color: rgb(255, 255, 255); font: 14px/21px &quot;Microsoft YaHei&quot;; padding: 5px; left: 372px; top: 280px; pointer-events: none;">21:00<br>订单数 : 0 个 <br>订单额 : 0 元</div></div>
-                <a href="javascript:" class="btn btn-refresh hidden" data-type="sale">订单统计</a>
+
+<!-- 流水与利润 -->
+<div class="dashboard-section row">
+    <div class="col-sm-3 col-xs-6">
+        <div class="stat-card">
+            <div class="stat-title">核销券总流水</div>
+            <div class="stat-main">￥{$platformTotalAmount|sprintf='%.2f',###}</div>
+            <div class="stat-sub">实付金额（含退款订单）</div>
+        </div>
+    </div>
+    <div class="col-sm-3 col-xs-6">
+        <div class="stat-card">
+            <div class="stat-title">今日流水</div>
+            <div class="stat-main">￥{$platformTodayAmount|sprintf='%.2f',###}</div>
+            <div class="stat-sub">今日付款订单</div>
+        </div>
+    </div>
+    <div class="col-sm-3 col-xs-6">
+        <div class="stat-card">
+            <div class="stat-title">平台利润累计</div>
+            <div class="stat-main">￥{$platformProfitTotal|sprintf='%.2f',###}</div>
+            <div class="stat-sub">结算记录 platform_amount 汇总</div>
+        </div>
+    </div>
+    <div class="col-sm-3 col-xs-6">
+        <div class="stat-card">
+            <div class="stat-title">已结算利润</div>
+            <div class="stat-main">￥{$platformProfitSettled|sprintf='%.2f',###}</div>
+            <div class="stat-sub">state=已结算</div>
+        </div>
+    </div>
+</div>
+
+<!-- 订单与券概览 -->
+<div class="dashboard-section row">
+    <div class="col-sm-6">
+        <div class="stat-card">
+            <div class="stat-title">核销券订单 <span class="stat-sub">单位：单 / 元</span></div>
+            <div class="stat-grid">
+                <div class="stat-item"><div class="stat-label">总订单</div><div class="stat-value">{$totalVoucherOrder} 单</div></div>
+                <div class="stat-item"><div class="stat-label">已支付</div><div class="stat-value">{$paidVoucherOrder} 单</div></div>
+                <div class="stat-item"><div class="stat-label">待支付</div><div class="stat-value">{$unpaidVoucherOrder} 单</div></div>
+                <div class="stat-item"><div class="stat-label">已取消</div><div class="stat-value">{$cancelVoucherOrder} 单</div></div>
+                <div class="stat-item"><div class="stat-label">今日新增</div><div class="stat-value">{$todayVoucherOrder} 单</div></div>
+                <div class="stat-item"><div class="stat-label">今日流水</div><div class="stat-value">￥{$platformTodayAmount|sprintf='%.2f',###}</div></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6">
+        <div class="stat-card">
+            <div class="stat-title">核销券 <span class="stat-sub">单位：张 / 元</span></div>
+            <div class="stat-grid">
+                <div class="stat-item"><div class="stat-label">总券量</div><div class="stat-value">{$totalVoucher} 张</div></div>
+                <div class="stat-item"><div class="stat-label">待核销</div><div class="stat-value">{$voucherUnused} 张</div></div>
+                <div class="stat-item"><div class="stat-label">已核销</div><div class="stat-value">{$voucherVerified} 张</div></div>
+                <div class="stat-item"><div class="stat-label">今日核销</div><div class="stat-value">{$voucherVerifiedTodayCount} 张</div></div>
+                <div class="stat-item"><div class="stat-label">今日核销额</div><div class="stat-value">￥{$voucherVerifiedTodayAmount|sprintf='%.2f',###}</div></div>
+                <div class="stat-item"><div class="stat-label">累计核销额</div><div class="stat-value">￥{$voucherVerifiedAmount|sprintf='%.2f',###}</div></div>
+                <div class="stat-item"><div class="stat-label">已过期</div><div class="stat-value">{$voucherExpired} 张</div></div>
+                <div class="stat-item"><div class="stat-label">退款中/已退</div><div class="stat-value">{$voucherRefunded} 张</div></div>
+                <div class="stat-item"><div class="stat-label">今日核销记录</div><div class="stat-value">{$todayVerificationCount} 条</div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 结算 / 返利 / 退款 -->
+<div class="dashboard-section row">
+    <div class="col-sm-4 col-xs-12">
+        <div class="stat-card">
+            <div class="stat-title">结算</div>
+            <div class="stat-grid">
+                <div class="stat-item w-50"><div class="stat-label">待结算</div><div class="stat-value">{$settlementPendingCount} 笔 / ￥{$settlementPendingAmount|sprintf='%.2f',###}</div></div>
+                <div class="stat-item w-50"><div class="stat-label">已结算</div><div class="stat-value">{$settlementPaidCount} 笔 / ￥{$settlementPaidAmount|sprintf='%.2f',###}</div></div>
+                <div class="stat-item w-50"><div class="stat-label">打款中</div><div class="stat-value">{$settlementPayingCount} 笔</div></div>
+                <div class="stat-item w-50"><div class="stat-label">打款失败</div><div class="stat-value">{$settlementFailedCount} 笔</div></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-4 col-xs-12">
+        <div class="stat-card">
+            <div class="stat-title">返利</div>
+            <div class="stat-grid">
+                <div class="stat-item w-50"><div class="stat-label">累计返利</div><div class="stat-value">￥{$rebateTotalAmount|sprintf='%.2f',###}</div></div>
+                <div class="stat-item w-50"><div class="stat-label">已打款</div><div class="stat-value">{$rebatePaidCount} 笔 / ￥{$rebatePaidAmount|sprintf='%.2f',###}</div></div>
+                <div class="stat-item w-50"><div class="stat-label">待打款</div><div class="stat-value">{$rebatePendingCount} 笔 / ￥{$rebatePendingAmount|sprintf='%.2f',###}</div></div>
+                <div class="stat-item w-50"><div class="stat-label">打款失败</div><div class="stat-value">{$rebateFailedCount} 笔</div></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-4 col-xs-12">
+        <div class="stat-card">
+            <div class="stat-title">退款</div>
+            <div class="stat-grid">
+                <div class="stat-item w-50"><div class="stat-label">申请中</div><div class="stat-value">{$refundApplyingCount} 笔</div></div>
+                <div class="stat-item w-50"><div class="stat-label">已同意</div><div class="stat-value">{$refundAgreeCount} 笔</div></div>
+                <div class="stat-item w-50"><div class="stat-label">已拒绝</div><div class="stat-value">{$refundRefuseCount} 笔</div></div>
+                <div class="stat-item w-50"><div class="stat-label">退款成功</div><div class="stat-value">{$refundSuccessCount} 笔 / ￥{$refundSuccessAmount|sprintf='%.2f',###}</div></div>
+                <div class="stat-item w-50"><div class="stat-label">今日退款成功</div><div class="stat-value">￥{$refundTodayAmount|sprintf='%.2f',###}</div></div>
             </div>
         </div>
     </div>

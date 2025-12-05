@@ -1399,8 +1399,8 @@
                                                 <span class="sku-title" :title="pSku.goods_title">{{ pSku.goods_title }}</span>
                                                 <span class="sku-spec-tag">{{ pSku.difference }}</span>
                                             </div>
-                                            <div class="sku-price-info">
-                                                <span class="platform-price">￥{{ pSku.price }}</span>
+                                            <div class="sku-price-info" style="position: relative;">
+                                                <span class="platform-price" style="cursor: pointer; transition: all 0.3s ease;">￥{{ pSku.price }}</span>
                                                 <span v-if="pSku.merchant_avg_price" class="merchant-avg-price">
                                                     商家均价 ￥{{ pSku.merchant_avg_price }}
                                                     <span class="avg-ratio" :class="{ cheaper: pSku.merchant_avg_price < pSku.price, expensive: pSku.merchant_avg_price > pSku.price }">
@@ -1412,6 +1412,16 @@
                                                     <i class="fa" :class="expandedSkus.includes(cat.category_id + '_' + pSku.id) ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
                                                 </span>
                                                 <span v-else class="no-merchant">暂无商家</span>
+                                                <a
+                                                    class="price-action-badge"
+                                                    @click.stop="jumpToDetail(cat.category_id, cityName, pSku.difference)"
+                                                    style="position: absolute; right: 0; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; background: #3c8dbc; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; cursor: pointer; text-decoration: none; transition: all 0.3s ease; opacity: 0;"
+                                                    @mouseenter="$event.currentTarget.style.opacity='1'; $event.currentTarget.style.transform='translateY(-50%) scale(1.1)'"
+                                                    @mouseleave="$event.currentTarget.style.opacity='0'; $event.currentTarget.style.transform='translateY(-50%) scale(1)'"
+                                                    title="查看历史价格走势"
+                                                >
+                                                    <i class="fa fa-arrow-right" style="font-size: 12px;"></i>
+                                                </a>
                                             </div>
                                         </div>
                                         <!-- 商家SKU子列表 -->
@@ -1508,13 +1518,6 @@
                     </select>
                 </div>
                 <div class="filter-item">
-                    <label>城市</label>
-                    <select v-model="selectedCity">
-                        <option value="">全部城市</option>
-                        <option v-for="city in cityList" :key="city.name" :value="city.name">{{ city.name }}</option>
-                    </select>
-                </div>
-                <div class="filter-item">
                     <label>开始日期</label>
                     <input type="date" v-model="startDate">
                 </div>
@@ -1525,95 +1528,115 @@
                 <div class="filter-item" style="flex: 0 0 auto;">
                     <label>&nbsp;</label>
                     <button class="btn-search" @click="fetchData" :disabled="loading || !selectedCategory">
-                        <i class="fa fa-search"></i> 查询
+                        <i class="fa fa-search"></i> 查询历史价格
                     </button>
-                </div>
-            </div>
-
-            <!-- 规格选择器 -->
-            <div v-if="specList.length > 0" style="margin-top: 15px;">
-                <label style="display: block; font-size: 13px; color: #666; margin-bottom: 8px; font-weight: 500;">
-                    选择规格 <span style="color: #999; font-weight: normal;">(可多选，不选则显示全部)</span>
-                </label>
-                <div class="spec-selector">
-                    <span
-                        v-for="spec in specList"
-                        :key="spec.value"
-                        class="spec-tag"
-                        :class="{ active: selectedSpecs.includes(spec.value) }"
-                        @click="toggleSpec(spec.value)"
-                    >
-                        {{spec.label}}
-                    </span>
                 </div>
             </div>
         </div>
 
-        <!-- 统计卡片 -->
-        <div class="summary-cards" v-if="summary && Object.keys(summary).length > 0">
-            <div class="summary-card" v-for="(data, spec) in summary" :key="spec">
-                <div class="card-title">{{spec}} 规格统计</div>
+        <!-- 城市和规格选择区域 -->
+        <div class="filter-section" v-if="detailCityList.length > 0" style="margin-bottom: 20px;">
+            <div class="filter-row">
+                <div class="filter-item" style="flex: 0 0 200px;">
+                    <label><i class="fa fa-map-marker" style="color: #e74c3c;"></i> 选择城市</label>
+                    <select v-model="detailSelectedCity">
+                        <option v-for="city in detailCityList" :key="city" :value="city">{{ city }}</option>
+                    </select>
+                </div>
+                <div class="filter-item" style="flex: 1;">
+                    <label>选择规格</label>
+                    <div class="spec-tabs-wrapper" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                        <span
+                            v-for="(spec, index) in detailSpecList"
+                            :key="spec"
+                            class="spec-tab"
+                            :class="{ active: activeSpecIndex === index }"
+                            @click="activeSpecIndex = index"
+                            style="cursor: pointer; padding: 6px 12px; border: 1px solid #ddd; border-radius: 3px; background: #f9f9f9; font-size: 13px;"
+                        >
+                            {{ spec }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 当前统计卡片 -->
+        <div class="summary-cards" v-if="currentStats">
+            <div class="summary-card">
+                <div class="card-title">
+                    <i class="fa fa-map-marker" style="color: #e74c3c;"></i>
+                    {{ detailSelectedCity }} - {{ detailSpecList[activeSpecIndex] }}
+                </div>
                 <div class="card-value platform">
-                    ￥{{data.avg_platform_price !== null ? data.avg_platform_price : '--'}}
+                    ￥{{ currentStats.platform_price !== null ? currentStats.platform_price : '--' }}
                 </div>
-                <div class="card-sub">平台均价</div>
-                <div style="margin-top: 10px;">
-                    <span class="card-value merchant" style="font-size: 18px;">
-                        ￥{{data.avg_merchant_price !== null ? data.avg_merchant_price : '--'}}
-                    </span>
-                    <span class="card-sub" style="margin-left: 5px;">商家均价</span>
+                <div class="card-sub">当前平台价格</div>
+            </div>
+            <div class="summary-card">
+                <div class="card-title">商家均价</div>
+                <div class="card-value merchant">
+                    ￥{{ currentStats.merchant_avg !== null ? currentStats.merchant_avg : '--' }}
                 </div>
-                <div style="margin-top: 8px;" v-if="data.diff_percentage !== null">
-                    <span
-                        class="card-value"
-                        :class="data.diff_percentage >= 0 ? 'positive' : 'negative'"
-                        style="font-size: 16px;"
+                <div class="card-sub">{{ currentStats.merchant_count || 0 }} 家商家</div>
+            </div>
+            <div class="summary-card" v-if="currentStats.diff_ratio !== null">
+                <div class="card-title">价差</div>
+                <div class="card-value" :class="currentStats.diff_ratio > 0 ? 'negative' : (currentStats.diff_ratio < 0 ? 'positive' : '')">
+                    {{ currentStats.diff_ratio > 0 ? '+' : '' }}{{ currentStats.diff_ratio }}%
+                </div>
+                <div class="card-sub">平台相对商家 {{ currentStats.diff_ratio > 0 ? '高' : (currentStats.diff_ratio < 0 ? '低' : '持平') }}</div>
+            </div>
+        </div>
+
+        <!-- 店铺选择器 -->
+        <div class="filter-section" v-if="currentShopList.length > 0" style="margin-bottom: 15px;">
+            <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <label style="font-weight: 500; color: #333; margin-right: 10px;">
+                    <i class="fa fa-store" style="color: #3c8dbc;"></i> 显示商家SKU：
+                </label>
+                <label class="shop-checkbox" style="display: inline-flex; align-items: center; margin-right: 15px; cursor: pointer;">
+                    <input type="checkbox" v-model="showMerchantAvg" style="margin-right: 5px;">
+                    <span style="color: #f39c12; font-weight: 500;">商家均价</span>
+                </label>
+                <span style="color: #999; margin-right: 10px;">|</span>
+                <button class="btn btn-xs btn-default" @click="selectAllShops" style="margin-right: 5px;">全选</button>
+                <button class="btn btn-xs btn-default" @click="deselectAllShops">取消全选</button>
+                <span style="color: #999; margin-left: 10px; margin-right: 10px;">|</span>
+                <label
+                    v-for="shop in currentShopList"
+                    :key="shop.shop_id"
+                    class="shop-checkbox"
+                    style="display: inline-flex; align-items: center; margin-right: 12px; cursor: pointer;"
+                >
+                    <input
+                        type="checkbox"
+                        :value="shop.shop_id"
+                        :checked="selectedShops.indexOf(shop.shop_id) > -1"
+                        @change="toggleShopSelection(shop.shop_id)"
+                        style="margin-right: 5px;"
                     >
-                        {{data.diff_percentage >= 0 ? '+' : ''}}{{data.diff_percentage}}%
-                    </span>
-                    <span class="card-sub" style="margin-left: 5px;">价差比例</span>
-                </div>
+                    <span :style="{ color: selectedShops.indexOf(shop.shop_id) > -1 ? '#333' : '#999' }">{{ shop.shop_name }}</span>
+                </label>
             </div>
         </div>
 
         <!-- 图表区域 -->
-        <div class="chart-section" v-if="chartData && chartData.length > 0">
+        <div class="chart-section" v-if="detailCityList.length > 0 && detailSpecList.length > 0">
             <div class="chart-header">
                 <div class="chart-title">
                     <i class="fa fa-line-chart"></i>
-                    {{categoryName}} - 价格趋势图
+                    {{ categoryName }} - 历史价格趋势图
                 </div>
-                <div class="chart-legend">
-                    <div class="legend-item">
-                        <span class="legend-dot platform"></span>
-                        平台价格
-                    </div>
-                    <div class="legend-item">
-                        <span class="legend-dot merchant"></span>
-                        商家均价
-                    </div>
-                    <div class="legend-item">
-                        <span class="legend-dot range"></span>
-                        商家价格区间
-                    </div>
+                <div class="chart-info" style="font-size: 12px; color: #999;">
+                    <span v-if="currentMerchants.length > 0">
+                        共 {{ currentMerchants.length }} 个商家SKU，已选 {{ selectedShops.length }} 家
+                    </span>
                 </div>
-            </div>
-
-            <!-- 规格标签页（多规格时显示） -->
-            <div class="spec-tabs" v-if="chartData.length > 1">
-                <span
-                    v-for="(data, index) in chartData"
-                    :key="data.spec"
-                    class="spec-tab"
-                    :class="{ active: activeChartIndex === index }"
-                    @click="activeChartIndex = index"
-                >
-                    {{data.spec}}
-                </span>
             </div>
 
             <div class="chart-container" style="position: relative;">
-                <div id="price-chart" style="width: 100%; height: 400px;"></div>
+                <div id="price-chart" style="width: 100%; height: 450px;"></div>
                 <div class="loading-mask" v-if="loading">
                     <div class="loading-spinner"></div>
                 </div>
@@ -1621,7 +1644,7 @@
         </div>
 
         <!-- 空状态 -->
-        <div class="chart-section" v-if="!loading && (!chartData || chartData.length === 0) && hasSearched">
+        <div class="chart-section" v-if="!loading && detailCityList.length === 0 && hasSearched">
             <div class="empty-state">
                 <i class="fa fa-bar-chart"></i>
                 <p>暂无数据，请选择分类并点击查询</p>

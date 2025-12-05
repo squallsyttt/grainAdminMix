@@ -476,10 +476,8 @@ class Pricetrend extends Backend
     public function getTrendData()
     {
         $categoryId = $this->request->param('category_id', 0, 'intval');
-        $specs = $this->request->param('specs', '');  // 逗号分隔的规格列表
         $startDate = $this->request->param('start_date', '');
         $endDate = $this->request->param('end_date', '');
-        $cityName = $this->request->param('city_name', '');
 
         if (!$categoryId) {
             $this->error('请选择分类');
@@ -493,79 +491,11 @@ class Pricetrend extends Backend
             $endDate = date('Y-m-d');
         }
 
-        // 转换为时间戳
         $startTime = strtotime($startDate . ' 00:00:00');
         $endTime = strtotime($endDate . ' 23:59:59');
 
         $prefix = Config::get('database.prefix');
 
-        // 解析规格列表
-        $specList = $specs ? explode(',', $specs) : [];
-
-        // 构建查询：获取所有SKU价格变动记录（包括历史和当前，只统计上架商品）
-        $query = Db::name('wanlshop_goods_sku')
-            ->alias('sku')
-            ->join("{$prefix}wanlshop_goods g", "sku.goods_id = g.id", 'INNER')
-            ->where('g.category_id', $categoryId)
-            ->where('g.deletetime', null)
-            ->where('g.status', 'normal')  // 只统计上架商品
-            ->where('sku.deletetime', null)
-            ->where('sku.updatetime', 'between', [$startTime, $endTime]);
-
-        if (!empty($specList)) {
-            $query->where('sku.difference', 'in', $specList);
-        }
-
-        if ($cityName !== '') {
-            $query->where('g.region_city_name', $cityName);
-        }
-
-        // 获取原始数据
-        $rawData = $query->field([
-            'sku.id',
-            'sku.goods_id',
-            'g.shop_id',
-            'g.title as goods_title',
-            'sku.difference',
-            'sku.price',
-            'sku.state',
-            'sku.updatetime',
-            'FROM_UNIXTIME(sku.updatetime, "%Y-%m-%d") as update_date'
-        ])->order('sku.updatetime ASC')->select();
-
-        // 按日期和规格聚合数据
-        $result = $this->aggregatePriceData($rawData, $startDate, $endDate, $specList);
-
-        // 获取分类名称
-        $categoryQuery = Db::name('wanlshop_category')->alias('c')->where('c.id', $categoryId);
-        if ($cityName !== '') {
-            $categoryQuery->join("{$prefix}wanlshop_goods g", "g.category_id = c.id", 'INNER')
-                ->where('g.deletetime', null)
-                ->where('g.status', 'normal')
-                ->where('g.region_city_name', $cityName);
-        }
-        $categoryName = $categoryQuery->value('c.name');
-
-        $this->success('', null, [
-            'category_name' => $categoryName,
-            'date_range' => ['start' => $startDate, 'end' => $endDate],
-            'specs' => $result['specs'],
-            'chart_data' => $result['chart_data'],
-            'summary' => $result['summary']
-        ]);
-    }
-
-    /**
-     * 聚合价格数据
-     *
-     * @param array $rawData 原始数据
-     * @param string $startDate 开始日期
-     * @param string $endDate 结束日期
-     * @param array $specList 规格列表
-     * @return array
-     */
-    protected function aggregatePriceData($rawData, $startDate, $endDate, $specList)
-    {
         // 生成日期序列
         $dates = [];
         $current = strtotime($startDate);
@@ -575,172 +505,307 @@ class Pricetrend extends Backend
             $current += 86400;
         }
 
-        // 按规格和日期组织数据
-        // 结构：$priceMap[规格][日期] = ['platform' => 价格, 'merchants' => [价格数组]]
-        $priceMap = [];
-        $allSpecs = [];
+        // 获取分类名称
+        $categoryName = Db::name('wanlshop_category')->where('id', $categoryId)->value('name');
 
-        // 首先获取每个商品在每个日期的最新价格状态
-        // 需要考虑：如果某天没有更新，应该使用该商品之前的最新价格
+        // 获取该分类下所有SKU的历史价格数据（包括当前state=0和历史state=1）
+        // 只统计在售商品（有state=0记录的SKU）
+        $skuQuery = Db::name('wanlshop_goods_sku')
+            ->alias('sku')
+            ->join("{$prefix}wanlshop_goods g", "sku.goods_id = g.id", 'INNER')
+            ->join("{$prefix}wanlshop_shop s", "s.id = g.shop_id", 'LEFT')
+            ->where('g.category_id', $categoryId)
+            ->where('g.deletetime', null)
+            ->where('g.status', 'normal')
+            ->where('sku.deletetime', null)
+            ->where('sku.price', '>', 0);
 
-        // 按商品+规格分组，找出每个时间点的价格
-        $goodsSkuPrices = [];
+        // 获取原始数据
+        $rawData = $skuQuery->field([
+            'sku.id',
+            'sku.goods_id',
+            'g.shop_id',
+            'CASE WHEN g.shop_id = 1 THEN "平台概念店" ELSE IFNULL(s.shopname, "未知店铺") END as shop_name',
+            'g.region_city_name as city_name',
+            'g.title as goods_title',
+            'sku.difference',
+            'sku.price',
+            'sku.state',
+            'sku.createtime',
+            'sku.updatetime'
+        ])->order('sku.createtime ASC')->select();
+
+        // 按城市 > 规格 组织数据
+        $cityData = [];
+        $cityList = [];
+
         foreach ($rawData as $row) {
-            $key = $row['goods_id'] . '_' . $row['difference'];
-            if (!isset($goodsSkuPrices[$key])) {
-                $goodsSkuPrices[$key] = [
-                    'shop_id' => $row['shop_id'],
-                    'difference' => $row['difference'],
-                    'prices' => []  // [timestamp => price]
+            $cityName = $row['city_name'] ?: '未知城市';
+            $spec = $row['difference'];
+            $isPlatform = ($row['shop_id'] == 1);
+
+            if (!in_array($cityName, $cityList)) {
+                $cityList[] = $cityName;
+            }
+
+            if (!isset($cityData[$cityName])) {
+                $cityData[$cityName] = [];
+            }
+            if (!isset($cityData[$cityName][$spec])) {
+                $cityData[$cityName][$spec] = [
+                    'platform_records' => [],  // 平台价格记录
+                    'platform_info' => null,   // 平台商品信息
+                    'merchant_records' => [],  // 商家价格记录（按goods_id分组）
+                    'merchant_infos' => [],    // 商家商品信息
+                    'current_platform_price' => null,
+                    'current_merchant_skus' => []
                 ];
             }
-            $goodsSkuPrices[$key]['prices'][$row['updatetime']] = $row['price'];
 
-            if (!in_array($row['difference'], $allSpecs)) {
-                $allSpecs[] = $row['difference'];
+            // 记录价格变动时间点
+            $timestamp = $row['createtime'];
+            $price = floatval($row['price']);
+
+            if ($isPlatform) {
+                $cityData[$cityName][$spec]['platform_records'][] = [
+                    'time' => $timestamp,
+                    'price' => $price
+                ];
+                // 记录平台商品信息
+                if (!$cityData[$cityName][$spec]['platform_info']) {
+                    $cityData[$cityName][$spec]['platform_info'] = [
+                        'goods_id' => $row['goods_id'],
+                        'goods_title' => $row['goods_title']
+                    ];
+                }
+                if ($row['state'] == '0') {
+                    $cityData[$cityName][$spec]['current_platform_price'] = $price;
+                }
+            } else {
+                // 商家按 goods_id 分组（每个商品一条线）
+                $goodsId = $row['goods_id'];
+                $shopId = $row['shop_id'];
+
+                if (!isset($cityData[$cityName][$spec]['merchant_records'][$goodsId])) {
+                    $cityData[$cityName][$spec]['merchant_records'][$goodsId] = [
+                        'shop_id' => $shopId,
+                        'shop_name' => $row['shop_name'],
+                        'goods_title' => $row['goods_title'],
+                        'records' => []
+                    ];
+                }
+                $cityData[$cityName][$spec]['merchant_records'][$goodsId]['records'][] = [
+                    'time' => $timestamp,
+                    'price' => $price
+                ];
+
+                if ($row['state'] == '0') {
+                    $cityData[$cityName][$spec]['current_merchant_skus'][] = [
+                        'id' => $row['id'],
+                        'goods_id' => $goodsId,
+                        'shop_id' => $shopId,
+                        'shop_name' => $row['shop_name'],
+                        'goods_title' => $row['goods_title'],
+                        'price' => $price
+                    ];
+                }
             }
         }
 
-        // 如果没有指定规格，使用所有找到的规格
-        if (empty($specList)) {
-            $specList = $allSpecs;
-        }
+        // 生成折线图数据
+        $chartDataByCity = [];
 
-        // 为每个规格初始化数据结构
-        foreach ($specList as $spec) {
-            $priceMap[$spec] = [];
-            foreach ($dates as $date) {
-                $priceMap[$spec][$date] = [
-                    'platform' => null,
-                    'merchants' => []
+        foreach ($cityData as $cityName => $specData) {
+            $chartDataByCity[$cityName] = [];
+
+            foreach ($specData as $spec => $data) {
+                // 生成平台价格时间线
+                $platformPrices = $this->generatePriceLine($data['platform_records'], $dates, $startTime, $endTime);
+
+                // 生成每个商家SKU的价格时间线
+                $merchantLines = [];
+                $shopList = [];  // 店铺列表，用于 checkbox
+                $shopIds = [];   // 去重
+
+                foreach ($data['merchant_records'] as $goodsId => $merchantData) {
+                    $merchantPrices = $this->generatePriceLine($merchantData['records'], $dates, $startTime, $endTime);
+                    $merchantLines[] = [
+                        'goods_id' => $goodsId,
+                        'shop_id' => $merchantData['shop_id'],
+                        'shop_name' => $merchantData['shop_name'],
+                        'goods_title' => $merchantData['goods_title'],
+                        'prices' => $merchantPrices
+                    ];
+
+                    // 收集店铺列表
+                    if (!in_array($merchantData['shop_id'], $shopIds)) {
+                        $shopIds[] = $merchantData['shop_id'];
+                        $shopList[] = [
+                            'shop_id' => $merchantData['shop_id'],
+                            'shop_name' => $merchantData['shop_name']
+                        ];
+                    }
+                }
+
+                // 生成商家均价时间线
+                $merchantAvgPrices = $this->generateMerchantAvgLine($data['merchant_records'], $dates, $startTime, $endTime);
+
+                // 计算当前统计
+                $currentPlatformPrice = $data['current_platform_price'];
+                $currentMerchantSkus = $data['current_merchant_skus'];
+                $currentMerchantAvg = null;
+                $merchantCount = count($currentMerchantSkus);
+
+                if ($merchantCount > 0) {
+                    $totalPrice = 0;
+                    foreach ($currentMerchantSkus as $mSku) {
+                        $totalPrice += $mSku['price'];
+                    }
+                    $currentMerchantAvg = round($totalPrice / $merchantCount, 2);
+                }
+
+                // 计算价差百分比：(平台价-商家均价)/商家均价 * 100
+                // 正数表示平台更贵，负数表示平台更便宜
+                $diffRatio = null;
+                if ($currentMerchantAvg && $currentMerchantAvg > 0) {
+                    $diffRatio = round((($currentPlatformPrice - $currentMerchantAvg) / $currentMerchantAvg) * 100, 1);
+                }
+
+                $chartDataByCity[$cityName][$spec] = [
+                    'spec' => $spec,
+                    'dates' => $dates,
+                    'platform' => [
+                        'goods_id' => $data['platform_info'] ? $data['platform_info']['goods_id'] : null,
+                        'goods_title' => $data['platform_info'] ? $data['platform_info']['goods_title'] : null,
+                        'prices' => $platformPrices
+                    ],
+                    'merchants' => $merchantLines,
+                    'merchant_avg_prices' => $merchantAvgPrices,
+                    'shop_list' => $shopList,
+                    'current_stats' => [
+                        'platform_price' => $currentPlatformPrice,
+                        'merchant_avg' => $currentMerchantAvg,
+                        'diff_ratio' => $diffRatio,
+                        'merchant_count' => $merchantCount
+                    ],
+                    'current_merchant_skus' => $currentMerchantSkus
                 ];
             }
         }
 
-        // 填充每个日期的价格数据
-        foreach ($goodsSkuPrices as $skuData) {
-            $spec = $skuData['difference'];
-            if (!in_array($spec, $specList)) {
-                continue;
+        sort($cityList);
+
+        $this->success('', null, [
+            'category_id' => $categoryId,
+            'category_name' => $categoryName,
+            'date_range' => ['start' => $startDate, 'end' => $endDate],
+            'city_list' => $cityList,
+            'chart_data_by_city' => $chartDataByCity
+        ]);
+    }
+
+    /**
+     * 生成价格时间线（填充空白日期）
+     */
+    protected function generatePriceLine($records, $dates, $startTime, $endTime)
+    {
+        if (empty($records)) {
+            return array_fill(0, count($dates), null);
+        }
+
+        // 按时间排序
+        usort($records, function($a, $b) {
+            return $a['time'] - $b['time'];
+        });
+
+        $priceTimeline = [];
+        $lastPrice = null;
+
+        // 查找开始日期之前的最新价格作为初始值
+        foreach ($records as $record) {
+            if ($record['time'] < $startTime) {
+                $lastPrice = $record['price'];
+            }
+        }
+
+        $recordIndex = 0;
+        $recordCount = count($records);
+
+        foreach ($dates as $date) {
+            $dateEnd = strtotime($date . ' 23:59:59');
+
+            // 更新到该日期结束时的最新价格
+            while ($recordIndex < $recordCount && $records[$recordIndex]['time'] <= $dateEnd) {
+                $lastPrice = $records[$recordIndex]['price'];
+                $recordIndex++;
             }
 
-            $shopId = $skuData['shop_id'];
-            $isPlatform = ($shopId == 1);
+            $priceTimeline[] = $lastPrice;
+        }
 
-            // 对价格记录按时间排序
-            ksort($skuData['prices']);
-            $priceTimeline = array_values($skuData['prices']);
-            $timeKeys = array_keys($skuData['prices']);
+        return $priceTimeline;
+    }
 
-            // 对于每个日期，找到该日期结束时的有效价格
+    /**
+     * 生成商家均价时间线
+     */
+    protected function generateMerchantAvgLine($merchantRecords, $dates, $startTime, $endTime)
+    {
+        if (empty($merchantRecords)) {
+            return array_fill(0, count($dates), null);
+        }
+
+        // 每个商家维护自己的价格状态
+        $merchantPrices = [];  // [shop_id => ['last_price' => x, 'records' => sorted_records, 'index' => i]]
+
+        foreach ($merchantRecords as $shopId => $shopData) {
+            $records = $shopData['records'];
+            usort($records, function($a, $b) {
+                return $a['time'] - $b['time'];
+            });
+
+            // 查找开始日期之前的最新价格
             $lastPrice = null;
-            $priceIndex = 0;
-            $priceCount = count($timeKeys);
+            foreach ($records as $record) {
+                if ($record['time'] < $startTime) {
+                    $lastPrice = $record['price'];
+                }
+            }
 
-            foreach ($dates as $date) {
-                $dateEnd = strtotime($date . ' 23:59:59');
+            $merchantPrices[$shopId] = [
+                'last_price' => $lastPrice,
+                'records' => $records,
+                'index' => 0
+            ];
+        }
 
-                // 更新到该日期结束时的最新价格
-                while ($priceIndex < $priceCount && $timeKeys[$priceIndex] <= $dateEnd) {
-                    $lastPrice = $priceTimeline[$priceIndex];
-                    $priceIndex++;
+        $avgTimeline = [];
+
+        foreach ($dates as $date) {
+            $dateEnd = strtotime($date . ' 23:59:59');
+            $dayPrices = [];
+
+            foreach ($merchantPrices as $shopId => &$mp) {
+                // 更新到该日期的最新价格
+                while ($mp['index'] < count($mp['records']) && $mp['records'][$mp['index']]['time'] <= $dateEnd) {
+                    $mp['last_price'] = $mp['records'][$mp['index']]['price'];
+                    $mp['index']++;
                 }
 
-                // 如果有有效价格，记录到对应位置
-                if ($lastPrice !== null && $lastPrice > 0) {
-                    if ($isPlatform) {
-                        $priceMap[$spec][$date]['platform'] = floatval($lastPrice);
-                    } else {
-                        $priceMap[$spec][$date]['merchants'][] = floatval($lastPrice);
-                    }
+                if ($mp['last_price'] !== null) {
+                    $dayPrices[] = $mp['last_price'];
                 }
+            }
+            unset($mp);
+
+            if (count($dayPrices) > 0) {
+                $avgTimeline[] = round(array_sum($dayPrices) / count($dayPrices), 2);
+            } else {
+                $avgTimeline[] = null;
             }
         }
 
-        // 构建图表数据
-        $chartData = [];
-        $summary = [];
-
-        foreach ($specList as $spec) {
-            $specData = [
-                'spec' => $spec,
-                'dates' => $dates,
-                'platform_prices' => [],
-                'merchant_avg_prices' => [],
-                'merchant_min_prices' => [],
-                'merchant_max_prices' => [],
-                'diff_percentages' => []  // 平台价格与商家均价差异百分比
-            ];
-
-            $totalPlatformPrice = 0;
-            $totalMerchantAvg = 0;
-            $platformCount = 0;
-            $merchantCount = 0;
-
-            foreach ($dates as $date) {
-                $dayData = $priceMap[$spec][$date];
-
-                // 平台价格
-                $platformPrice = $dayData['platform'];
-                $specData['platform_prices'][] = $platformPrice;
-
-                if ($platformPrice !== null) {
-                    $totalPlatformPrice += $platformPrice;
-                    $platformCount++;
-                }
-
-                // 商家价格统计
-                $merchants = $dayData['merchants'];
-                if (!empty($merchants)) {
-                    $avg = round(array_sum($merchants) / count($merchants), 2);
-                    $min = min($merchants);
-                    $max = max($merchants);
-
-                    $specData['merchant_avg_prices'][] = $avg;
-                    $specData['merchant_min_prices'][] = $min;
-                    $specData['merchant_max_prices'][] = $max;
-
-                    $totalMerchantAvg += $avg;
-                    $merchantCount++;
-
-                    // 计算差异百分比
-                    if ($platformPrice !== null && $platformPrice > 0) {
-                        $diff = round(($platformPrice - $avg) / $avg * 100, 2);
-                        $specData['diff_percentages'][] = $diff;
-                    } else {
-                        $specData['diff_percentages'][] = null;
-                    }
-                } else {
-                    $specData['merchant_avg_prices'][] = null;
-                    $specData['merchant_min_prices'][] = null;
-                    $specData['merchant_max_prices'][] = null;
-                    $specData['diff_percentages'][] = null;
-                }
-            }
-
-            $chartData[] = $specData;
-
-            // 汇总统计
-            $summary[$spec] = [
-                'avg_platform_price' => $platformCount > 0 ? round($totalPlatformPrice / $platformCount, 2) : null,
-                'avg_merchant_price' => $merchantCount > 0 ? round($totalMerchantAvg / $merchantCount, 2) : null,
-                'price_diff' => null,
-                'diff_percentage' => null
-            ];
-
-            if ($summary[$spec]['avg_platform_price'] !== null && $summary[$spec]['avg_merchant_price'] !== null) {
-                $summary[$spec]['price_diff'] = round($summary[$spec]['avg_platform_price'] - $summary[$spec]['avg_merchant_price'], 2);
-                if ($summary[$spec]['avg_merchant_price'] > 0) {
-                    $summary[$spec]['diff_percentage'] = round($summary[$spec]['price_diff'] / $summary[$spec]['avg_merchant_price'] * 100, 2);
-                }
-            }
-        }
-
-        return [
-            'specs' => $specList,
-            'chart_data' => $chartData,
-            'summary' => $summary
-        ];
+        return $avgTimeline;
     }
 
     public function getDetailList()

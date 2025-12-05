@@ -19,13 +19,20 @@ class Dashboard extends Backend
      */
     public function index()
     {
-		$user = model('app\common\model\User');
-		$order = model('app\admin\model\wanlshop\Order');
-		$goods = model('app\admin\model\wanlshop\Goods');
-		$shop = model('app\admin\model\wanlshop\Shop');
-		$shopauth = model('app\admin\model\wanlshop\Auth');
-		$refund = model('app\admin\model\wanlshop\Refund');
-		$moneylog = model('app\common\model\MoneyLog');
+        $user = model('app\common\model\User');
+        $order = model('app\admin\model\wanlshop\Order');
+        $goods = model('app\admin\model\wanlshop\Goods');
+        $shop = model('app\admin\model\wanlshop\Shop');
+        $shopauth = model('app\admin\model\wanlshop\Auth');
+        $refund = model('app\admin\model\wanlshop\Refund');
+
+        // 核销券相关模型
+        $voucherOrder = model('app\admin\model\wanlshop\VoucherOrder');
+        $voucher = model('app\admin\model\wanlshop\Voucher');
+        $voucherVerification = model('app\admin\model\wanlshop\VoucherVerification');
+        $voucherSettlement = model('app\admin\model\wanlshop\VoucherSettlement');
+        $voucherRebate = model('app\admin\model\wanlshop\VoucherRebate');
+        $voucherRefund = model('app\admin\model\wanlshop\VoucherRefund');
 		// 处理POST
 		if ($this->request->isPost()) {
 		    $date = $this->request->post('date', '');
@@ -38,63 +45,130 @@ class Dashboard extends Backend
 		}
 		// 店铺
 		$this->view->assign("totalShop", $shop->where('verify','3')->count());
-		// 用户
-		$this->view->assign("totalUser", $user->count());
-		$this->view->assign("totalDayUser", $user->whereTime('jointime', 'today')->count());
-		// 商品
-		$this->view->assign("totalGoods", $goods->count());
-		// 订单
-		$this->view->assign("totalOrder", $order->count());
-		$this->view->assign("paidOrder", $order->where('state','1')->count());
-		// 退款->field('id,shopname,state')
-		$this->view->assign("totalRefund", $refund->where('state','gt','4,5')->count());
-		// 资金统计
-		$MoneyPaySum = $MoneyLogDayPay = $MoneyLogDayVerify = 0;
-		foreach ($moneylog->where('type','in',['pay','recharge'])->select() as $vo) {
-			$money = abs(floatval($vo['money']));
-			// 统计总额
-			if($vo['type'] == 'pay'){
-				$MoneyPaySum += $money;
-			}
-			// 统计今日
-			if(date("Ymd", $vo['createtime']) == date("Ymd")){
-				if($vo['type'] == 'pay'){
-					$MoneyLogDayPay += $money;
-				}
-			}
-		}
-		// 今日核销金额（待核销订单金额）
-		$prefix = Config::get('database.prefix');
-		$MoneyLogDayVerify = model('app\admin\model\wanlshop\Pay')
-			->alias('pay')
-			->join($prefix.'wanlshop_order order', 'pay.order_id = order.id')
-			->where('order.state', '2')
-			->whereTime('order.createtime', 'today')
-			->sum('pay.price');
-		$this->view->assign("MoneyPaySum", $MoneyPaySum);
-		$this->view->assign("MoneyLogDayPay", $MoneyLogDayPay);
-		$this->view->assign("MoneyLogDayVerify", $MoneyLogDayVerify ?: 0);
-		// 热销TOP10
-		$this->view->assign("goodsTopList", $goods->order('sales desc')->limit(10)->select());
-		
-		//订单数和订单额统计
-		list($orderSaleCategory, $orderSaleAmount, $orderSaleNums) = $this->statis();
-		$this->assignconfig('orderSaleCategory', $orderSaleCategory);
-		$this->assignconfig('orderSaleAmount', $orderSaleAmount);
-		$this->assignconfig('orderSaleNums', $orderSaleNums);
-		
-		// 待审核店铺
-		$this->assignconfig("shopAuthList", $shopauth->where('verify','2')->field('id,shopname,state,verify')->select());
-		
-		// 介入退款
-		$servicesRefundList = $refund->where('state','3')->field('id,order_pay_id,price,state')->select();
-		foreach ($servicesRefundList as $vo) {
-			$vo['pay'] = model('app\admin\model\wanlshop\Pay')
-				->where('id', $vo['order_pay_id'])
-				->field('order_no')
-				->find();
-		}
-		$this->assignconfig('servicesRefundList', $servicesRefundList);
+        // 用户
+        $this->view->assign("totalUser", $user->count());
+        $this->view->assign("totalDayUser", $user->whereTime('jointime', 'today')->count());
+        // 商品
+        $this->view->assign("totalGoods", $goods->count());
+
+        // 时间范围
+        $todayStart = strtotime('today');
+        $todayEnd = strtotime('tomorrow') - 1;
+
+        // 平台流水（仅核销券订单）
+        $paidOrderStates = ['2','4']; // 已支付、存在退款
+        $platformTotalAmount = $voucherOrder->where('state', 'in', $paidOrderStates)->sum('actual_payment');
+        $platformTodayAmount = $voucherOrder
+            ->where('state', 'in', $paidOrderStates)
+            ->where('paymenttime', 'between', [$todayStart, $todayEnd])
+            ->sum('actual_payment');
+
+        // 订单统计（核销券）
+        $totalVoucherOrder = $voucherOrder->count();
+        $paidVoucherOrder = $voucherOrder->where('state', 'in', $paidOrderStates)->count();
+        $unpaidVoucherOrder = $voucherOrder->where('state', '1')->count();
+        $cancelVoucherOrder = $voucherOrder->where('state', '3')->count();
+        $todayVoucherOrder = $voucherOrder->where('createtime', 'between', [$todayStart, $todayEnd])->count();
+
+        // 券统计
+        $totalVoucher = $voucher->count();
+        $voucherUnused = $voucher->where('state', '1')->count();
+        $voucherVerified = $voucher->where('state', '2')->count();
+        $voucherExpired = $voucher->where('state', '3')->count();
+        $voucherRefunded = $voucher->where('state', 'in', ['4','5'])->count();
+        $voucherVerifiedAmount = $voucher->where('state', '2')->sum('face_value');
+        $voucherVerifiedTodayCount = $voucher->where('state', '2')->where('verifytime', 'between', [$todayStart, $todayEnd])->count();
+        $voucherVerifiedTodayAmount = $voucher->where('state', '2')->where('verifytime', 'between', [$todayStart, $todayEnd])->sum('face_value');
+
+        // 核销记录（按核销表统计核销件数）
+        $todayVerificationCount = $voucherVerification->where('createtime', 'between', [$todayStart, $todayEnd])->count();
+
+        // 结算统计
+        $settlementPendingCount = $voucherSettlement->where('state', '1')->count();
+        $settlementPendingAmount = $voucherSettlement->where('state', '1')->sum('shop_amount');
+        $settlementPaidCount = $voucherSettlement->where('state', '2')->count();
+        $settlementPaidAmount = $voucherSettlement->where('state', '2')->sum('shop_amount');
+        $settlementPayingCount = $voucherSettlement->where('state', '3')->count();
+        $settlementFailedCount = $voucherSettlement->where('state', '4')->count();
+        $platformProfitTotal = $voucherSettlement->sum('platform_amount');
+        $platformProfitSettled = $voucherSettlement->where('state', '2')->sum('platform_amount');
+
+        // 返利统计
+        $rebateTotalAmount = $voucherRebate->sum('rebate_amount');
+        $rebatePaidAmount = $voucherRebate->where('payment_status', 'paid')->sum('rebate_amount');
+        $rebatePaidCount = $voucherRebate->where('payment_status', 'paid')->count();
+        $rebatePendingAmount = $voucherRebate->where('payment_status', 'in', ['unpaid', 'pending', 'failed'])->sum('rebate_amount');
+        $rebatePendingCount = $voucherRebate->where('payment_status', 'in', ['unpaid', 'pending', 'failed'])->count();
+        $rebateFailedCount = $voucherRebate->where('payment_status', 'failed')->count();
+
+        // 退款统计（核销券退款表）
+        $refundApplyingCount = $voucherRefund->where('state', '0')->count();
+        $refundAgreeCount = $voucherRefund->where('state', '1')->count();
+        $refundRefuseCount = $voucherRefund->where('state', '2')->count();
+        $refundSuccessCount = $voucherRefund->where('state', '3')->count();
+        $refundSuccessAmount = $voucherRefund->where('state', '3')->sum('refund_amount');
+        $refundTodayAmount = $voucherRefund->where('state', '3')->where('updatetime', 'between', [$todayStart, $todayEnd])->sum('refund_amount');
+
+        // 热销TOP10（沿用原逻辑）
+        $this->view->assign("goodsTopList", $goods->order('sales desc')->limit(10)->select());
+
+        // 待审核店铺
+        $this->assignconfig("shopAuthList", $shopauth->where('verify','2')->field('id,shopname,state,verify')->select());
+
+        // 介入退款（旧逻辑保留）
+        $servicesRefundList = $refund->where('state','3')->field('id,order_pay_id,price,state')->select();
+        foreach ($servicesRefundList as $vo) {
+            $vo['pay'] = model('app\admin\model\wanlshop\Pay')
+                ->where('id', $vo['order_pay_id'])
+                ->field('order_no')
+                ->find();
+        }
+        $this->assignconfig('servicesRefundList', $servicesRefundList);
+
+        // 输出统计数据
+        $this->view->assign([
+            'platformTotalAmount'      => $platformTotalAmount,
+            'platformTodayAmount'      => $platformTodayAmount,
+            'platformProfitTotal'      => $platformProfitTotal,
+            'platformProfitSettled'    => $platformProfitSettled,
+
+            'totalVoucherOrder'        => $totalVoucherOrder,
+            'paidVoucherOrder'         => $paidVoucherOrder,
+            'unpaidVoucherOrder'       => $unpaidVoucherOrder,
+            'cancelVoucherOrder'       => $cancelVoucherOrder,
+            'todayVoucherOrder'        => $todayVoucherOrder,
+
+            'totalVoucher'             => $totalVoucher,
+            'voucherUnused'            => $voucherUnused,
+            'voucherVerified'          => $voucherVerified,
+            'voucherExpired'           => $voucherExpired,
+            'voucherRefunded'          => $voucherRefunded,
+            'voucherVerifiedAmount'    => $voucherVerifiedAmount,
+            'voucherVerifiedTodayCount'=> $voucherVerifiedTodayCount,
+            'voucherVerifiedTodayAmount'=>$voucherVerifiedTodayAmount,
+            'todayVerificationCount'   => $todayVerificationCount,
+
+            'settlementPendingCount'   => $settlementPendingCount,
+            'settlementPendingAmount'  => $settlementPendingAmount,
+            'settlementPaidCount'      => $settlementPaidCount,
+            'settlementPaidAmount'     => $settlementPaidAmount,
+            'settlementPayingCount'    => $settlementPayingCount,
+            'settlementFailedCount'    => $settlementFailedCount,
+
+            'rebateTotalAmount'        => $rebateTotalAmount,
+            'rebatePaidAmount'         => $rebatePaidAmount,
+            'rebatePaidCount'          => $rebatePaidCount,
+            'rebatePendingAmount'      => $rebatePendingAmount,
+            'rebatePendingCount'       => $rebatePendingCount,
+            'rebateFailedCount'        => $rebateFailedCount,
+
+            'refundApplyingCount'      => $refundApplyingCount,
+            'refundAgreeCount'         => $refundAgreeCount,
+            'refundRefuseCount'        => $refundRefuseCount,
+            'refundSuccessCount'       => $refundSuccessCount,
+            'refundSuccessAmount'      => $refundSuccessAmount,
+            'refundTodayAmount'        => $refundTodayAmount,
+        ]);
         return $this->view->fetch();
     }
 	
