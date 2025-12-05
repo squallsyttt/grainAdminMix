@@ -108,6 +108,7 @@ class Settlement extends Api
      * @ApiParams   (name="status", type="string", required=false, description="状态筛选：1=待确认,2=成功,3=失败,all=全部，默认1")
      * @ApiParams   (name="pagesize", type="integer", required=false, description="每页数量，默认10，最大50")
      * @ApiParams   (name="order_type", type="string", required=false, description="业务类型：settlement=结算，rebate=返利，all=全部，默认settlement")
+     * @ApiParams   (name="rebate_id", type="integer", required=false, description="返利记录ID，指定后只返回该记录")
      */
     public function pendingTransfers()
     {
@@ -129,6 +130,7 @@ class Settlement extends Api
         // 状态筛选：1=待确认,2=成功,3=失败,all=全部
         $status = $this->request->get('status', '1');
         $orderType = $this->request->get('order_type', TransferLog::ORDER_TYPE_SETTLEMENT);
+        $rebateId = $this->request->get('rebate_id/d', 0);
 
         $orderTypes = [
             TransferLog::ORDER_TYPE_SETTLEMENT,
@@ -140,6 +142,11 @@ class Settlement extends Api
         }
 
         $query = TransferLog::where('receiver_user_id', $userId);
+
+        // 如果指定了 rebate_id，直接查询该记录
+        if ($rebateId > 0) {
+            $query->where('rebate_id', $rebateId);
+        }
 
         if ($orderType !== 'all') {
             $query->where('order_type', $orderType);
@@ -162,6 +169,17 @@ class Settlement extends Api
                 // 添加状态文字说明
                 $statusMap = [1 => '待确认', 2 => '成功', 3 => '失败'];
                 $item->status_text = $statusMap[$item->status] ?? '未知';
+
+                // 根据 order_type 获取关联的 voucher_id
+                $item->voucher_id = null;
+                if ($item->order_type === TransferLog::ORDER_TYPE_REBATE && $item->rebate_id) {
+                    $rebate = $item->rebate;
+                    $item->voucher_id = $rebate ? $rebate->voucher_id : null;
+                } elseif ($item->order_type === TransferLog::ORDER_TYPE_SETTLEMENT && $item->settlement_id) {
+                    $settlement = $item->settlement;
+                    $item->voucher_id = $settlement ? $settlement->voucher_id : null;
+                }
+
                 return $item;
             });
 
