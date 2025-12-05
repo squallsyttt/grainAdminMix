@@ -479,8 +479,6 @@
 
     .sku-list {
         border-top: 1px solid #e8e8e8;
-        max-height: 300px;
-        overflow-y: auto;
     }
 
     .sku-table {
@@ -558,6 +556,202 @@
         font-size: 13px;
     }
 
+    /* 城市分组样式 */
+    .city-group {
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .city-group:last-child {
+        border-bottom: none;
+    }
+
+    .city-header {
+        display: flex;
+        align-items: center;
+        padding: 12px 15px;
+        background: linear-gradient(135deg, #f8f9fa, #f0f0f0);
+        font-size: 13px;
+        color: #666;
+    }
+
+    .city-header i {
+        color: #e74c3c;
+        margin-right: 8px;
+    }
+
+    .city-title {
+        font-weight: 600;
+        color: #333;
+    }
+
+    .city-sku-count {
+        margin-left: auto;
+        font-size: 12px;
+        color: #999;
+    }
+
+    /* 平台SKU列表 */
+    .platform-sku-list {
+        padding: 0;
+    }
+
+    .platform-sku-item {
+        border-bottom: 1px solid #f5f5f5;
+    }
+
+    .platform-sku-item:last-child {
+        border-bottom: none;
+    }
+
+    .platform-sku-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 15px;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .platform-sku-row:hover {
+        background: #f9f9f9;
+    }
+
+    .sku-main-info {
+        display: flex;
+        align-items: center;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .sku-title {
+        flex: 1;
+        margin: 0 10px;
+        color: #333;
+        font-size: 13px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .sku-spec-tag {
+        background: #e8e8e8;
+        color: #666;
+        padding: 2px 8px;
+        border-radius: 3px;
+        font-size: 12px;
+        white-space: nowrap;
+    }
+
+    .sku-price-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .platform-price {
+        font-size: 16px;
+        font-weight: 600;
+        color: #3c8dbc;
+    }
+
+    .merchant-avg-price {
+        font-size: 12px;
+        color: #888;
+        background: #f5f5f5;
+        padding: 3px 8px;
+        border-radius: 4px;
+    }
+
+    .avg-ratio {
+        font-weight: 500;
+    }
+
+    .avg-ratio.cheaper {
+        color: #00a65a;
+    }
+
+    .avg-ratio.expensive {
+        color: #dd4b39;
+    }
+
+    .merchant-count-badge {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        background: #fff3e0;
+        color: #f39c12;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        cursor: pointer;
+    }
+
+    .merchant-count-badge:hover {
+        background: #ffe0b2;
+    }
+
+    .no-merchant {
+        color: #ccc;
+        font-size: 12px;
+    }
+
+    /* 商家SKU子列表 */
+    .merchant-sku-list {
+        background: #fafafa;
+        border-top: 1px dashed #e0e0e0;
+        padding: 10px 15px 10px 40px;
+    }
+
+    .merchant-list-header {
+        font-size: 12px;
+        color: #888;
+        margin-bottom: 10px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #eee;
+    }
+
+    .merchant-sku-row {
+        display: flex;
+        align-items: center;
+        padding: 8px 0;
+        font-size: 13px;
+    }
+
+    .merchant-sku-row:not(:last-child) {
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .merchant-goods-title {
+        flex: 1;
+        margin: 0 10px;
+        color: #666;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .merchant-price {
+        font-weight: 600;
+        color: #333;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .merchant-price.cheaper {
+        color: #00a65a;
+    }
+
+    .merchant-price.expensive {
+        color: #dd4b39;
+    }
+
+    .price-ratio {
+        font-size: 11px;
+        font-weight: normal;
+        opacity: 0.8;
+    }
+
     @media (max-width: 992px) {
         .category-grid {
             grid-template-columns: 1fr;
@@ -633,6 +827,32 @@
 
     .category-table .btn-detail:hover {
         background: #367fa9;
+    }
+
+    .category-table .row-cheaper {
+        background: #f0fff4;
+    }
+
+    .category-table .row-expensive {
+        background: #fff5f5;
+    }
+
+    .category-table .diff-badge {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .category-table .diff-badge.cheaper {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .category-table .diff-badge.expensive {
+        background: #f8d7da;
+        color: #721c24;
     }
 
     /* 详情表格 */
@@ -1068,72 +1288,114 @@
                         </div>
                         <i class="fa expand-icon" :class="expandedCategories.includes(cat.category_id) ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
                     </div>
-                    <!-- SKU列表 -->
+                    <!-- SKU列表 - 按城市分组，平台SKU为主干 -->
                     <div class="sku-list" v-show="expandedCategories.includes(cat.category_id)">
-                        <table class="sku-table">
-                            <thead>
-                                <tr>
-                                    <th style="width: 100px;">店铺</th>
-                                    <th style="width: 80px;">城市</th>
-                                    <th>商品名称</th>
-                                    <th style="width: 120px;">规格</th>
-                                    <th style="width: 80px;">价格</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="sku in cat.sku_list" :key="sku.id">
-                                    <td>
-                                        <span class="shop-tag" :class="sku.shop_id == 1 ? 'platform' : 'merchant'">{{sku.shop_name}}</span>
-                                    </td>
-                                    <td class="city-name">{{sku.city_name || '--'}}</td>
-                                    <td class="goods-title" :title="sku.goods_title">{{sku.goods_title}}</td>
-                                    <td class="sku-spec">{{sku.difference}}</td>
-                                    <td class="sku-price">￥{{sku.price}}</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                        <div v-if="!cat.sku_list || cat.sku_list.length === 0" class="empty-sku">暂无SKU数据</div>
+                        <div v-if="cat.sku_list && cat.sku_list.city_list && cat.sku_list.city_list.length > 0">
+                            <!-- 按城市分组 -->
+                            <div v-for="cityName in cat.sku_list.city_list" :key="cityName" class="city-group">
+                                <div class="city-header">
+                                    <i class="fa fa-map-marker"></i>
+                                    <span class="city-title">{{ cityName }}</span>
+                                    <span class="city-sku-count">{{ cat.sku_list.by_city[cityName].length }} 个平台SKU</span>
+                                </div>
+                                <!-- 平台SKU列表 -->
+                                <div class="platform-sku-list">
+                                    <div v-for="pSku in cat.sku_list.by_city[cityName]" :key="pSku.id" class="platform-sku-item">
+                                        <!-- 平台SKU主行 -->
+                                        <div class="platform-sku-row" @click="toggleSkuExpand(cat.category_id + '_' + pSku.id)">
+                                            <div class="sku-main-info">
+                                                <span class="shop-tag platform">平台</span>
+                                                <span class="sku-title" :title="pSku.goods_title">{{ pSku.goods_title }}</span>
+                                                <span class="sku-spec-tag">{{ pSku.difference }}</span>
+                                            </div>
+                                            <div class="sku-price-info">
+                                                <span class="platform-price">￥{{ pSku.price }}</span>
+                                                <span v-if="pSku.merchant_avg_price" class="merchant-avg-price">
+                                                    商家均价 ￥{{ pSku.merchant_avg_price }}
+                                                    <span class="avg-ratio" :class="{ cheaper: pSku.merchant_avg_price < pSku.price, expensive: pSku.merchant_avg_price > pSku.price }">
+                                                        ({{ ((pSku.merchant_avg_price / pSku.price) * 100).toFixed(0) }}%)
+                                                    </span>
+                                                </span>
+                                                <span v-if="pSku.merchant_count > 0" class="merchant-count-badge">
+                                                    {{ pSku.merchant_count }}家商家
+                                                    <i class="fa" :class="expandedSkus.includes(cat.category_id + '_' + pSku.id) ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                                                </span>
+                                                <span v-else class="no-merchant">暂无商家</span>
+                                            </div>
+                                        </div>
+                                        <!-- 商家SKU子列表 -->
+                                        <div v-show="expandedSkus.includes(cat.category_id + '_' + pSku.id) && pSku.merchant_skus.length > 0" class="merchant-sku-list">
+                                            <div class="merchant-list-header">
+                                                <span>同城市同规格商家报价</span>
+                                            </div>
+                                            <div v-for="mSku in pSku.merchant_skus" :key="mSku.id" class="merchant-sku-row">
+                                                <span class="shop-tag merchant">{{ mSku.shop_name }}</span>
+                                                <span class="merchant-goods-title" :title="mSku.goods_title">{{ mSku.goods_title }}</span>
+                                                <span class="merchant-price" :class="{ cheaper: parseFloat(mSku.price) < parseFloat(pSku.price), expensive: parseFloat(mSku.price) > parseFloat(pSku.price) }">
+                                                    ￥{{ mSku.price }}
+                                                    <span class="price-ratio">
+                                                        ({{ ((parseFloat(mSku.price) / parseFloat(pSku.price)) * 100).toFixed(0) }}%)
+                                                    </span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-else class="empty-sku">暂无平台SKU数据</div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- 分类统计表格 -->
-        <div class="category-table-section" v-if="overviewData && overviewData.category_stats && overviewData.category_stats.length > 0">
-            <div class="section-title">
-                <i class="fa fa-table"></i>
-                各分类价格对比
+        <!-- 价差汇总表 -->
+        <div class="category-table-section" v-if="overviewData && overviewData.price_diff_summary && overviewData.price_diff_summary.length > 0">
+            <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
+                <span>
+                    <i class="fa fa-table"></i>
+                    城市-规格价差明细
+                    <span style="font-size: 12px; color: #999; font-weight: normal; margin-left: 10px;">
+                        按商家均价/平台价比例排序，越低说明商家越便宜
+                    </span>
+                </span>
+                <span style="font-size: 12px; color: #888;">
+                    共 {{ overviewData.price_diff_summary.length }} 条记录
+                </span>
             </div>
             <table class="category-table">
                 <thead>
                     <tr>
-                        <th>分类名称</th>
-                        <th>平台均价</th>
+                        <th>城市</th>
+                        <th>分类</th>
+                        <th>规格</th>
+                        <th>平台价</th>
                         <th>商家均价</th>
-                        <th>商家最低</th>
-                        <th>商家最高</th>
-                        <th>价差</th>
-                        <th>入驻商家</th>
+                        <th>价差比例</th>
+                        <th>商家数</th>
                         <th>操作</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="cat in overviewData.category_stats" :key="cat.category_id">
-                        <td>{{cat.category_name}}</td>
-                        <td class="price platform">￥{{cat.platform_avg ? parseFloat(cat.platform_avg).toFixed(2) : '--'}}</td>
-                        <td class="price merchant">￥{{cat.merchant_avg ? parseFloat(cat.merchant_avg).toFixed(2) : '--'}}</td>
-                        <td>￥{{cat.merchant_min ? parseFloat(cat.merchant_min).toFixed(2) : '--'}}</td>
-                        <td>￥{{cat.merchant_max ? parseFloat(cat.merchant_max).toFixed(2) : '--'}}</td>
+                    <tr v-for="(item, index) in overviewData.price_diff_summary" :key="index"
+                        :class="{ 'row-cheaper': item.diff_ratio < 95, 'row-expensive': item.diff_ratio > 105 }">
                         <td>
-                            <span v-if="cat.platform_avg && cat.merchant_avg" class="diff" :class="(cat.platform_avg - cat.merchant_avg) >= 0 ? 'positive' : 'negative'">
-                                {{((cat.platform_avg - cat.merchant_avg) >= 0 ? '+' : '') + ((cat.platform_avg - cat.merchant_avg) / cat.merchant_avg * 100).toFixed(1)}}%
-                            </span>
-                            <span v-else>--</span>
+                            <i class="fa fa-map-marker" style="color: #e74c3c; margin-right: 5px;"></i>
+                            {{ item.city_name }}
                         </td>
-                        <td>{{cat.merchant_shop_count}} 家</td>
+                        <td>{{ item.category_name }}</td>
+                        <td><span class="sku-spec-tag">{{ item.difference }}</span></td>
+                        <td class="price platform">￥{{ item.platform_price }}</td>
+                        <td class="price merchant">￥{{ item.merchant_avg_price }}</td>
                         <td>
-                            <button class="btn-detail" @click="viewCategoryDetail(cat.category_id, cat.category_name)">
-                                <i class="fa fa-search"></i> 查看
+                            <span class="diff-badge" :class="{ cheaper: item.diff_ratio < 100, expensive: item.diff_ratio > 100 }">
+                                {{ item.diff_ratio }}%
+                            </span>
+                        </td>
+                        <td>{{ item.merchant_count }} 家</td>
+                        <td>
+                            <button class="btn-detail" @click="locateToSku(item.category_id, item.sku_id)">
+                                <i class="fa fa-eye"></i> 查看
                             </button>
                         </td>
                     </tr>

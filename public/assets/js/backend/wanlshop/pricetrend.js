@@ -16,6 +16,7 @@ define(['jquery', 'bootstrap', 'backend', 'vue', 'echarts', 'echarts-theme'], fu
                     overviewEndDate: '',
                     overviewSelectedCity: '',
                     expandedCategories: [],  // 展开的分类ID列表
+                    expandedSkus: [],  // 展开的SKU ID列表（格式：categoryId_skuId）
                     showFormula: false,  // 是否显示公式说明
 
                     // 城市列表
@@ -119,6 +120,16 @@ define(['jquery', 'bootstrap', 'backend', 'vue', 'echarts', 'echarts-theme'], fu
                         }
                     },
 
+                    // 切换SKU展开/折叠（查看商家报价）
+                    toggleSkuExpand: function(skuKey) {
+                        var index = this.expandedSkus.indexOf(skuKey);
+                        if (index > -1) {
+                            this.expandedSkus.splice(index, 1);
+                        } else {
+                            this.expandedSkus.push(skuKey);
+                        }
+                    },
+
                     // 全部展开
                     expandAllCategories: function() {
                         if (this.overviewData && this.overviewData.category_stats) {
@@ -131,6 +142,37 @@ define(['jquery', 'bootstrap', 'backend', 'vue', 'echarts', 'echarts-theme'], fu
                     // 全部收起
                     collapseAllCategories: function() {
                         this.expandedCategories = [];
+                    },
+
+                    // 定位到指定SKU（从价差汇总表点击）
+                    locateToSku: function(categoryId, skuId) {
+                        var self = this;
+                        // 1. 展开对应的分类
+                        if (!this.expandedCategories.includes(categoryId)) {
+                            this.expandedCategories.push(categoryId);
+                        }
+                        // 2. 展开对应的SKU
+                        var skuKey = categoryId + '_' + skuId;
+                        if (!this.expandedSkus.includes(skuKey)) {
+                            this.expandedSkus.push(skuKey);
+                        }
+                        // 3. 滚动到对应位置
+                        this.$nextTick(function() {
+                            var element = document.querySelector('.category-card');
+                            if (element) {
+                                // 找到对应分类的卡片
+                                var cards = document.querySelectorAll('.category-card');
+                                for (var i = 0; i < cards.length; i++) {
+                                    var card = cards[i];
+                                    // 简单方式：滚动到分类SKU明细区域
+                                    var section = document.querySelector('.category-sku-section');
+                                    if (section) {
+                                        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                    }
+                                    break;
+                                }
+                            }
+                        });
                     },
 
                     // 查看分类详情

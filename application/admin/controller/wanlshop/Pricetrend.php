@@ -144,6 +144,112 @@ class Pricetrend extends Backend
                 }
                 $skuDetails[$catId][] = $sku;
             }
+
+            // 重组数据结构：按城市分组，平台SKU为主干，商家SKU为子项
+            foreach ($skuDetails as $catId => &$skus) {
+                $cityGrouped = [];
+
+                // 先按城市和规格分组所有SKU
+                $platformSkus = [];  // 平台SKU，按城市+规格分组
+                $merchantSkus = [];  // 商家SKU，按城市+规格分组
+
+                foreach ($skus as $sku) {
+                    $cityName = $sku['city_name'] ?: '未知城市';
+                    $spec = $sku['difference'];
+                    $key = $cityName . '||' . $spec;
+
+                    if ($sku['shop_id'] == 1) {
+                        // 平台SKU
+                        if (!isset($platformSkus[$cityName])) {
+                            $platformSkus[$cityName] = [];
+                        }
+                        $platformSkus[$cityName][] = [
+                            'id' => $sku['id'],
+                            'goods_title' => $sku['goods_title'],
+                            'difference' => $spec,
+                            'price' => $sku['price'],
+                            'city_name' => $cityName,
+                            'merchant_skus' => []  // 待填充
+                        ];
+                    } else {
+                        // 商家SKU，按城市+规格分组
+                        if (!isset($merchantSkus[$key])) {
+                            $merchantSkus[$key] = [];
+                        }
+                        $merchantSkus[$key][] = [
+                            'id' => $sku['id'],
+                            'shop_name' => $sku['shop_name'],
+                            'goods_title' => $sku['goods_title'],
+                            'price' => $sku['price']
+                        ];
+                    }
+                }
+
+                // 将商家SKU附加到对应的平台SKU下
+                foreach ($platformSkus as $cityName => &$cityPlatformSkus) {
+                    foreach ($cityPlatformSkus as &$pSku) {
+                        $key = $cityName . '||' . $pSku['difference'];
+                        if (isset($merchantSkus[$key])) {
+                            $pSku['merchant_skus'] = $merchantSkus[$key];
+                            $pSku['merchant_count'] = count($merchantSkus[$key]);
+                            // 计算商家平均价
+                            $totalPrice = 0;
+                            foreach ($merchantSkus[$key] as $mSku) {
+                                $totalPrice += floatval($mSku['price']);
+                            }
+                            $pSku['merchant_avg_price'] = round($totalPrice / count($merchantSkus[$key]), 2);
+                        } else {
+                            $pSku['merchant_count'] = 0;
+                            $pSku['merchant_avg_price'] = null;
+                        }
+                    }
+                    unset($pSku);
+                }
+                unset($cityPlatformSkus);
+
+                $skuDetails[$catId] = [
+                    'by_city' => $platformSkus,
+                    'city_list' => array_keys($platformSkus)
+                ];
+            }
+            unset($skus);
+
+            // 生成价差汇总表数据（扁平化：城市+分类+规格）
+            $priceDiffSummary = [];
+            foreach ($skuDetails as $catId => $catData) {
+                // 找到分类名称
+                $catName = '';
+                foreach ($categoryStats as $cs) {
+                    if ($cs['category_id'] == $catId) {
+                        $catName = $cs['category_name'];
+                        break;
+                    }
+                }
+
+                foreach ($catData['by_city'] as $cityName => $platformSkuList) {
+                    foreach ($platformSkuList as $pSku) {
+                        if ($pSku['merchant_count'] > 0) {
+                            $diffRatio = round(($pSku['merchant_avg_price'] / $pSku['price']) * 100, 0);
+                            $priceDiffSummary[] = [
+                                'category_id' => $catId,
+                                'category_name' => $catName,
+                                'city_name' => $cityName,
+                                'sku_id' => $pSku['id'],
+                                'difference' => $pSku['difference'],
+                                'platform_price' => $pSku['price'],
+                                'merchant_avg_price' => $pSku['merchant_avg_price'],
+                                'diff_ratio' => $diffRatio,
+                                'merchant_count' => $pSku['merchant_count']
+                            ];
+                        }
+                    }
+                }
+            }
+
+            // 按价差比例排序（从低到高，越低说明商家越便宜）
+            usort($priceDiffSummary, function($a, $b) {
+                return $a['diff_ratio'] - $b['diff_ratio'];
+            });
         }
 
         // 将SKU明细附加到分类统计中
@@ -259,6 +365,7 @@ class Pricetrend extends Backend
                 'merchant_count' => $totalStats['merchant_count']
             ],
             'category_stats' => $categoryStats,
+            'price_diff_summary' => isset($priceDiffSummary) ? $priceDiffSummary : [],
             'chart_data' => [
                 'dates' => $chartDates,
                 'platform_prices' => $platformPrices,

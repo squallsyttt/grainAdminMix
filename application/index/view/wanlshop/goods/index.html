@@ -13,9 +13,9 @@
 				<div class="widget-body no-padding">
 					<div id="toolbar" class="toolbar">
 						<a href="javascript:;" class="btn btn-primary btn-refresh" title="{:__('Refresh')}" ><i class="fa fa-refresh"></i> </a>
-						{if condition="$shop.id eq 1"}
-						<a href="javascript:;" class="btn btn-success btn-add" title="{:__('Add')}" ><i class="fa fa-plus"></i> {:__('Add')}</a>
-						{/if}
+                        {if condition="$shop.id eq 1 && $showSyncButton"}
+                        <a href="javascript:;" class="btn btn-success btn-add" title="{:__('Add')}" ><i class="fa fa-plus"></i> {:__('Add')}</a>
+                        {/if}
 						<a href="javascript:;" class="btn btn-success btn-edit btn-disabled disabled" title="{:__('Edit')}" ><i class="fa fa-pencil"></i> {:__('Edit')}</a>
 						<a href="javascript:;" class="btn btn-danger btn-del btn-disabled disabled" title="{:__('Delete')}" ><i class="fa fa-trash"></i> {:__('Delete')}</a>
                         <div class="dropdown btn-group">

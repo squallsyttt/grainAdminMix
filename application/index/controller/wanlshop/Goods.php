@@ -219,11 +219,12 @@ class Goods extends Wanlshop
 						$this->model->category_attribute = json_encode($params['attribute'], JSON_UNESCAPED_UNICODE);
 					}
 	                $this->model->title = $params['title'];
-	                $this->model->image = $params['image'];
+                $this->model->image = $params['image'];
                 $this->model->images = $params['images'];
                 $this->model->description = $params['description'];
                 $this->model->stock = $params['stock'];
-                $this->model->status = $params['status'];
+                // 新增表单未显式传 status，默认隐藏或传入值
+                $this->model->status = isset($params['status']) ? $params['status'] : 'hidden';
                 // 平台店铺可选择城市，其他店铺绑定自身城市
                 if ($this->shop->id == 1) {
                     $regionCode = isset($params['region_city_code']) ? $params['region_city_code'] : '';
