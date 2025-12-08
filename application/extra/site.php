@@ -1,10 +1,10 @@
 <?php
 
 return array (
-  'name' => '壕禾大米平台',
+  'name' => '丰慧农科',
   'beian' => '',
   'cdnurl' => '',
-  'version' => '1.0.3',
+  'version' => '1.0.1',
   'timezone' => 'Asia/Shanghai',
   'forbiddenip' => '',
   'languages' => 
