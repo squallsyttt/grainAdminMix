@@ -181,6 +181,101 @@ class Dashboard extends Backend
 	{
 		return $this->statis($date);
 	}
+
+	/**
+	 * 获取历史趋势数据（按天统计）
+	 * @return void
+	 */
+	public function getTrendData()
+	{
+		$days = $this->request->get('days', 30);
+		$days = min(max((int)$days, 7), 90); // 限制7-90天
+
+		$voucherOrder = model('app\admin\model\wanlshop\VoucherOrder');
+		$voucher = model('app\admin\model\wanlshop\Voucher');
+		$voucherRefund = model('app\admin\model\wanlshop\VoucherRefund');
+		$user = model('app\common\model\User');
+
+		// 生成日期列表
+		$dates = [];
+		$startDate = strtotime("-{$days} days");
+		for ($i = 0; $i < $days; $i++) {
+			$dates[] = date('Y-m-d', strtotime("+{$i} days", $startDate));
+		}
+
+		// 初始化数据结构
+		$orderAmount = array_fill_keys($dates, 0);   // 每日流水
+		$orderCount = array_fill_keys($dates, 0);    // 每日订单数
+		$verifyAmount = array_fill_keys($dates, 0);  // 每日核销金额
+		$verifyCount = array_fill_keys($dates, 0);   // 每日核销数量
+		$refundAmount = array_fill_keys($dates, 0);  // 每日退款金额
+		$newUsers = array_fill_keys($dates, 0);      // 每日新增用户
+
+		$paidOrderStates = ['2', '4']; // 已支付、存在退款
+
+		// 查询每日流水和订单数（按付款时间）
+		$orderList = $voucherOrder
+			->where('state', 'in', $paidOrderStates)
+			->where('paymenttime', '>=', $startDate)
+			->field('DATE(FROM_UNIXTIME(paymenttime)) as day, COUNT(*) as cnt, SUM(actual_payment) as amount')
+			->group('day')
+			->select();
+		foreach ($orderList as $row) {
+			if (isset($orderAmount[$row['day']])) {
+				$orderAmount[$row['day']] = round($row['amount'], 2);
+				$orderCount[$row['day']] = (int)$row['cnt'];
+			}
+		}
+
+		// 查询每日核销数量和金额（按核销时间）
+		$verifyList = $voucher
+			->where('state', '2')
+			->where('verifytime', '>=', $startDate)
+			->field('DATE(FROM_UNIXTIME(verifytime)) as day, COUNT(*) as cnt, SUM(face_value) as amount')
+			->group('day')
+			->select();
+		foreach ($verifyList as $row) {
+			if (isset($verifyAmount[$row['day']])) {
+				$verifyAmount[$row['day']] = round($row['amount'], 2);
+				$verifyCount[$row['day']] = (int)$row['cnt'];
+			}
+		}
+
+		// 查询每日退款金额（按退款成功时间）
+		$refundList = $voucherRefund
+			->where('state', '3')
+			->where('updatetime', '>=', $startDate)
+			->field('DATE(FROM_UNIXTIME(updatetime)) as day, SUM(refund_amount) as amount')
+			->group('day')
+			->select();
+		foreach ($refundList as $row) {
+			if (isset($refundAmount[$row['day']])) {
+				$refundAmount[$row['day']] = round($row['amount'], 2);
+			}
+		}
+
+		// 查询每日新增用户
+		$userList = $user
+			->where('jointime', '>=', $startDate)
+			->field('DATE(FROM_UNIXTIME(jointime)) as day, COUNT(*) as cnt')
+			->group('day')
+			->select();
+		foreach ($userList as $row) {
+			if (isset($newUsers[$row['day']])) {
+				$newUsers[$row['day']] = (int)$row['cnt'];
+			}
+		}
+
+		$this->success('', '', [
+			'dates' => array_keys($orderAmount),
+			'orderAmount' => array_values($orderAmount),
+			'orderCount' => array_values($orderCount),
+			'verifyAmount' => array_values($verifyAmount),
+			'verifyCount' => array_values($verifyCount),
+			'refundAmount' => array_values($refundAmount),
+			'newUsers' => array_values($newUsers),
+		]);
+	}
 	
 	
 	/**

@@ -252,6 +252,63 @@
   .module-header, .module-body { padding-left: 20px; padding-right: 20px; }
   .overview-grid, .finance-item, .business-section, .ops-section, .list-section { padding-left: 20px; padding-right: 20px; }
 }
+
+/* 趋势图模块样式 */
+.trend-filter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.trend-select {
+  padding: 8px 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #374151;
+  background: #fff;
+  cursor: pointer;
+  outline: none;
+}
+.trend-select:focus {
+  border-color: #3c8dbc;
+}
+.trend-btn {
+  padding: 8px 16px;
+  border: 1px solid #3c8dbc;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #3c8dbc;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.trend-btn:hover {
+  background: #3c8dbc;
+  color: #fff;
+}
+.trend-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+.trend-chart-box {
+  background: #fafafa;
+  border-radius: 12px;
+  padding: 20px;
+}
+.trend-chart-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 16px;
+}
+.trend-chart {
+  height: 280px;
+  width: 100%;
+}
+@media (max-width: 992px) {
+  .trend-grid { grid-template-columns: 1fr; }
+}
 </style>
 
 <div class="alert alert-success-light" style="margin-bottom: 24px; border-radius: 12px;">
@@ -314,6 +371,43 @@
             <div class="finance-label">已结算利润</div>
             <div class="finance-value">￥{$platformProfitSettled|sprintf='%.2f',###}</div>
             <div class="finance-desc">state=已结算</div>
+        </div>
+    </div>
+</div>
+
+<!-- 历史数据趋势图 -->
+<div class="dashboard-module" id="trend-charts">
+    <div class="module-header">
+        <h3 class="module-title"><i class="fa fa-area-chart"></i> 历史数据趋势</h3>
+        <div class="trend-filter">
+            <select id="trend-days" class="trend-select">
+                <option value="7">近7天</option>
+                <option value="14">近14天</option>
+                <option value="30" selected>近30天</option>
+                <option value="60">近60天</option>
+                <option value="90">近90天</option>
+            </select>
+            <button id="refresh-trend" class="trend-btn"><i class="fa fa-refresh"></i> 刷新</button>
+        </div>
+    </div>
+    <div class="module-body">
+        <div class="trend-grid">
+            <div class="trend-chart-box">
+                <div class="trend-chart-title">每日流水 / 订单数</div>
+                <div id="chart-order" class="trend-chart"></div>
+            </div>
+            <div class="trend-chart-box">
+                <div class="trend-chart-title">每日核销金额 / 核销数量</div>
+                <div id="chart-verify" class="trend-chart"></div>
+            </div>
+            <div class="trend-chart-box">
+                <div class="trend-chart-title">每日退款金额</div>
+                <div id="chart-refund" class="trend-chart"></div>
+            </div>
+            <div class="trend-chart-box">
+                <div class="trend-chart-title">每日新增用户</div>
+                <div id="chart-users" class="trend-chart"></div>
+            </div>
         </div>
     </div>
 </div>
