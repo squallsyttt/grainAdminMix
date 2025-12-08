@@ -1,0 +1,30 @@
+<div class="panel panel-default panel-intro">
+    <div class="panel-heading">
+        {:build_heading(null,FALSE)}
+        <ul class="nav nav-tabs" data-field="custody_state">
+            <li class="active"><a href="#t-all" data-value="" data-toggle="tab">全部</a></li>
+            <li><a href="#t-pending" data-value="1" data-toggle="tab">申请中</a></li>
+            <li><a href="#t-approved" data-value="2" data-toggle="tab">已通过</a></li>
+            <li><a href="#t-rejected" data-value="3" data-toggle="tab">已拒绝</a></li>
+        </ul>
+    </div>
+    <div class="panel-body">
+        <div id="myTabContent" class="tab-content">
+            <div class="tab-pane fade active in">
+                <div class="widget-body no-padding">
+                    <div id="toolbar" class="toolbar">
+                        {:build_toolbar('refresh')}
+                        <a href="javascript:;" class="btn btn-success btn-approve btn-disabled disabled" title="审核通过"><i class="fa fa-check"></i> 审核通过</a>
+                        <a href="javascript:;" class="btn btn-danger btn-reject btn-disabled disabled" title="审核拒绝"><i class="fa fa-times"></i> 审核拒绝</a>
+                    </div>
+                    <table id="table" class="table table-striped table-bordered table-hover table-nowrap"
+                           data-operate-detail="{:$auth->check('wanlshop/voucher/custody/detail')}"
+                           data-operate-approve="{:$auth->check('wanlshop/voucher/custody/approve')}"
+                           data-operate-reject="{:$auth->check('wanlshop/voucher/custody/reject')}"
+                           width="100%">
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

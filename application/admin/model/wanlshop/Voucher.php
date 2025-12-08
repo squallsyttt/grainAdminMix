@@ -26,6 +26,7 @@ class Voucher extends Model
     // 追加属性：状态文本 + 前端所需计算属性
     protected $append = [
         'state_text',
+        'custody_state_text',
         'code',
         'type',
         'productName',
@@ -62,6 +63,34 @@ class Voucher extends Model
     {
         $value = $value ? $value : (isset($data['state']) ? $data['state'] : '');
         $list = $this->getStateList();
+        return isset($list[$value]) ? $list[$value] : '';
+    }
+
+    /**
+     * 代管理状态枚举
+     * 0=未申请, 1=申请中, 2=已通过, 3=已拒绝
+     * @return array
+     */
+    public function getCustodyStateList()
+    {
+        return [
+            '0' => '未申请',
+            '1' => '申请中',
+            '2' => '已通过',
+            '3' => '已拒绝',
+        ];
+    }
+
+    /**
+     * 代管理状态文本获取器
+     * @param mixed $value
+     * @param array $data
+     * @return string
+     */
+    public function getCustodyStateTextAttr($value, $data)
+    {
+        $value = $value ? $value : (isset($data['custody_state']) ? $data['custody_state'] : '0');
+        $list = $this->getCustodyStateList();
         return isset($list[$value]) ? $list[$value] : '';
     }
 

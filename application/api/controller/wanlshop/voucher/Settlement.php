@@ -109,6 +109,7 @@ class Settlement extends Api
      * @ApiParams   (name="pagesize", type="integer", required=false, description="每页数量，默认10，最大50")
      * @ApiParams   (name="order_type", type="string", required=false, description="业务类型：settlement=结算，rebate=返利，all=全部，默认settlement")
      * @ApiParams   (name="rebate_id", type="integer", required=false, description="返利记录ID，指定后只返回该记录")
+     * @ApiParams   (name="rebate_type", type="string", required=false, description="返利类型筛选：normal=核销返利，custody=代管理返利，all=全部，默认all")
      */
     public function pendingTransfers()
     {
@@ -131,6 +132,7 @@ class Settlement extends Api
         $status = $this->request->get('status', '1');
         $orderType = $this->request->get('order_type', TransferLog::ORDER_TYPE_SETTLEMENT);
         $rebateId = $this->request->get('rebate_id/d', 0);
+        $rebateType = $this->request->get('rebate_type', 'all');
 
         $orderTypes = [
             TransferLog::ORDER_TYPE_SETTLEMENT,
@@ -139,6 +141,12 @@ class Settlement extends Api
         ];
         if (!in_array($orderType, $orderTypes, true)) {
             $orderType = TransferLog::ORDER_TYPE_SETTLEMENT;
+        }
+
+        // 验证 rebate_type 参数
+        $rebateTypes = ['normal', 'custody', 'all'];
+        if (!in_array($rebateType, $rebateTypes, true)) {
+            $rebateType = 'all';
         }
 
         $query = TransferLog::where('receiver_user_id', $userId);
@@ -160,6 +168,15 @@ class Settlement extends Api
                 // 无效状态值，默认查待确认
                 $query->where('status', 1);
             }
+        }
+
+        // 按返利类型筛选（仅当 order_type 为 rebate 时生效）
+        if ($rebateType !== 'all' && $orderType === TransferLog::ORDER_TYPE_REBATE) {
+            $query->whereExists(function ($q) use ($rebateType) {
+                $q->table('grain_wanlshop_voucher_rebate')
+                    ->where('grain_wanlshop_voucher_rebate.id = grain_wanlshop_transfer_log.rebate_id')
+                    ->where('grain_wanlshop_voucher_rebate.rebate_type', $rebateType);
+            });
         }
 
         $list = $query->order('createtime desc')
@@ -188,7 +205,7 @@ class Settlement extends Api
 
     /**
      * 微信转账回调（商家转账到零钱）
-     * 支持结算打款（STL前缀）和返利打款（RBT前缀）
+     * 支持结算打款（STL前缀）和返利打款（RBT/CUS前缀）
      *
      * @ApiSummary  (微信转账回调通知)
      * @ApiMethod   (POST)
@@ -244,9 +261,12 @@ class Settlement extends Api
             }
 
             // 根据 out_bill_no 前缀判断业务类型
+            // RBT: 普通核销返利打款，CUS: 代管理返利打款
             $orderType = 'voucher_transfer';
             if (strpos($outBillNo, 'RBT') === 0) {
                 $orderType = 'rebate_transfer';
+            } elseif (strpos($outBillNo, 'CUS') === 0) {
+                $orderType = 'custody_transfer';
             }
 
             // 记录回调日志（若存在则复用）

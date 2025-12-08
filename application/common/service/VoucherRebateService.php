@@ -168,10 +168,11 @@ class VoucherRebateService
      * @param int $verifyTime 核销时间戳
      * @param int $shopId 核销店铺ID
      * @param array $shopGoodsInfo 核销店铺商品信息
+     * @param string $rebateType 返利类型：normal=普通核销, custody=代管理
      * @return VoucherRebate
      * @throws Exception
      */
-    public function createRebateRecord(Voucher $voucher, VoucherVerification $verification, $verifyTime, $shopId, array $shopGoodsInfo = [])
+    public function createRebateRecord(Voucher $voucher, VoucherVerification $verification, $verifyTime, $shopId, array $shopGoodsInfo = [], $rebateType = 'normal')
     {
         if (!$verification || !$verification->id) {
             throw new Exception('核销记录不存在');
@@ -207,6 +208,7 @@ class VoucherRebateService
         $rebate = new VoucherRebate();
         $rebate->voucher_id = $voucher->id;
         $rebate->voucher_no = $voucher->voucher_no;
+        $rebate->rebate_type = $rebateType;  // 返利类型：normal/custody
         $rebate->order_id = $voucher->order_id;
         $rebate->verification_id = $verification->id;
         $rebate->user_id = $voucher->user_id;

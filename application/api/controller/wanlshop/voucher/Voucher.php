@@ -85,6 +85,15 @@ class Voucher extends Api
                     $data['rule_goods_days'] = 0;
                 }
 
+                // 代管理相关字段
+                $data['custody_state'] = isset($data['custody_state']) ? $data['custody_state'] : '0';
+                $data['custody_apply_time'] = isset($data['custody_apply_time']) ? (int)$data['custody_apply_time'] : null;
+                $data['custody_estimated_rebate'] = isset($data['custody_estimated_rebate']) && $data['custody_estimated_rebate'] !== null
+                    ? (float)$data['custody_estimated_rebate'] : null;
+
+                // 计算是否可申请代管理
+                $data['can_apply_custody'] = $this->checkCanApplyCustody($data);
+
                 // 是否已评价（仅已核销状态才有意义）
                 $data['has_comment'] = in_array($data['id'], $commentedIds);
             }
@@ -298,5 +307,41 @@ class Voucher extends Api
                 $data[$field] = (float)$data[$field];
             }
         }
+    }
+
+    /**
+     * 检查是否可申请代管理
+     *
+     * @param array $data 券数据
+     * @return bool
+     */
+    private function checkCanApplyCustody(array $data)
+    {
+        // 1. 券状态必须是未使用
+        if (!isset($data['state']) || $data['state'] != '1') {
+            return false;
+        }
+
+        // 2. 代管理状态必须是未申请或已拒绝
+        $custodyState = isset($data['custody_state']) ? $data['custody_state'] : '0';
+        if (!in_array($custodyState, ['0', '3'])) {
+            return false;
+        }
+
+        // 3. 必须在免费期内
+        $paymentTime = 0;
+        if (!empty($data['voucher_order']) && is_array($data['voucher_order'])) {
+            $paymentTime = isset($data['voucher_order']['paymenttime']) ? (int)$data['voucher_order']['paymenttime'] : 0;
+        }
+
+        if ($paymentTime <= 0) {
+            return false;
+        }
+
+        $freeDays = isset($data['rule_free_days']) ? (int)$data['rule_free_days'] : 0;
+        $now = time();
+        $daysFromPayment = floor(($now - $paymentTime) / 86400);
+
+        return $daysFromPayment <= $freeDays;
     }
 }

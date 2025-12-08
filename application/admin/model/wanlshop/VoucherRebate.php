@@ -23,10 +23,11 @@ class VoucherRebate extends Model
     protected $updateTime = 'updatetime';
     protected $deleteTime = 'deletetime';
 
-    // 追加属性：阶段文本、返现状态
+    // 追加属性：阶段文本、返现状态、返利类型文本
     protected $append = [
         'stage_text',
-        'payment_status_text'
+        'payment_status_text',
+        'rebate_type_text'
     ];
 
     /**
@@ -120,6 +121,31 @@ class VoucherRebate extends Model
         $value = $value ? $value : (isset($data['payment_status']) ? $data['payment_status'] : '');
         $list = $this->getPaymentStatusList();
         return isset($list[$value]) ? $list[$value] : '';
+    }
+
+    /**
+     * 返利类型枚举
+     * @return array
+     */
+    public function getRebateTypeList()
+    {
+        return [
+            'normal' => '核销返利',
+            'custody' => '代管理返利',
+        ];
+    }
+
+    /**
+     * 返利类型文本获取器
+     * @param mixed $value
+     * @param array $data
+     * @return string
+     */
+    public function getRebateTypeTextAttr($value, $data)
+    {
+        $value = $value ? $value : (isset($data['rebate_type']) ? $data['rebate_type'] : 'normal');
+        $list = $this->getRebateTypeList();
+        return isset($list[$value]) ? $list[$value] : '核销返利';
     }
 
     /**

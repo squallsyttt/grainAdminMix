@@ -1,0 +1,277 @@
+### 核销券代管理接口测试
+### 基础配置
+@baseUrl = http://localhost
+@token = your_test_token_here
+
+### ========== 用户端接口 ==========
+
+### 申请代管理
+# @name applyCustody
+# 将核销券提交给平台代为管理
+# 条件：券状态为未使用、在免费期内、未申请过或被拒绝
+POST {{baseUrl}}/api/wanlshop/voucher/custody/apply
+Content-Type: application/json
+token: {{token}}
+
+{
+    "voucher_id": 1
+}
+
+### 预期响应（成功）
+# {
+#     "code": 1,
+#     "msg": "申请成功",
+#     "data": {
+#         "voucher_id": 1,
+#         "custody_state": "1",
+#         "custody_state_text": "申请中",
+#         "estimated_rebate": 50.00,
+#         "platform_price": 100.00
+#     }
+# }
+
+### 预期响应（失败-不在免费期）
+# {
+#     "code": 0,
+#     "msg": "只有在免费期内的券才能申请代管理"
+# }
+
+###
+
+### 取消代管理申请
+# @name cancelCustody
+# 取消已提交的代管理申请（仅申请中状态可取消）
+POST {{baseUrl}}/api/wanlshop/voucher/custody/cancel
+Content-Type: application/json
+token: {{token}}
+
+{
+    "voucher_id": 1
+}
+
+### 预期响应（成功）
+# {
+#     "code": 1,
+#     "msg": "取消成功",
+#     "data": {
+#         "voucher_id": 1,
+#         "custody_state": "0",
+#         "custody_state_text": "未申请"
+#     }
+# }
+
+### 预期响应（失败-状态不允许）
+# {
+#     "code": 0,
+#     "msg": "当前状态不允许取消"
+# }
+
+###
+
+### 查询代管理详情
+# @name getCustodyDetail
+# 获取券的代管理详细信息
+GET {{baseUrl}}/api/wanlshop/voucher/custody/detail?voucher_id=1
+Content-Type: application/json
+token: {{token}}
+
+### 预期响应
+# {
+#     "code": 1,
+#     "msg": "success",
+#     "data": {
+#         "voucher_id": 1,
+#         "custody_state": "1",
+#         "custody_state_text": "申请中",
+#         "custody_apply_time": 1733644800,
+#         "custody_audit_time": null,
+#         "custody_platform_price": 100.00,
+#         "custody_estimated_rebate": 50.00,
+#         "custody_refuse_reason": null,
+#         "can_apply": false,
+#         "can_cancel": true
+#     }
+# }
+
+###
+
+### ========== 后台管理接口 ==========
+
+### 代管理列表（待审核）
+# @name custodyListPending
+GET {{baseUrl}}/admin/wanlshop/voucher/custody/index?custody_state=1
+Content-Type: application/json
+token: {{adminToken}}
+
+### 预期响应
+# {
+#     "code": 1,
+#     "msg": "",
+#     "data": {
+#         "total": 10,
+#         "rows": [
+#             {
+#                 "id": 1,
+#                 "voucher_no": "V202312080001",
+#                 "goods_title": "东北大米",
+#                 "user": { "nickname": "测试用户" },
+#                 "custody_state": "1",
+#                 "custody_state_text": "申请中",
+#                 "custody_apply_time": 1733644800,
+#                 "custody_estimated_rebate": 50.00
+#             }
+#         ]
+#     }
+# }
+
+###
+
+### 代管理列表（已通过）
+# @name custodyListApproved
+GET {{baseUrl}}/admin/wanlshop/voucher/custody/index?custody_state=2
+Content-Type: application/json
+token: {{adminToken}}
+
+###
+
+### 代管理列表（已拒绝）
+# @name custodyListRejected
+GET {{baseUrl}}/admin/wanlshop/voucher/custody/index?custody_state=3
+Content-Type: application/json
+token: {{adminToken}}
+
+###
+
+### 代管理详情
+# @name custodyAdminDetail
+GET {{baseUrl}}/admin/wanlshop/voucher/custody/detail?id=1
+Content-Type: application/json
+token: {{adminToken}}
+
+### 预期响应
+# {
+#     "code": 1,
+#     "msg": "success",
+#     "data": {
+#         "id": 1,
+#         "voucher_no": "V202312080001",
+#         "goods_title": "东北大米",
+#         "sku_difference": "5KG",
+#         "user": {
+#             "id": 100,
+#             "nickname": "测试用户",
+#             "mobile": "138****8888"
+#         },
+#         "custody_state": "1",
+#         "custody_state_text": "申请中",
+#         "custody_apply_time": 1733644800,
+#         "custody_platform_price": 100.00,
+#         "custody_estimated_rebate": 50.00,
+#         "expire_at": 1736323200,
+#         "createtime": 1733558400
+#     }
+# }
+
+###
+
+### 审核通过
+# @name approveCustomdy
+# 审核通过后自动核销券并创建返利记录
+POST {{baseUrl}}/admin/wanlshop/voucher/custody/approve
+Content-Type: application/json
+token: {{adminToken}}
+
+{
+    "ids": "1,2,3"
+}
+
+### 预期响应（成功）
+# {
+#     "code": 1,
+#     "msg": "审核通过成功，已处理 3 张券"
+# }
+
+### 预期响应（部分成功）
+# {
+#     "code": 1,
+#     "msg": "审核通过成功，已处理 2 张券，1 张处理失败"
+# }
+
+###
+
+### 审核拒绝
+# @name rejectCustody
+POST {{baseUrl}}/admin/wanlshop/voucher/custody/reject
+Content-Type: application/json
+token: {{adminToken}}
+
+{
+    "ids": "1,2",
+    "reason": "券已过期，不符合代管理条件"
+}
+
+### 预期响应（成功）
+# {
+#     "code": 1,
+#     "msg": "已拒绝 2 张券的代管理申请"
+# }
+
+### 预期响应（失败-缺少拒绝理由）
+# {
+#     "code": 0,
+#     "msg": "请填写拒绝理由"
+# }
+
+###
+
+### 代管理统计
+# @name custodyStatistics
+GET {{baseUrl}}/admin/wanlshop/voucher/custody/statistics
+Content-Type: application/json
+token: {{adminToken}}
+
+### 预期响应
+# {
+#     "code": 1,
+#     "msg": "success",
+#     "data": {
+#         "pending": 15,
+#         "approved": 100,
+#         "rejected": 5,
+#         "total_rebate": 5000.00
+#     }
+# }
+
+###
+
+### ========== 券列表接口（含代管理字段） ==========
+
+### 获取券列表（包含代管理状态）
+# @name voucherListWithCustody
+GET {{baseUrl}}/api/wanlshop/voucher/lists?state=1&page=1&limit=10
+Content-Type: application/json
+token: {{token}}
+
+### 预期响应
+# {
+#     "code": 1,
+#     "msg": "success",
+#     "data": {
+#         "total": 50,
+#         "per_page": 10,
+#         "current_page": 1,
+#         "data": [
+#             {
+#                 "id": 1,
+#                 "voucher_no": "V202312080001",
+#                 "goods_title": "东北大米",
+#                 "status": "UNUSED",
+#                 "expire_at": 1736323200,
+#                 "custody_state": "0",
+#                 "custody_apply_time": null,
+#                 "custody_estimated_rebate": null,
+#                 "can_apply_custody": true
+#             }
+#         ]
+#     }
+# }

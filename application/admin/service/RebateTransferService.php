@@ -232,6 +232,176 @@ class RebateTransferService
             return ['success' => false, 'message' => '仅支持对打款失败记录重试'];
         }
 
+        // 代管理返利使用专用方法
+        if ($rebate->rebate_type === 'custody') {
+            return $this->transferCustody($rebateId);
+        }
+
         return $this->transfer($rebateId);
+    }
+
+    /**
+     * 执行代管理返利打款（无需等待7天）
+     *
+     * @param int $rebateId 返利ID
+     * @return array
+     */
+    public function transferCustody(int $rebateId): array
+    {
+        $config = config('wechat.payment');
+        $transferNotifyUrl = isset($config['transfer_notify_url']) ? trim($config['transfer_notify_url']) : '';
+
+        if ($rebateId <= 0) {
+            return ['success' => false, 'message' => '参数无效'];
+        }
+
+        $outBillNo = null;
+        $requestData = null;
+        $receiver = null;
+        $rebate = null;
+        $amountFen = 0;
+
+        Db::startTrans();
+        try {
+            set_error_handler(function ($severity, $message, $file, $line) {
+                throw new \ErrorException($message, 0, $severity, $file, $line);
+            });
+
+            $rebate = VoucherRebate::where('id', $rebateId)->lock(true)->find();
+            if (!$rebate) {
+                throw new Exception('返利记录不存在');
+            }
+
+            // 代管理返利不需要等待7天，直接检查状态
+            if ($rebate->payment_status === VoucherRebate::PAYMENT_STATUS_PENDING) {
+                throw new Exception('当前状态为打款中，请勿重复操作');
+            }
+            if ($rebate->payment_status === VoucherRebate::PAYMENT_STATUS_PAID) {
+                throw new Exception('已打款，请勿重复操作');
+            }
+
+            // 获取收款人（购买用户本人）
+            $receiver = $this->getReceiver((int)$rebate->user_id);
+            if (!$receiver || empty($receiver['openid'])) {
+                throw new Exception('用户未绑定小程序，无法打款');
+            }
+
+            // 计算返利金额
+            $amountFen = (int)bcmul((float)$rebate->rebate_amount, 100, 0);
+            if ($amountFen <= 0) {
+                throw new Exception('返利金额无效');
+            }
+
+            // 生成单号：CUS 前缀区分代管理返利打款
+            $outBillNo = 'CUS' . date('YmdHis') . $rebateId;
+
+            $requestData = [
+                'out_bill_no'       => $outBillNo,
+                'openid'            => $receiver['openid'],
+                'transfer_amount'   => $amountFen,
+                'transfer_remark'   => '代管理返利',
+                'transfer_scene_id' => '1009', // 采购货款场景
+                'scene_report_infos' => [
+                    ['info_type' => '采购商品名称', 'info_content' => '核销券代管理返利款'],
+                ],
+            ];
+            if ($transferNotifyUrl !== '') {
+                $requestData['notify_url'] = $transferNotifyUrl;
+            }
+
+            // 更新状态为打款中
+            $rebate->payment_status = VoucherRebate::PAYMENT_STATUS_PENDING;
+            $rebate->save();
+
+            $result = WechatPayment::transferToWallet($requestData);
+
+            // 处理返回状态
+            $transferState = (string)($result['state'] ?? '');
+            $needUserConfirm = in_array($transferState, ['WAIT_USER_CONFIRM', 'ACCEPTED'], true);
+            $isImmediateSuccess = $transferState === 'SUCCESS';
+            $logStatus = $isImmediateSuccess ? TransferLog::STATUS_SUCCESS : ($needUserConfirm ? TransferLog::STATUS_PENDING : TransferLog::STATUS_FAILED);
+
+            // 记录打款日志
+            TransferLog::create([
+                'order_type'        => TransferLog::ORDER_TYPE_REBATE,
+                'settlement_id'     => null,
+                'rebate_id'         => $rebate->id,
+                'out_batch_no'      => $outBillNo,
+                'out_detail_no'     => $outBillNo,
+                'transfer_amount'   => $amountFen,
+                'receiver_openid'   => $receiver['openid'],
+                'receiver_user_id'  => $rebate->user_id,
+                'status'            => $logStatus,
+                'wechat_batch_id'   => $result['transfer_bill_no'] ?? null,
+                'wechat_detail_id'  => $result['transfer_bill_no'] ?? null,
+                'fail_reason'       => $isImmediateSuccess || $needUserConfirm ? null : ($result['fail_reason'] ?? null),
+                'request_data'      => json_encode($requestData, JSON_UNESCAPED_UNICODE),
+                'response_data'     => json_encode($result, JSON_UNESCAPED_UNICODE),
+                'package_info'      => isset($result['package_info']) ? json_encode($result['package_info'], JSON_UNESCAPED_UNICODE) : null,
+            ]);
+
+            // 根据返回状态更新返利记录
+            if ($isImmediateSuccess) {
+                $rebate->payment_status = VoucherRebate::PAYMENT_STATUS_PAID;
+            } elseif ($needUserConfirm) {
+                $rebate->payment_status = VoucherRebate::PAYMENT_STATUS_PENDING;
+            } else {
+                $rebate->payment_status = VoucherRebate::PAYMENT_STATUS_FAILED;
+            }
+            $rebate->save();
+
+            Db::commit();
+
+            return [
+                'success' => true,
+                'data' => [
+                    'out_bill_no'       => $outBillNo,
+                    'transfer_bill_no'  => $result['transfer_bill_no'] ?? null,
+                    'transfer_state'    => $transferState,
+                    'need_user_confirm' => $needUserConfirm,
+                    'package_info'      => $result['package_info'] ?? null,
+                    'amount'            => $amountFen,
+                ]
+            ];
+        } catch (Exception $e) {
+            Db::rollback();
+
+            Log::error('代管理返利打款异常: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+
+            // 更新状态为失败
+            if ($rebate && $rebate->id) {
+                VoucherRebate::where('id', $rebate->id)->update([
+                    'payment_status' => VoucherRebate::PAYMENT_STATUS_FAILED,
+                    'updatetime' => time(),
+                ]);
+            }
+
+            // 记录失败日志
+            try {
+                if ($rebate && $outBillNo) {
+                    TransferLog::create([
+                        'order_type'        => TransferLog::ORDER_TYPE_REBATE,
+                        'settlement_id'     => null,
+                        'rebate_id'         => $rebate->id,
+                        'out_batch_no'      => $outBillNo,
+                        'out_detail_no'     => $outBillNo,
+                        'transfer_amount'   => $amountFen,
+                        'receiver_openid'   => $receiver['openid'] ?? '',
+                        'receiver_user_id'  => $rebate->user_id,
+                        'status'            => TransferLog::STATUS_FAILED,
+                        'fail_reason'       => $e->getMessage(),
+                        'request_data'      => $requestData ? json_encode($requestData, JSON_UNESCAPED_UNICODE) : null,
+                        'response_data'     => null,
+                        'package_info'      => null,
+                    ]);
+                }
+            } catch (Exception $logEx) {
+                Log::error('记录代管理返利打款失败日志异常: ' . $logEx->getMessage());
+            }
+
+            return ['success' => false, 'message' => $e->getMessage()];
+        } finally {
+            restore_error_handler();
+        }
     }
 }
