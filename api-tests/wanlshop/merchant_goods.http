@@ -1,0 +1,256 @@
+### 商家商品管理 API 测试
+### 说明：所有接口需要 Token 认证，且用户必须已绑定店铺
+
+@baseUrl = http://localhost
+@token = YOUR_TOKEN_HERE
+
+### ========== 商品列表 ==========
+
+### 获取商品列表 - 全部
+# @name getGoodsList
+GET {{baseUrl}}/api/wanlshop/merchantGoods/list
+token: {{token}}
+
+### 获取商品列表 - 上架中
+GET {{baseUrl}}/api/wanlshop/merchantGoods/list?status=normal
+token: {{token}}
+
+### 获取商品列表 - 已下架
+GET {{baseUrl}}/api/wanlshop/merchantGoods/list?status=hidden
+token: {{token}}
+
+### 获取商品列表 - 分页
+GET {{baseUrl}}/api/wanlshop/merchantGoods/list?page=1&limit=20
+token: {{token}}
+
+### 预期响应
+# {
+#     "code": 1,
+#     "msg": "获取成功",
+#     "time": "1733644800",
+#     "data": {
+#         "total": 10,
+#         "page": 1,
+#         "limit": 10,
+#         "rows": [
+#             {
+#                 "id": 1,
+#                 "title": "商品名称",
+#                 "image": "图片URL",
+#                 "price": "99.00",
+#                 "stock": 100,
+#                 "status": "normal",
+#                 "sales": 50,
+#                 "views": 200,
+#                 "category_name": "大米",
+#                 "createtime": 1733644800,
+#                 "updatetime": 1733644800
+#             }
+#         ],
+#         "count": {
+#             "all": 10,
+#             "normal": 8,
+#             "hidden": 2
+#         }
+#     }
+# }
+
+### ========== 仓库商品 ==========
+
+### 获取仓库商品列表
+# @name getStockList
+GET {{baseUrl}}/api/wanlshop/merchantGoods/stockList
+token: {{token}}
+
+### 获取仓库商品列表 - 分页
+GET {{baseUrl}}/api/wanlshop/merchantGoods/stockList?page=1&limit=10
+token: {{token}}
+
+### ========== 同步规范商品 ==========
+
+### 同步规范商品
+# @name syncStandard
+POST {{baseUrl}}/api/wanlshop/merchantGoods/syncStandard
+token: {{token}}
+
+### 预期响应
+# {
+#     "code": 1,
+#     "msg": "开始同步规范商品，成功同步 5 个商品",
+#     "time": "1733644800",
+#     "data": {
+#         "count": 5
+#     }
+# }
+
+### ========== 批量操作 ==========
+
+### 批量上架
+# @name batchOnline
+POST {{baseUrl}}/api/wanlshop/merchantGoods/multi
+Content-Type: application/x-www-form-urlencoded
+token: {{token}}
+
+ids=1,2,3&params=status=normal
+
+### 批量下架
+# @name batchOffline
+POST {{baseUrl}}/api/wanlshop/merchantGoods/multi
+Content-Type: application/x-www-form-urlencoded
+token: {{token}}
+
+ids=1,2,3&params=status=hidden
+
+### 预期响应
+# {
+#     "code": 1,
+#     "msg": "操作成功，已更新 3 个商品",
+#     "time": "1733644800",
+#     "data": {
+#         "count": 3
+#     }
+# }
+
+### ========== 商品详情 ==========
+
+### 获取商品详情（编辑用）
+# @name getGoodsDetail
+GET {{baseUrl}}/api/wanlshop/merchantGoods/detail?id=1
+token: {{token}}
+
+### 预期响应
+# {
+#     "code": 1,
+#     "msg": "获取成功",
+#     "time": "1733644800",
+#     "data": {
+#         "goods": {
+#             "id": 1,
+#             "title": "商品名称",
+#             "description": "商品描述",
+#             "image": "主图URL",
+#             "images": "轮播图URLs",
+#             "content": "详情内容",
+#             "price": "99.00",
+#             "stock": 100,
+#             "status": "normal",
+#             "category_id": 5,
+#             "category_name": "大米"
+#         },
+#         "sku_list": [
+#             {
+#                 "id": 1,
+#                 "thumbnail": "SKU图片",
+#                 "difference": "5kg,白色",
+#                 "price": "99.00",
+#                 "market_price": "129.00",
+#                 "stock": 50,
+#                 "weigh": 0,
+#                 "sn": "SKU编码"
+#             }
+#         ],
+#         "spu_list": [
+#             {
+#                 "id": 1,
+#                 "name": "规格",
+#                 "item": "5kg,10kg,20kg"
+#             }
+#         ]
+#     }
+# }
+
+### ========== 编辑商品 ==========
+
+### 编辑商品 - 修改状态
+# @name editGoodsStatus
+POST {{baseUrl}}/api/wanlshop/merchantGoods/edit
+Content-Type: application/x-www-form-urlencoded
+token: {{token}}
+
+id=1&status=normal
+
+### 编辑商品 - 修改价格和库存
+# @name editGoodsPriceStock
+POST {{baseUrl}}/api/wanlshop/merchantGoods/edit
+Content-Type: application/x-www-form-urlencoded
+token: {{token}}
+
+id=1&price=88.00&stock=200
+
+### 编辑商品 - 修改 SKU（JSON 格式）
+# @name editGoodsSku
+POST {{baseUrl}}/api/wanlshop/merchantGoods/edit
+Content-Type: application/json
+token: {{token}}
+
+{
+    "id": 1,
+    "sku": [
+        {
+            "id": 1,
+            "price": "88.00",
+            "stock": 100
+        },
+        {
+            "id": 2,
+            "price": "168.00",
+            "stock": 50
+        }
+    ]
+}
+
+### 预期响应
+# {
+#     "code": 1,
+#     "msg": "保存成功",
+#     "time": "1733644800",
+#     "data": null
+# }
+
+### ========== 删除商品 ==========
+
+### 删除商品（单个）
+# @name deleteGoods
+POST {{baseUrl}}/api/wanlshop/merchantGoods/del
+Content-Type: application/x-www-form-urlencoded
+token: {{token}}
+
+ids=1
+
+### 删除商品（批量）
+# @name deleteGoodsBatch
+POST {{baseUrl}}/api/wanlshop/merchantGoods/del
+Content-Type: application/x-www-form-urlencoded
+token: {{token}}
+
+ids=1,2,3
+
+### 预期响应
+# {
+#     "code": 1,
+#     "msg": "删除成功，已删除 3 个商品",
+#     "time": "1733644800",
+#     "data": {
+#         "count": 3
+#     }
+# }
+
+### ========== 错误场景测试 ==========
+
+### 未绑定店铺时访问
+### 预期响应：
+# {
+#     "code": 0,
+#     "msg": "请先绑定店铺",
+#     "time": "1733644800",
+#     "data": null
+# }
+
+### 访问不属于自己店铺的商品
+### 预期响应：
+# {
+#     "code": 0,
+#     "msg": "商品不存在或无权访问",
+#     "time": "1733644800",
+#     "data": null
+# }

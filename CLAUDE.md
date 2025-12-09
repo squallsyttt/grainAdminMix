@@ -200,6 +200,28 @@ php think install \
   --password=数据库密码
 ```
 
+### 数据库调试查询
+
+⚠️ **重要规则**：排查数据库相关问题时，**必须先查询数据库验证数据状态**，不要仅凭代码猜测。
+
+数据库配置读取自 `.env` 文件：
+
+```bash
+# 查看表结构
+mysql -h 127.0.0.1 -u root -p123 grainProOL -e "DESCRIBE grain_表名"
+
+# 查询数据验证
+mysql -h 127.0.0.1 -u root -p123 grainProOL -e "SELECT * FROM grain_表名 WHERE 条件 LIMIT 10"
+
+# 检查字段是否存在
+mysql -h 127.0.0.1 -u root -p123 grainProOL -e "DESCRIBE grain_表名" | grep 字段名
+```
+
+**调试流程**：
+1. 先查数据库确认表结构和数据状态
+2. 再分析代码逻辑
+3. 最后定位问题根因
+
 ## 命名规范
 
 - **控制器**：大驼峰 + `Controller` 后缀（如 `UserController`）
