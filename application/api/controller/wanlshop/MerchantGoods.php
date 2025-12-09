@@ -124,12 +124,18 @@ class MerchantGoods extends Api
         // 格式化数据
         $rows = [];
         foreach ($list as $row) {
+            // 计算商品总库存（所有有效 SKU 库存之和）
+            $totalStock = model('app\\api\\model\\wanlshop\\GoodsSku')
+                ->where('goods_id', $row['id'])
+                ->where('state', 0)
+                ->sum('stock');
+
             $rows[] = [
                 'id' => $row['id'],
                 'title' => $row['title'],
                 'image' => $row['image'],
                 'price' => $row['price'],
-                'stock' => $row['stock'],
+                'stock' => (int)$totalStock,
                 'status' => $row['status'],
                 'sales' => $row['sales'],
                 'views' => $row['views'],
@@ -191,12 +197,18 @@ class MerchantGoods extends Api
 
         $rows = [];
         foreach ($list as $row) {
+            // 计算商品总库存（所有有效 SKU 库存之和）
+            $totalStock = model('app\\api\\model\\wanlshop\\GoodsSku')
+                ->where('goods_id', $row['id'])
+                ->where('state', 0)
+                ->sum('stock');
+
             $rows[] = [
                 'id' => $row['id'],
                 'title' => $row['title'],
                 'image' => $row['image'],
                 'price' => $row['price'],
-                'stock' => $row['stock'],
+                'stock' => (int)$totalStock,
                 'status' => $row['status'],
                 'category_name' => $row->category ? $row->category['name'] : '',
                 'createtime' => $row['createtime'],
@@ -467,6 +479,12 @@ class MerchantGoods extends Api
         // 查询类目
         $category = $goods->category;
 
+        // 计算商品总库存（所有有效 SKU 库存之和）
+        $totalStock = model('app\\api\\model\\wanlshop\\GoodsSku')
+            ->where('goods_id', $id)
+            ->where('state', 0)
+            ->sum('stock');
+
         $this->success('获取成功', [
             'goods' => [
                 'id' => $goods['id'],
@@ -476,7 +494,7 @@ class MerchantGoods extends Api
                 'images' => $goods['images'],
                 'content' => $goods['content'],
                 'price' => $goods['price'],
-                'stock' => $goods['stock'],
+                'stock' => (int)$totalStock,
                 'status' => $goods['status'],
                 'category_id' => $goods['category_id'],
                 'category_name' => $category ? $category['name'] : '',
@@ -519,7 +537,7 @@ class MerchantGoods extends Api
         }
 
         // 允许修改的字段
-        $allowFields = ['price', 'stock', 'status', 'image', 'images'];
+        $allowFields = ['title', 'category_id', 'price', 'stock', 'status', 'image', 'images'];
         $data = [];
 
         foreach ($allowFields as $field) {
