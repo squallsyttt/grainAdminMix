@@ -519,7 +519,7 @@ class MerchantGoods extends Api
         }
 
         // 允许修改的字段
-        $allowFields = ['price', 'stock', 'status'];
+        $allowFields = ['price', 'stock', 'status', 'image', 'images'];
         $data = [];
 
         foreach ($allowFields as $field) {
@@ -583,8 +583,13 @@ class MerchantGoods extends Api
 
             Db::commit();
             $this->success('保存成功');
+        } catch (\think\exception\HttpResponseException $e) {
+            // HttpResponseException 是正常的响应，重新抛出
+            throw $e;
         } catch (\Exception $e) {
             Db::rollback();
+            // 记录详细错误日志
+            \think\Log::error('[MerchantGoods::edit] 保存失败: ' . $e->getMessage() . ' | File: ' . $e->getFile() . ' | Line: ' . $e->getLine());
             $this->error('保存失败：' . $e->getMessage());
         }
     }
