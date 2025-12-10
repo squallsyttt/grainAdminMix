@@ -28,8 +28,8 @@ class PriceCalculator
     // 平台利润率 20%
     const PLATFORM_MARGIN_RATE = 0.20;
 
-    // 微信手续费率 0.6%
-    const WECHAT_FEE_RATE = 0.006;
+    // 微信手续费率 0.6% 但我现在平台选择不收
+    const WECHAT_FEE_RATE = 0;
 
     // 平台店铺ID
     const PLATFORM_SHOP_ID = 1;
