@@ -89,7 +89,7 @@ class Verify extends Api
         }
 
         // 验证商家身份
-        $this->getMerchantShop();
+        $shop = $this->getMerchantShop();
 
         $voucher = Voucher::with(['goods', 'user'])
             ->where([
@@ -116,10 +116,181 @@ class Verify extends Api
         $voucher->goods;
         $voucher->user;
 
+        // 获取券对应的城市信息（从关联商品获取）
+        $voucherCityCode = null;
+        $voucherCityName = null;
+        if ($voucher->goods) {
+            $voucherCityCode = $voucher->goods->region_city_code;
+            $voucherCityName = $voucher->goods->region_city_name;
+        }
+
+        // 检查商家是否有对应的商品（城市 + 分类 + SKU）
+        $shopGoodsCheck = $this->checkShopGoods(
+            $shop->id,
+            $voucher->category_id,
+            $voucher->sku_difference,
+            $voucherCityCode,
+            $voucher->face_value
+        );
+
         $this->success('ok', [
             'voucher' => $voucher,
-            'can_verify' => true
+            'can_verify' => $shopGoodsCheck['can_verify'],
+            'verify_error' => $shopGoodsCheck['error_message'],
+            'shop_goods_info' => $shopGoodsCheck['shop_goods_info']
         ]);
+    }
+
+    /**
+     * 检查商家商品是否匹配核销券条件
+     *
+     * @param int $shopId 商家店铺ID
+     * @param int $categoryId 券的分类ID
+     * @param string $skuDifference SKU规格名（如 1KG、5KG）
+     * @param string $voucherCityCode 券对应的城市编码
+     * @param float $faceValue 券面值
+     * @return array
+     */
+    protected function checkShopGoods($shopId, $categoryId, $skuDifference, $voucherCityCode, $faceValue)
+    {
+        $result = [
+            'can_verify' => false,
+            'error_message' => null,
+            'shop_goods_info' => null
+        ];
+
+        // Step 1: 查找商家在该分类下的商品（优先匹配券城市）
+        $goodsConditions = [
+            'shop_id' => $shopId,
+            'category_id' => $categoryId
+        ];
+
+        $goods = null;
+        if ($voucherCityCode) {
+            $goods = Db::name('wanlshop_goods')
+                ->where($goodsConditions)
+                ->where('region_city_code', $voucherCityCode)
+                ->order('id', 'desc')
+                ->find();
+        }
+
+        if (!$goods) {
+            $goods = Db::name('wanlshop_goods')
+                ->where($goodsConditions)
+                ->order('id', 'desc')
+                ->find();
+        }
+
+        $voucherCityName = $voucherCityCode ? Db::name('area')->where('code', $voucherCityCode)->value('name') : null;
+        $goodsCityCode = $goods ? ($goods['region_city_code'] ?? null) : null;
+        $goodsCityName = $goods ? ($goods['region_city_name'] ?? null) : null;
+        if (!$goodsCityName && $goodsCityCode) {
+            $goodsCityName = Db::name('area')->where('code', $goodsCityCode)->value('name');
+        }
+        $cityValid = $voucherCityCode ? ($goodsCityCode === $voucherCityCode) : true;
+
+        $statusTextMap = [
+            'normal' => '在售',
+            'hidden' => '已下架',
+            'offline' => '已下架',
+            'violation' => '违规下架'
+        ];
+
+        $statusValid = $goods ? (($goods['status'] ?? '') === 'normal') : false;
+        $goodsStatus = $goods['status'] ?? null;
+        $goodsStatusText = $goodsStatus ? ($statusTextMap[$goodsStatus] ?? $goodsStatus) : '未找到商品';
+
+        // Step 2: 查找该商品的对应规格 SKU
+        $sku = null;
+        if ($goods) {
+            $sku = Db::name('wanlshop_goods_sku')
+                ->where('goods_id', $goods['id'])
+                ->where('difference', $skuDifference)
+                ->where('state', '0')  // state=0 表示使用中
+                ->where('status', 'normal')
+                ->find();
+        }
+
+        // Step 3: 检查价格条件（供货价 <= 券面价 * 80%）
+        $skuPrice = $sku ? round((float)$sku['price'], 2) : null;
+        $faceValue = round((float)$faceValue, 2);
+        $priceThreshold = round($faceValue * 0.8, 2);
+        $priceValid = $sku ? ($skuPrice <= $priceThreshold) : false;
+
+        // 整理返回的商家商品信息
+        if ($goods) {
+            $result['shop_goods_info'] = [
+                'goods_id' => $goods['id'],
+                'goods_title' => $goods['title'],
+                'sku_id' => $sku['id'] ?? null,
+                'sku_price' => $skuPrice,
+                'sku_difference' => $skuDifference,
+                'price_threshold' => $priceThreshold,
+                'price_valid' => $priceValid,
+                'goods_status' => $goodsStatus,
+                'goods_status_text' => $goodsStatusText,
+                'city_code' => $goodsCityCode,
+                'city_name' => $goodsCityName,
+                'voucher_city_code' => $voucherCityCode,
+                'voucher_city_name' => $voucherCityName,
+                'city_valid' => $cityValid,
+                'status_valid' => $statusValid
+            ];
+        }
+
+        // 校验结果与错误提示
+        if (!$goods) {
+            $categoryName = Db::name('wanlshop_category')->where('id', $categoryId)->value('name');
+            $cityLabel = $voucherCityName ? "【{$voucherCityName}】" : '';
+            $result['error_message'] = sprintf(
+                '未找到%s分类%s的商家商品，无法核销此券',
+                $categoryName ? "【{$categoryName}】" : '指定',
+                $cityLabel ? "{$cityLabel}地区" : ''
+            );
+            return $result;
+        }
+
+        if ($voucherCityCode && !$cityValid) {
+            $result['error_message'] = sprintf(
+                '城市校验未通过：券适用【%s】，但商家商品城市为【%s】',
+                $voucherCityName ?: $voucherCityCode,
+                $goodsCityName ?: '未知城市'
+            );
+            return $result;
+        }
+
+        if (!$statusValid) {
+            $result['error_message'] = sprintf(
+                '商品状态异常：当前为【%s】，请先上架后再核销',
+                $goodsStatusText
+            );
+            return $result;
+        }
+
+        if (!$sku) {
+            $result['error_message'] = sprintf(
+                '规格校验未通过：商品【%s】没有上架【%s】规格，无法核销',
+                $goods['title'],
+                $skuDifference
+            );
+            return $result;
+        }
+
+        if (!$priceValid) {
+            $result['error_message'] = sprintf(
+                '价格校验未通过：供货价（¥%.2f）超过券面价80%%（¥%.2f），请调整价格后再试',
+                $skuPrice,
+                $priceThreshold
+            );
+            return $result;
+        }
+
+        // 全部校验通过
+        $result['can_verify'] = true;
+        $result['shop_goods_info'] = $result['shop_goods_info'] ?: [];
+        $result['shop_goods_info']['price_valid'] = true;
+
+        return $result;
     }
 
     /**
