@@ -52,6 +52,10 @@ Content-Type: application/json
 
 ### ========================================
 ### 8. 获取商品类目树形结构 - 指定类型
+### 过滤逻辑：分类必须同时满足以下条件才显示：
+###   1. shop_id=1 的店铺有该分类的上架商品 (grounding=1, status=normal)
+###   2. 同城市(delivery_city_code相同)且shop_id≠1的店铺也有该分类的上架商品
+### 如果没有满足条件的分类，返回空数组
 ### ========================================
 GET {{baseUrl}}{{apiPrefix}}/tree?type=goods
 Content-Type: application/json
