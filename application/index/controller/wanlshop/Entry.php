@@ -32,6 +32,43 @@ class Entry extends Frontend
     {
         if ($this->request->isPost()) {
             $data = $this->request->post();
+
+            // 【新增】检查统一信用代码是否已被使用
+            $number = trim($data['number'] ?? '');
+            if (!empty($number)) {
+                // 查询是否有其他用户使用过该统一信用代码（包括软删除的记录）
+                $existingAuth = Db::name('wanlshop_auth')
+                    ->where('number', $number)
+                    ->where('user_id', '<>', $this->auth->id)
+                    ->field('id, user_id, deletetime')
+                    ->find();
+
+                if ($existingAuth) {
+                    // 检查该用户是否有被软删除的店铺
+                    $existingShop = Db::name('wanlshop_shop')
+                        ->where('user_id', $existingAuth['user_id'])
+                        ->field('id, deletetime')
+                        ->find();
+
+                    if ($existingShop && $existingShop['deletetime']) {
+                        // 店铺被软删除，说明被平台管控
+                        $this->error('您之前被平台管控，请联系客服处理');
+                    } else {
+                        // 正常情况，统一信用代码已被使用
+                        $this->error('该统一信用代码已被注册，不允许重复注册');
+                    }
+                }
+
+                // 【补充】检查当前用户自己是否有被软删除的店铺（恢复注册场景）
+                $myShop = Db::name('wanlshop_shop')
+                    ->where('user_id', $this->auth->id)
+                    ->field('id, deletetime')
+                    ->find();
+                if ($myShop && $myShop['deletetime']) {
+                    $this->error('您之前被平台管控，请联系客服处理');
+                }
+            }
+
 			$data['verify'] = '1';
 			$data['user_id'] = $this->auth->id;
 			$result = $this->entry ? $this->entry->allowField(true)->save($data) : $this->model->allowField(true)->save($data);
