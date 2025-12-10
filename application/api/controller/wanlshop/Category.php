@@ -160,7 +160,7 @@ class Category extends Api
         // 1) shop_id=1 有上架商品的分类
         $goodsModel = model('app\api\model\wanlshop\Goods');
         $shopCategoryIds = $goodsModel
-            ->where(['shop_id' => $shopId, 'grounding' => 1, 'status' => 'normal'])
+            ->where(['shop_id' => $shopId, 'status' => 'normal'])
             ->column('category_id');
 
         // 2) 同城其他店铺有上架商品的分类
@@ -168,7 +168,6 @@ class Category extends Api
             ->alias('g')
             ->join('wanlshop_shop s', 'g.shop_id = s.id')
             ->where('g.shop_id', '<>', $shopId)
-            ->where('g.grounding', 1)
             ->where('g.status', 'normal')
             ->where('s.delivery_city_code', $cityCode)
             ->where('s.status', 'normal')
