@@ -4,6 +4,7 @@ namespace app\index\controller\wanlshop;
 
 use app\common\controller\Frontend;
 use fast\Http;
+use think\Db;
 /**
  * 审核
  * @internal
@@ -13,7 +14,7 @@ class Entry extends Frontend
     protected $noNeedLogin = '';
     protected $noNeedRight = '*';
     protected $layout = 'default';
-    
+
     public function _initialize()
     {
         parent::_initialize();
@@ -25,7 +26,7 @@ class Entry extends Frontend
 		// 获取用户手机号码
         $this->view->assign("mobile", $this->auth->mobile);
     }
-    
+
     // 提交资质
     public function index()
     {
@@ -47,7 +48,7 @@ class Entry extends Frontend
 		$this->view->assign('title', '商家入驻 - 步骤2 提交资质');
 		return $this->view->fetch();
     }
-    
+
     // 提交店铺信息
     public function stepthree()
     {
@@ -55,10 +56,32 @@ class Entry extends Frontend
             $data = $this->request->post();
             $config = get_addon_config('wanlshop');
             $verify = $config['config']['store_audit'] == 'N' ? 3:2;
-            // 更新提交信息
+
+            // 【新增】验证并处理邀请码
+            $inviterId = null;
+            $inviteCode = strtoupper(trim($data['invite_code'] ?? ''));
+            if (!empty($inviteCode)) {
+                // 查询邀请码对应的用户
+                $inviter = Db::name('user')
+                    ->where('invite_code', $inviteCode)
+                    ->field('id')
+                    ->find();
+                if (!$inviter) {
+                    $this->error('邀请码无效');
+                }
+                // 不能绑定自己
+                if ($inviter['id'] == $this->auth->id) {
+                    $this->error('不能使用自己的邀请码');
+                }
+                $inviterId = $inviter['id'];
+            }
+
+            // 更新提交信息（包含邀请码暂存）
             $data['user_id'] = $this->auth->id;
             $data['verify'] = $verify;
+            $data['invite_code'] = $inviteCode; // 暂存邀请码到 auth 表
 			$this->entry ? $this->entry->allowField(true)->save($data) : $this->model->allowField(true)->save($data);
+
 			// 自动审核
 			if($config['config']['store_audit'] == 'N'){
 			    $row = model('app\index\model\wanlshop\Auth')->where(['user_id' => $this->auth->id])->find();
@@ -74,6 +97,11 @@ class Entry extends Frontend
 				$shop->delivery_city_code = $row['delivery_city_code'];
 				$shop->delivery_city_name = $row['delivery_city_name'];
 				$shop->verify = $verify;
+				// 【新增】绑定邀请人
+				if ($inviterId) {
+				    $shop->inviter_id = $inviterId;
+				    $shop->invite_bind_time = time();
+				}
 				$shop->save();
 			}
 			$this->success();
@@ -82,7 +110,7 @@ class Entry extends Frontend
 		$this->view->assign('title', '商家入驻 - 步骤3 提交店铺信息');
 		return $this->view->fetch();
     }
-    
+
     // 提交审核
     public function stepfour()
     {

@@ -1,0 +1,68 @@
+<form id="transfer-form" class="form-horizontal" role="form" data-toggle="validator" method="POST" action="">
+
+    <div class="form-group">
+        <label class="control-label col-xs-12 col-sm-3">邀请店铺：</label>
+        <div class="col-xs-12 col-sm-8">
+            <p class="form-control-static">{$row.invite_shop_name}</p>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="control-label col-xs-12 col-sm-3">返利类型：</label>
+        <div class="col-xs-12 col-sm-8">
+            <p class="form-control-static">
+                <span class="label label-success">店铺邀请返利</span>
+            </p>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="control-label col-xs-12 col-sm-3">返利金额：</label>
+        <div class="col-xs-12 col-sm-8">
+            <p class="form-control-static">
+                <strong style="color:#f00;font-size:16px;">{$rebateAmount}</strong> 元
+            </p>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="control-label col-xs-12 col-sm-3">返利比例：</label>
+        <div class="col-xs-12 col-sm-8">
+            <p class="form-control-static">{$row.bonus_ratio}%</p>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="control-label col-xs-12 col-sm-3">收款人：</label>
+        <div class="col-xs-12 col-sm-8">
+            {if condition="!empty($receiver)"}
+            <p class="form-control-static">
+                <span class="label label-success">{$receiver.nickname}</span>
+                <small class="text-muted">（{:substr($receiver['openid'], 0, 4)}****{:substr($receiver['openid'], -4)}）</small>
+            </p>
+            {else/}
+            <p class="form-control-static text-danger">
+                <i class="fa fa-exclamation-triangle"></i> 用户未绑定小程序，无法打款
+            </p>
+            {/if}
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="control-label col-xs-12 col-sm-3">创建时间：</label>
+        <div class="col-xs-12 col-sm-8">
+            <p class="form-control-static">{:date('Y-m-d H:i:s', $row['createtime'])}</p>
+        </div>
+    </div>
+
+    <div class="form-group layer-footer">
+        <label class="control-label col-xs-12 col-sm-3"></label>
+        <div class="col-xs-12 col-sm-8">
+            {if condition="!empty($receiver)"}
+            <button type="submit" class="btn btn-primary btn-embossed">确认打款</button>
+            {else/}
+            <button type="button" class="btn btn-default btn-embossed" disabled>确认打款</button>
+            {/if}
+        </div>
+    </div>
+</form>

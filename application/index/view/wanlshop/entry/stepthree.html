@@ -138,6 +138,15 @@
 							</div>
 						</div>
 						<div class="form-group">
+							<label class="control-label col-xs-12 col-sm-2">邀请码:</label>
+							<div class="col-xs-12 col-sm-8">
+								<input type="text" class="form-control" name="invite_code"
+									   placeholder="选填，填写邀请人的邀请码"
+									   value="{$entry.invite_code|default=''}" maxlength="20">
+								<p class="help-block text-muted">如有推荐人，请填写其邀请码（可选）</p>
+							</div>
+						</div>
+						<div class="form-group">
 							<label class="control-label col-xs-12 col-sm-2">{:__('店铺介绍')}:</label>
 							<div class="col-xs-12 col-sm-8">
 								{:Form::editor('content', $entry.content, ['data-rule'=>'required'])}

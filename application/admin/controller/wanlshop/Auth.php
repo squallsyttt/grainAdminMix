@@ -88,6 +88,19 @@ class Auth extends Backend
 					$shop->delivery_city_code = $row['delivery_city_code'];
 					$shop->delivery_city_name = $row['delivery_city_name'];
 					$shop->verify = $row['verify'];
+
+					// 【新增】同步邀请人信息到店铺表
+					if (!empty($row['invite_code'])) {
+					    $inviter = Db::name('user')
+					        ->where('invite_code', $row['invite_code'])
+					        ->field('id')
+					        ->find();
+					    if ($inviter && $inviter['id'] != $row['user_id']) {
+					        $shop->inviter_id = $inviter['id'];
+					        $shop->invite_bind_time = time();
+					    }
+					}
+
 					// 新增店铺配置
 					if($shop->save()){
 						$config = model('app\index\model\wanlshop\ShopConfig');

@@ -517,6 +517,20 @@ class MiniProgramAuth extends Api
                 }
             }
 
+            // 【新增】店铺邀请统计
+            $shopInvitedTotal = (int)Db::name('wanlshop_shop')
+                ->where('inviter_id', $userId)
+                ->count();
+
+            $shopRebatedCount = (int)Db::name('shop_invite_rebate_log')
+                ->where('inviter_id', $userId)
+                ->count();
+
+            $shopPendingCount = (int)Db::name('shop_invite_pending')
+                ->where('inviter_id', $userId)
+                ->where('state', 0)
+                ->count();
+
             $this->success('ok', [
                 'inviteCode' => $user['invite_code'],
                 'level' => $level,
@@ -530,7 +544,11 @@ class MiniProgramAuth extends Api
                 'nextRebateRate' => $nextRebateRate,
                 'upgradeRule' => $upgradeRule,
                 'recentRebates' => [],
-                'boundInviter' => $boundInviter
+                'boundInviter' => $boundInviter,
+                // 【新增】店铺邀请统计
+                'shopInvitedTotal' => $shopInvitedTotal,
+                'shopRebatedCount' => $shopRebatedCount,
+                'shopPendingCount' => $shopPendingCount
             ]);
         } catch (Exception $e) {
             Log::error('获取邀请信息失败：' . $e->getMessage());
@@ -730,5 +748,69 @@ class MiniProgramAuth extends Api
         Db::name('user')->where('id', $this->auth->id)->update(['bind_shop' => null]);
 
         $this->success('解绑成功');
+    }
+
+    /**
+     * 获取邀请的店铺列表
+     *
+     * @ApiSummary  (获取当前用户邀请的店铺列表及返利状态)
+     * @ApiMethod   (GET)
+     * @param int $page 页码
+     * @param int $limit 每页数量
+     */
+    public function invitedShops()
+    {
+        $userId = $this->auth->id;
+        $page = (int)$this->request->get('page', 1);
+        $limit = (int)$this->request->get('limit', 10);
+        $page = $page > 0 ? $page : 1;
+        $limit = $limit > 0 ? $limit : 10;
+
+        try {
+            // 查询邀请的店铺列表
+            $list = Db::name('wanlshop_shop')
+                ->alias('s')
+                ->join('shop_invite_rebate_log r', 'r.shop_id = s.id', 'LEFT')
+                ->join('shop_invite_pending p', 'p.shop_id = s.id AND p.state = 0', 'LEFT')
+                ->where('s.inviter_id', $userId)
+                ->field('s.id, s.shopname, s.avatar, s.city, s.createtime as bind_time,
+                         r.rebate_amount, r.bonus_ratio, r.createtime as rebate_time,
+                         CASE WHEN r.id IS NOT NULL THEN 2
+                              WHEN p.id IS NOT NULL THEN 1
+                              ELSE 0 END as rebate_state')
+                ->order('s.createtime DESC')
+                ->page($page, $limit)
+                ->select();
+
+            $total = Db::name('wanlshop_shop')
+                ->where('inviter_id', $userId)
+                ->count();
+
+            // 格式化返回数据
+            $formattedList = [];
+            foreach ($list as $shop) {
+                $formattedList[] = [
+                    'id' => (int)$shop['id'],
+                    'shopname' => $shop['shopname'],
+                    'avatar' => $shop['avatar'],
+                    'city' => $shop['city'],
+                    'bindTime' => $shop['bind_time'] ? (int)$shop['bind_time'] : null,
+                    'rebateAmount' => $shop['rebate_amount'] ? (float)$shop['rebate_amount'] : null,
+                    'bonusRatio' => $shop['bonus_ratio'] ? (float)$shop['bonus_ratio'] : null,
+                    'rebateTime' => $shop['rebate_time'] ? (int)$shop['rebate_time'] : null,
+                    'rebateState' => (int)$shop['rebate_state'] // 0=未触发 1=待处理 2=已返利
+                ];
+            }
+
+            $this->success('ok', [
+                'list' => $formattedList,
+                'total' => (int)$total,
+                'page' => $page,
+                'limit' => $limit
+            ]);
+        } catch (Exception $e) {
+            Log::error('获取邀请店铺列表失败：' . $e->getMessage());
+            $this->error($e->getMessage());
+        }
     }
 }

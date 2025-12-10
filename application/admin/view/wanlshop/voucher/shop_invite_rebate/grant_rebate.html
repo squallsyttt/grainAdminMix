@@ -1,0 +1,119 @@
+<form id="grant-form" class="form-horizontal" role="form" data-toggle="validator" method="POST" action="">
+
+    <div class="panel panel-info">
+        <div class="panel-heading">
+            <h3 class="panel-title">店铺信息</h3>
+        </div>
+        <div class="panel-body">
+            <div class="form-group">
+                <label class="control-label col-xs-12 col-sm-3">店铺名称：</label>
+                <div class="col-xs-12 col-sm-8">
+                    <p class="form-control-static">{$shop.shopname}</p>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="control-label col-xs-12 col-sm-3">店铺ID：</label>
+                <div class="col-xs-12 col-sm-8">
+                    <p class="form-control-static">{$shop.id}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel panel-success">
+        <div class="panel-heading">
+            <h3 class="panel-title">邀请人信息</h3>
+        </div>
+        <div class="panel-body">
+            <div class="form-group">
+                <label class="control-label col-xs-12 col-sm-3">邀请人昵称：</label>
+                <div class="col-xs-12 col-sm-8">
+                    <p class="form-control-static">{$inviter.nickname}</p>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="control-label col-xs-12 col-sm-3">邀请人手机：</label>
+                <div class="col-xs-12 col-sm-8">
+                    <p class="form-control-static">{$inviter.mobile}</p>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="control-label col-xs-12 col-sm-3">当前等级：</label>
+                <div class="col-xs-12 col-sm-8">
+                    <p class="form-control-static">
+                        <span class="label label-{if condition="$currentLevel == 0"}default{elseif condition="$currentLevel == 1"}info{else}success{/if}">
+                            Lv{$currentLevel}
+                        </span>
+                        {if condition="$willUpgrade"}
+                        <i class="fa fa-arrow-right text-warning"></i>
+                        <span class="label label-{if condition="$afterLevel == 1"}info{else}success{/if}">
+                            Lv{$afterLevel}
+                        </span>
+                        <span class="text-success">（将升级）</span>
+                        {/if}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel panel-warning">
+        <div class="panel-heading">
+            <h3 class="panel-title">返利计算</h3>
+        </div>
+        <div class="panel-body">
+            <div class="form-group">
+                <label class="control-label col-xs-12 col-sm-3">供货价（基数）：</label>
+                <div class="col-xs-12 col-sm-8">
+                    <p class="form-control-static">¥{$pending.supply_price}</p>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="control-label col-xs-12 col-sm-3">返利比例：</label>
+                <div class="col-xs-12 col-sm-8">
+                    <p class="form-control-static">
+                        <strong class="text-primary">{$afterRatio}%</strong>
+                        {if condition="$willUpgrade"}
+                        <small class="text-muted">（升级后比例）</small>
+                        {/if}
+                    </p>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="control-label col-xs-12 col-sm-3">返利金额：</label>
+                <div class="col-xs-12 col-sm-8">
+                    <p class="form-control-static">
+                        <strong style="color:#f00;font-size:20px;">¥{$estimatedAmount}</strong>
+                    </p>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="control-label col-xs-12 col-sm-3">核销时间：</label>
+                <div class="col-xs-12 col-sm-8">
+                    <p class="form-control-static">{:date('Y-m-d H:i:s', $pending['verify_time'])}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="alert alert-info">
+        <i class="fa fa-info-circle"></i> 
+        点击「确认发放」后，系统将：
+        <ol style="margin-top:10px;">
+            {if condition="$willUpgrade"}
+            <li>将邀请人等级从 Lv{$currentLevel} 升级到 Lv{$afterLevel}</li>
+            {/if}
+            <li>按 {$afterRatio}% 比例计算返利金额 ¥{$estimatedAmount}</li>
+            <li>创建返利记录，等待后续打款</li>
+        </ol>
+    </div>
+
+    <div class="form-group layer-footer">
+        <label class="control-label col-xs-12 col-sm-3"></label>
+        <div class="col-xs-12 col-sm-8">
+            <button type="submit" class="btn btn-success btn-lg btn-embossed">
+                <i class="fa fa-check"></i> 确认发放
+            </button>
+        </div>
+    </div>
+</form>

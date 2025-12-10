@@ -132,6 +132,7 @@ class VoucherRebate extends Model
         return [
             'normal' => '核销返利',
             'custody' => '代管理返利',
+            'shop_invite' => '店铺邀请返利',
         ];
     }
 
@@ -200,5 +201,14 @@ class VoucherRebate extends Model
     public function verification()
     {
         return $this->belongsTo('VoucherVerification', 'verification_id', 'id');
+    }
+
+    /**
+     * 关联：邀请的店铺（店铺邀请返利类型专用）
+     * @return \think\model\relation\BelongsTo
+     */
+    public function inviteShop()
+    {
+        return $this->belongsTo('Shop', 'invite_shop_id', 'id');
     }
 }
