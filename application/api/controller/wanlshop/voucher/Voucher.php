@@ -328,20 +328,65 @@ class Voucher extends Api
             return false;
         }
 
-        // 3. 必须在免费期内
-        $paymentTime = 0;
-        if (!empty($data['voucher_order']) && is_array($data['voucher_order'])) {
-            $paymentTime = isset($data['voucher_order']['paymenttime']) ? (int)$data['voucher_order']['paymenttime'] : 0;
-        }
-
-        if ($paymentTime <= 0) {
+        // 3. 券必须在有效期内
+        $validEnd = isset($data['valid_end']) ? (int)$data['valid_end'] : 0;
+        if ($validEnd <= time()) {
             return false;
         }
 
-        $freeDays = isset($data['rule_free_days']) ? (int)$data['rule_free_days'] : 0;
-        $now = time();
-        $daysFromPayment = floor(($now - $paymentTime) / 86400);
+        // 4. 必须有关联的商品信息
+        if (empty($data['goods_id'])) {
+            return false;
+        }
 
-        return $daysFromPayment <= $freeDays;
+        // 5. 获取券对应商品的城市编码
+        $voucherGoods = $data['goods'] ?? null;
+        if (!$voucherGoods || !isset($voucherGoods['region_city_code'])) {
+            return false;
+        }
+
+        $regionCityCode = $voucherGoods['region_city_code'];
+        $categoryId = isset($data['category_id']) ? (int)$data['category_id'] : 0;
+        $goodsSkuId = isset($data['goods_sku_id']) ? (int)$data['goods_sku_id'] : 0;
+        $voucherSupplyPrice = isset($data['supply_price']) ? (float)$data['supply_price'] : 0;
+
+        // 必须有有效的SKU ID
+        if (!$goodsSkuId) {
+            return false;
+        }
+
+        // 6. 查询 shopid=1 的店铺中，该城市、该分类、该 SKU 对应的商品
+        // 使用原生 SQL 进行联合查询：找到该SKU对应的商品，再验证该商品在shopid=1是否存在
+        $shopOneGoods = Db::name('wanlshop_goods')
+            ->where([
+                'shop_id' => 1,
+                'category_id' => $categoryId,
+                'region_city_code' => $regionCityCode ?: '',
+                'status' => 'normal'
+            ])
+            ->field('id')
+            ->find();
+
+        if (!$shopOneGoods) {
+            return false;
+        }
+
+        // 7. 获取 shopid=1 店铺中对应 SKU 的价格
+        $shopOneSku = Db::name('wanlshop_goods_sku')
+            ->where([
+                'goods_id' => $shopOneGoods['id'],
+                'state' => 0  // 正常状态
+            ])
+            ->field('id,price')
+            ->find();
+
+        if (!$shopOneSku || !isset($shopOneSku['price'])) {
+            return false;
+        }
+
+        $shopOneSkuPrice = (float)$shopOneSku['price'];
+
+        // 8. 关键条件：shopid=1 的 SKU 价格必须高于券购买时的供货价
+        return $shopOneSkuPrice > $voucherSupplyPrice;
     }
 }
