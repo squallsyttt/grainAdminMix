@@ -348,7 +348,8 @@ class Voucher extends Api
         $regionCityCode = $voucherGoods['region_city_code'];
         $categoryId = isset($data['category_id']) ? (int)$data['category_id'] : 0;
         $goodsSkuId = isset($data['goods_sku_id']) ? (int)$data['goods_sku_id'] : 0;
-        $voucherSupplyPrice = isset($data['supply_price']) ? (float)$data['supply_price'] : 0;
+        // 使用 face_value（券面值/用户实际支付价格）来判断，而非 supply_price（核销时才产生）
+        $voucherFaceValue = isset($data['face_value']) ? (float)$data['face_value'] : 0;
 
         // 必须有有效的SKU ID
         if (!$goodsSkuId) {
@@ -386,7 +387,8 @@ class Voucher extends Api
 
         $shopOneSkuPrice = (float)$shopOneSku['price'];
 
-        // 8. 关键条件：shopid=1 的 SKU 价格必须高于券购买时的供货价
-        return $shopOneSkuPrice > $voucherSupplyPrice;
+        // 8. 关键条件：shopid=1 的 SKU 价格必须高于券的面值（用户实际支付价格）
+        // 这样才有利润空间进行代管理
+        return $shopOneSkuPrice > $voucherFaceValue;
     }
 }
