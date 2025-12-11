@@ -100,7 +100,8 @@
                     城市 <span class="label label-default">{$inventory.region_city_name}</span> |
                     品类ID <span class="label label-default">{$inventory.category_id}</span> |
                     待使用券总数 <span class="label label-success">{$inventory.total.voucher_count}</span> 张 |
-                    总重量 <span class="label label-success">{$inventory.total.total_weight}</span> KG
+                    原始总重量 <span class="label label-success">{$inventory.total.original_weight|default='-'}</span> KG |
+                    实际可用总重量 <span class="label label-primary">{$inventory.total.actual_weight|default='-'}</span> KG
                 </div>
 
                 <div class="row">
@@ -117,13 +118,17 @@
                                 <p class="text-muted">占平台同维度总重量</p>
                                 <hr>
                                 <div class="row">
-                                    <div class="col-xs-6">
+                                    <div class="col-xs-4">
                                         <div style="font-size: 24px; font-weight: bold;">{$inventory.current_sku.voucher_count}</div>
                                         <small class="text-muted">券数量</small>
                                     </div>
-                                    <div class="col-xs-6">
+                                    <div class="col-xs-4">
                                         <div style="font-size: 24px; font-weight: bold;">{$inventory.current_sku.total_weight}</div>
-                                        <small class="text-muted">总重量(KG)</small>
+                                        <small class="text-muted">原始重量(KG)</small>
+                                    </div>
+                                    <div class="col-xs-4">
+                                        <div style="font-size: 24px; font-weight: bold;">{$inventory.current_sku.actual_weight|default='-'}</div>
+                                        <small class="text-muted">实际可用(KG)</small>
                                     </div>
                                 </div>
                             </div>
@@ -249,6 +254,61 @@
                         </tfoot>
                     </table>
                 </div>
+
+                <!-- 券明细列表 -->
+                {if isset($inventory.voucher_list)}
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h5 class="panel-title"><i class="fa fa-list"></i> 券明细列表</h5>
+                    </div>
+                    <table class="table table-bordered table-striped table-hover">
+                        <thead>
+                            <tr class="active">
+                                <th width="12%">券号</th>
+                                <th width="12%">SKU规格</th>
+                                <th width="10%">原始重量(KG)</th>
+                                <th width="12%">实际可用重量(KG)</th>
+                                <th width="10%">损耗阶段</th>
+                                <th width="10%">距付款天数</th>
+                                <th width="12%">用户</th>
+                                <th width="10%">面值</th>
+                                <th width="12%">过期时间</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {foreach $inventory.voucher_list as $voucher}
+                            <tr {if isset($voucher.voucher_id) && $voucher.voucher_id == $row.id}class="info"{/if}>
+                                <td>{$voucher.voucher_no|default='-'}</td>
+                                <td>{$voucher.sku_difference|default='-'}</td>
+                                <td>{$voucher.sku_weight|default='-'}</td>
+                                <td>{$voucher.actual_weight|default='-'}</td>
+                                <td>
+                                    {switch name="$voucher.stage"}
+                                        {case value="free"}<span class="label label-success">免费期</span>{/case}
+                                        {case value="welfare"}<span class="label label-info">福利损耗期</span>{/case}
+                                        {case value="goods"}<span class="label label-warning">货物损耗期</span>{/case}
+                                        {case value="expired"}<span class="label label-danger">已过期</span>{/case}
+                                        {default}<span class="label label-default">未知</span>{/default}
+                                    {/switch}
+                                </td>
+                                <td>{$voucher.days_from_payment|default='-'}</td>
+                                <td>{$voucher.user_nickname|default='-'}</td>
+                                <td>¥{$voucher.face_value|default='0.00'}</td>
+                                <td>
+                                    {:isset($voucher['valid_end']) && $voucher['valid_end'] ? date('Y-m-d H:i:s', $voucher['valid_end']) : '-'}
+                                </td>
+                            </tr>
+                            {/foreach}
+
+                            {if empty($inventory.voucher_list)}
+                            <tr>
+                                <td colspan="9" class="text-center text-muted">暂无券明细数据</td>
+                            </tr>
+                            {/if}
+                        </tbody>
+                    </table>
+                </div>
+                {/if}
                 {elseif isset($inventory.error)}
                 <div class="alert alert-warning">
                     <i class="fa fa-warning"></i> 库存分析数据获取失败：{$inventory.error}

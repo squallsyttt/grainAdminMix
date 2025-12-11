@@ -135,14 +135,19 @@ class Custody extends Backend
         $currentSkuDifference = $voucher->sku_difference;
         $currentSkuWeight = (float)$voucher->sku_weight;
 
+        // 基础筛选：同城市、同品类、待使用、状态正常
+        $baseWhere = function ($query) use ($categoryId, $regionCityCode) {
+            $query->where('v.state', 1)
+                ->where('v.status', 'normal')
+                ->where('v.category_id', $categoryId)
+                ->where('g.region_city_code', $regionCityCode);
+        };
+
         // 查询同城市、同品类的所有待使用券按SKU分组统计
         $skuStats = Db::name('wanlshop_voucher')
             ->alias('v')
             ->join('wanlshop_goods g', 'v.goods_id = g.id', 'LEFT')
-            ->where('v.state', 1)  // 待使用
-            ->where('v.status', 'normal')
-            ->where('v.category_id', $categoryId)
-            ->where('g.region_city_code', $regionCityCode)
+            ->where($baseWhere)
             ->group('v.sku_difference')
             ->field([
                 'v.sku_difference',
@@ -191,6 +196,98 @@ class Custody extends Backend
             }
         }
 
+        // 获取券明细（不按 SKU 分组）
+        $now = time();
+        $voucherRows = Db::name('wanlshop_voucher')
+            ->alias('v')
+            ->join('wanlshop_goods g', 'v.goods_id = g.id', 'LEFT')
+            ->join('wanlshop_voucher_order o', 'v.order_id = o.id', 'LEFT')
+            ->join('wanlshop_voucher_rule r', 'v.rule_id = r.id', 'LEFT')
+            ->join('user u', 'v.user_id = u.id', 'LEFT')
+            ->where($baseWhere)
+            ->field([
+                'v.id as voucher_id',
+                'v.voucher_no',
+                'v.sku_difference',
+                'v.sku_weight',
+                'v.face_value',
+                'v.valid_end',
+                'v.rule_id',
+                'o.paymenttime',
+                'r.free_days',
+                'r.welfare_days',
+                'r.goods_days',
+                'u.nickname as user_nickname'
+            ])
+            ->select();
+
+        $voucherList = [];
+        $totalOriginalWeight = 0;
+        $totalActualWeight = 0;
+
+        foreach ($voucherRows as $row) {
+            $originalWeight = round((float)($row['sku_weight'] ?? 0), 2);
+            $paymentTime = isset($row['paymenttime']) ? (int)$row['paymenttime'] : 0;
+            $freeDays = isset($row['free_days']) ? (int)$row['free_days'] : 0;
+            $welfareDays = isset($row['welfare_days']) ? (int)$row['welfare_days'] : 0;
+            $goodsDays = isset($row['goods_days']) ? (int)$row['goods_days'] : 0;
+
+            $daysFromPayment = null;
+            $stage = 'unknown';
+            $actualWeight = 0;
+
+            if ($paymentTime > 0) {
+                $daysFromPayment = (int)floor(($now - $paymentTime) / 86400);
+                if ($daysFromPayment < 0) {
+                    $daysFromPayment = 0;
+                }
+
+                // 阶段与损耗计算（参考 VoucherRebateService::calculateRebate）
+                if ($daysFromPayment <= $freeDays) {
+                    $stage = 'free';
+                    $actualWeight = $originalWeight;
+                } elseif ($daysFromPayment <= $freeDays + $welfareDays) {
+                    $stage = 'welfare';
+                    // 福利期只损耗福利，货物重量不变
+                    $actualWeight = $originalWeight;
+                } elseif ($daysFromPayment <= $freeDays + $welfareDays + $goodsDays) {
+                    $stage = 'goods';
+                    $elapsed = $daysFromPayment - $freeDays - $welfareDays;
+                    $lossPerDay = $goodsDays > 0 ? $originalWeight / $goodsDays : 0;
+                    $actualWeight = $originalWeight - ($lossPerDay * $elapsed);
+                } else {
+                    $stage = 'expired';
+                    $actualWeight = 0;
+                }
+            }
+
+            $actualWeight = round(max(0, $actualWeight), 2);
+
+            $voucherList[] = [
+                'voucher_id' => (int)$row['voucher_id'],
+                'voucher_no' => $row['voucher_no'],
+                'sku_difference' => $row['sku_difference'] ?: '未知规格',
+                'sku_weight' => $originalWeight,
+                'actual_weight' => $actualWeight,
+                'stage' => $stage,
+                'days_from_payment' => $daysFromPayment,
+                'valid_end' => isset($row['valid_end']) ? (int)$row['valid_end'] : null,
+                'user_nickname' => $row['user_nickname'] ?? '',
+                'face_value' => isset($row['face_value']) ? (float)$row['face_value'] : 0,
+            ];
+
+            $totalOriginalWeight += $originalWeight;
+            $totalActualWeight += $actualWeight;
+        }
+
+        // 计算当前SKU的实际可用重量（汇总该SKU下所有券的损耗后重量）
+        $currentSkuActualWeight = 0;
+        foreach ($voucherList as $v) {
+            if ($v['sku_difference'] == $currentSkuDifference) {
+                $currentSkuActualWeight += $v['actual_weight'];
+            }
+        }
+
         return [
             'region_city_code' => $regionCityCode,
             'region_city_name' => $regionCityName,
@@ -200,13 +297,22 @@ class Custody extends Backend
                 'sku_weight' => $currentSkuWeight,
                 'voucher_count' => $currentSkuStat ? $currentSkuStat['voucher_count'] : 0,
                 'total_weight' => $currentSkuStat ? $currentSkuStat['total_weight'] : 0,
+                'actual_weight' => round($currentSkuActualWeight, 2),
                 'weight_ratio' => $currentSkuStat ? $currentSkuStat['weight_ratio'] : 0,
                 'count_ratio' => $currentSkuStat ? $currentSkuStat['count_ratio'] : 0,
             ],
+            // 券明细列表（不分组）
+            'voucher_list' => $voucherList,
+            // 汇总
             'total' => [
-                'voucher_count' => $totalCount,
+                'voucher_count' => count($voucherList),
+                'original_weight' => round($totalOriginalWeight, 2),
+                'actual_weight' => round($totalActualWeight, 2),
+                // 兼容旧字段名
                 'total_weight' => $totalWeight,
             ],
+            // SKU 汇总（保留原有能力）
+            'sku_summary' => $skuList,
             'sku_list' => $skuList,
         ];
     }
