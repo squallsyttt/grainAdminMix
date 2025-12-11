@@ -72,23 +72,22 @@ class VoucherRebateService
             $actualBonusRatio = $userBonusRatio;
             $actualGoodsWeight = $originalWeight;
         } elseif ($daysFromPayment <= $freeDays + $welfareDays) {
-            // 福利损耗期：返利和货物线性递减
+            // 福利损耗期：返利线性递减，货物不变
             $stage = 'welfare';
             $welfareElapsedDays = $daysFromPayment - $freeDays;
             $ratioLossPerDay = $welfareDays > 0 ? $userBonusRatio / $welfareDays : 0;
             $actualBonusRatio = max(0, $userBonusRatio - ($ratioLossPerDay * $welfareElapsedDays));
 
-            $goodsLossPerDay = $welfareDays > 0 ? (($userBonusRatio / 100) * $originalWeight / $welfareDays) : 0;
-            $actualGoodsWeight = $originalWeight - ($goodsLossPerDay * $welfareElapsedDays);
+            // 货物重量不变（福利损耗期只损耗福利，不损耗货物）
+            $actualGoodsWeight = $originalWeight;
         } elseif ($daysFromPayment <= $freeDays + $welfareDays + $goodsDays) {
-            // 货物损耗期：返利为0，货物继续递减
+            // 货物损耗期：返利为0，货物从完整重量开始线性递减至0
             $stage = 'goods';
             $actualBonusRatio = 0;
 
-            $remainingWeight = $originalWeight * (1 - $userBonusRatio / 100);
             $goodsElapsedDays = $daysFromPayment - $freeDays - $welfareDays;
-            $goodsLossPerDay = $goodsDays > 0 ? $remainingWeight / $goodsDays : 0;
-            $actualGoodsWeight = $remainingWeight - ($goodsLossPerDay * $goodsElapsedDays);
+            $goodsLossPerDay = $goodsDays > 0 ? $originalWeight / $goodsDays : 0;
+            $actualGoodsWeight = $originalWeight - ($goodsLossPerDay * $goodsElapsedDays);
         } else {
             // 已过期：返利和货物均为0
             $stage = 'expired';
