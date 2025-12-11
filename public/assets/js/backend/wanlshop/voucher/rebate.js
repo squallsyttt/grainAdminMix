@@ -14,6 +14,19 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
         failed: {text: '打款失败', className: 'label-danger'}
     };
 
+    var rebateTypeMap = {
+        normal: {text: '核销返利', className: 'label-default'},
+        custody: {text: '代管理返利', className: 'label-primary'},
+        shop_invite: {text: '店铺邀请返利', className: 'label-info'}
+    };
+
+    var custodyRefundStatusMap = {
+        none: {text: '无退款', className: 'label-default'},
+        pending: {text: '退款中', className: 'label-info'},
+        success: {text: '退款成功', className: 'label-success'},
+        failed: {text: '退款失败', className: 'label-danger'}
+    };
+
     var Formatter = {
         money: function (value) {
             if (value === null || value === undefined || value === '') {
@@ -43,6 +56,31 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
                 html += ' <small class="text-muted">(' + row.days_until_transfer + '天后可打)</small>';
             }
             return html;
+        },
+        rebateType: function (value, row) {
+            var current = rebateTypeMap[value] || {text: '核销返利', className: 'label-default'};
+            return '<span class="label ' + current.className + '">' + current.text + '</span>';
+        },
+        custodyRefundStatus: function (value, row) {
+            // 只有代管理返利才显示退款状态
+            if (row.rebate_type !== 'custody') {
+                return '-';
+            }
+            var current = custodyRefundStatusMap[value] || {text: '无退款', className: 'label-default'};
+            return '<span class="label ' + current.className + '">' + current.text + '</span>';
+        },
+        // 代管理返利总金额（返利 + 退款）
+        totalAmount: function (value, row) {
+            if (row.rebate_type !== 'custody') {
+                return Formatter.money(row.rebate_amount);
+            }
+            var rebate = parseFloat(row.rebate_amount) || 0;
+            var refund = parseFloat(row.refund_amount) || 0;
+            var total = rebate + refund;
+            if (refund > 0) {
+                return '¥' + total.toFixed(2) + ' <small class="text-muted">(返利' + rebate.toFixed(2) + '+退款' + refund.toFixed(2) + ')</small>';
+            }
+            return '¥' + total.toFixed(2);
         }
     };
 
@@ -76,6 +114,13 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
                         {checkbox: true},
                         {field: 'id', title: 'ID'},
                         {field: 'voucher.voucher_no', title: '券号', operate: 'LIKE'},
+                        {
+                            field: 'rebate_type',
+                            title: '返利类型',
+                            operate: '=',
+                            searchList: {'normal': '核销返利', 'custody': '代管理返利', 'shop_invite': '店铺邀请返利'},
+                            formatter: Formatter.rebateType
+                        },
                         {field: 'goods_title', title: '商品标题', align: 'left', operate: 'LIKE'},
                         {field: 'user.nickname', title: '用户昵称', operate: 'LIKE', formatter: Table.api.formatter.search},
                         {field: 'user_id', title: '用户ID', operate: '='},
@@ -94,7 +139,24 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
                             field: 'rebate_amount',
                             title: '返利金额',
                             operate: 'BETWEEN',
-                            formatter: Formatter.money
+                            formatter: Formatter.totalAmount
+                        },
+                        {
+                            field: 'refund_amount',
+                            title: '等量退款',
+                            operate: 'BETWEEN',
+                            formatter: function (value, row) {
+                                if (row.rebate_type !== 'custody') {
+                                    return '-';
+                                }
+                                return Formatter.money(value);
+                            }
+                        },
+                        {
+                            field: 'custody_refund_status',
+                            title: '退款状态',
+                            searchList: {'none': '无退款', 'pending': '退款中', 'success': '退款成功', 'failed': '退款失败'},
+                            formatter: Formatter.custodyRefundStatus
                         },
                         {
                             field: 'payment_time',
@@ -166,6 +228,27 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
                     });
                 });
             });
+
+            // 重试代管理退款
+            $(document).on('click', '.btn-retry-refund', function () {
+                var rebateId = $(this).data('id');
+                layer.confirm('确认重试代管理退款？', {
+                    title: '重试退款',
+                    btn: ['确定', '取消']
+                }, function (index) {
+                    Fast.api.ajax({
+                        url: 'wanlshop/voucher.rebate/retryRefund',
+                        data: {rebate_id: rebateId}
+                    }, function () {
+                        layer.close(index);
+                        Toastr.success('已提交重试');
+                        table.bootstrapTable('refresh');
+                        return false;
+                    }, function () {
+                        layer.close(index);
+                    });
+                });
+            });
         },
         detail: function () {
         },
@@ -182,6 +265,8 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
                     var buttons = [];
                     var paymentStatus = row.payment_status;
                     var canTransfer = row.can_transfer;
+                    var rebateType = row.rebate_type;
+                    var custodyRefundStatus = row.custody_refund_status;
 
                     // 详情按钮
                     buttons.push('<a href="javascript:;" class="btn btn-xs btn-info btn-dialog" data-url="wanlshop/voucher.rebate/detail?ids=' + row.id + '" title="查看详情"><i class="fa fa-eye"></i></a>');
@@ -194,6 +279,11 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
                     // 打款失败：显示重试按钮
                     if (paymentStatus === 'failed') {
                         buttons.push('<a href="javascript:;" class="btn btn-xs btn-warning btn-retry" data-id="' + row.id + '" title="重试打款"><i class="fa fa-refresh"></i> 重试</a>');
+                    }
+
+                    // 代管理退款失败：显示重试退款按钮
+                    if (rebateType === 'custody' && custodyRefundStatus === 'failed') {
+                        buttons.push('<a href="javascript:;" class="btn btn-xs btn-danger btn-retry-refund" data-id="' + row.id + '" title="重试退款"><i class="fa fa-refresh"></i> 重试退款</a>');
                     }
 
                     return buttons.join(' ');

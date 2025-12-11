@@ -20,12 +20,13 @@ class VoucherRebateService
      * 计算返利（动态获取规则配置）
      *
      * @param Voucher $voucher 核销券
-     * @param int $verifyTime 核销时间戳
+     * @param int $verifyTime 核销时间戳（代管理时为审核通过时间）
      * @param float|null $shopSupplyPrice 店铺供货价（核销店铺商品价格）
+     * @param bool $calculateRefund 是否计算等量退款（代管理专用）
      * @return array
      * @throws Exception
      */
-    public function calculateRebate(Voucher $voucher, $verifyTime, $shopSupplyPrice = null)
+    public function calculateRebate(Voucher $voucher, $verifyTime, $shopSupplyPrice = null, $calculateRefund = false)
     {
         if (!$voucher || !$voucher->id) {
             throw new Exception('核销券不存在');
@@ -101,6 +102,17 @@ class VoucherRebateService
         $faceValue = round((float)$voucher->face_value, 2);
         $rebateAmount = round($faceValue * ($actualBonusRatio / 100), 2);
 
+        // 8. 计算等量退款（代管理专用）
+        $refundAmount = 0;
+        $unitPrice = 0;
+        if ($calculateRefund && $originalWeight > 0) {
+            // 计算货物单价（元/斤）= 供货价 / 原始货物重量
+            $supplyPrice = $shopSupplyPrice !== null ? $shopSupplyPrice : round((float)$voucher->supply_price, 2);
+            $unitPrice = round($supplyPrice / $originalWeight, 2);
+            // 等量退款金额 = 实际货物重量 × 单价
+            $refundAmount = round($actualGoodsWeight * $unitPrice, 2);
+        }
+
         return [
             'stage' => $stage,
             'days_from_payment' => $daysFromPayment,
@@ -109,6 +121,8 @@ class VoucherRebateService
             'original_goods_weight' => $originalWeight,
             'actual_goods_weight' => $actualGoodsWeight,
             'rebate_amount' => $rebateAmount,
+            'refund_amount' => $refundAmount,    // 等量退款金额
+            'unit_price' => $unitPrice,           // 货物单价
             'rule_id' => $rule->id,
             'free_days' => $freeDays,
             'welfare_days' => $welfareDays,
@@ -164,7 +178,7 @@ class VoucherRebateService
      *
      * @param Voucher $voucher 核销券
      * @param VoucherVerification $verification 核销记录
-     * @param int $verifyTime 核销时间戳
+     * @param int $verifyTime 核销时间戳（代管理时为审核通过时间）
      * @param int $shopId 核销店铺ID
      * @param array $shopGoodsInfo 核销店铺商品信息
      * @param string $rebateType 返利类型：normal=普通核销, custody=代管理
@@ -202,7 +216,9 @@ class VoucherRebateService
         }
         $shopSupplyPrice = round(isset($shopGoodsInfo['sku_price']) ? (float)$shopGoodsInfo['sku_price'] : 0, 2);
 
-        $result = $this->calculateRebate($voucher, $verifyTime, $shopSupplyPrice);
+        // 代管理返利需要计算等量退款
+        $calculateRefund = ($rebateType === 'custody');
+        $result = $this->calculateRebate($voucher, $verifyTime, $shopSupplyPrice, $calculateRefund);
 
         $rebate = new VoucherRebate();
         $rebate->voucher_id = $voucher->id;
@@ -219,6 +235,11 @@ class VoucherRebateService
         $rebate->rebate_amount = $result['rebate_amount'];
         $rebate->user_bonus_ratio = $result['user_bonus_ratio'];
         $rebate->actual_bonus_ratio = $result['actual_bonus_ratio'];
+
+        // 代管理等量退款字段
+        $rebate->refund_amount = $result['refund_amount'];
+        $rebate->unit_price = $result['unit_price'];
+        $rebate->custody_refund_status = ($rebateType === 'custody' && $result['refund_amount'] > 0) ? 'none' : 'none';
 
         $rebate->stage = $result['stage'];
         $rebate->days_from_payment = $result['days_from_payment'];

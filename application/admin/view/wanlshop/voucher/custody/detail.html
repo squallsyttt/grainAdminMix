@@ -1,0 +1,336 @@
+<div class="panel panel-default panel-intro">
+    <div class="panel-heading">
+        {:build_heading()}
+    </div>
+    <div class="panel-body">
+        <div class="row">
+            <div class="col-md-12">
+                <h4>券基本信息</h4>
+                <table class="table table-bordered table-striped">
+                    <tr>
+                        <th width="15%">券ID</th>
+                        <td width="35%">{$row.id}</td>
+                        <th width="15%">券号</th>
+                        <td>{$row.voucher_no|default='-'}</td>
+                    </tr>
+                    <tr>
+                        <th>用户</th>
+                        <td>
+                            {$row.user.nickname|default='-'}
+                            {if $row.user && $row.user.mobile} ({$row.user.mobile}){/if}
+                        </td>
+                        <th>用户ID</th>
+                        <td>{$row.user_id|default='-'}</td>
+                    </tr>
+                    <tr>
+                        <th>商品标题</th>
+                        <td colspan="3">{$row.goods_title|default='-'}</td>
+                    </tr>
+                    <tr>
+                        <th>券面值</th>
+                        <td>¥{$row.face_value|default='0.00'}</td>
+                        <th>券状态</th>
+                        <td>
+                            {if $row.state == 1 || $row.state == '1'}
+                                <span class="label label-success">未使用</span>
+                            {elseif $row.state == 2 || $row.state == '2'}
+                                <span class="label label-info">已核销</span>
+                            {elseif $row.state == 3 || $row.state == '3'}
+                                <span class="label label-default">已过期</span>
+                            {elseif $row.state == 4 || $row.state == '4'}
+                                <span class="label label-warning">已退款</span>
+                            {else}
+                                <span class="label label-default">未知</span>
+                            {/if}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>SKU规格</th>
+                        <td><span class="label label-primary">{$row.sku_difference|default='-'}</span></td>
+                        <th>SKU重量</th>
+                        <td><strong>{$row.sku_weight|default='0'}</strong> 斤</td>
+                    </tr>
+                    <tr>
+                        <th>有效期开始</th>
+                        <td>{:isset($row['valid_start']) && $row['valid_start'] ? date('Y-m-d H:i:s', $row['valid_start']) : '-'}</td>
+                        <th>有效期结束</th>
+                        <td>{:isset($row['valid_end']) && $row['valid_end'] ? date('Y-m-d H:i:s', $row['valid_end']) : '-'}</td>
+                    </tr>
+                </table>
+
+                <h4>代管理申请信息</h4>
+                <table class="table table-bordered table-striped">
+                    <tr>
+                        <th width="15%">代管理状态</th>
+                        <td width="35%">
+                            {if $row.custody_state == 0 || $row.custody_state == '0'}
+                                <span class="label label-default">未申请</span>
+                            {elseif $row.custody_state == 1 || $row.custody_state == '1'}
+                                <span class="label label-warning">申请中</span>
+                            {elseif $row.custody_state == 2 || $row.custody_state == '2'}
+                                <span class="label label-success">已通过</span>
+                            {elseif $row.custody_state == 3 || $row.custody_state == '3'}
+                                <span class="label label-danger">已拒绝</span>
+                            {else}
+                                <span class="label label-default">未知({$row.custody_state})</span>
+                            {/if}
+                        </td>
+                        <th width="15%">申请时间</th>
+                        <td>{:isset($row['custody_apply_time']) && $row['custody_apply_time'] ? date('Y-m-d H:i:s', $row['custody_apply_time']) : '-'}</td>
+                    </tr>
+                    <tr>
+                        <th>审核时间</th>
+                        <td>{:isset($row['custody_audit_time']) && $row['custody_audit_time'] ? date('Y-m-d H:i:s', $row['custody_audit_time']) : '-'}</td>
+                        <th>审核管理员ID</th>
+                        <td>{$row.custody_admin_id|default='-'}</td>
+                    </tr>
+                    {if $row.custody_state == '3' || $row.custody_state == 3}
+                    <tr>
+                        <th>拒绝理由</th>
+                        <td colspan="3">{$row.custody_refuse_reason|default='-'}</td>
+                    </tr>
+                    {/if}
+                </table>
+
+                <!-- 库存对比分析 -->
+                {if isset($inventory) && !isset($inventory.error)}
+                <h4><i class="fa fa-pie-chart"></i> 平台库存对比分析</h4>
+                <div class="alert alert-info">
+                    <strong>统计范围：</strong>
+                    城市 <span class="label label-default">{$inventory.region_city_name}</span> |
+                    品类ID <span class="label label-default">{$inventory.category_id}</span> |
+                    待使用券总数 <span class="label label-success">{$inventory.total.voucher_count}</span> 张 |
+                    总重量 <span class="label label-success">{$inventory.total.total_weight}</span> 斤
+                </div>
+
+                <div class="row">
+                    <!-- 当前券SKU概览 -->
+                    <div class="col-md-4">
+                        <div class="panel panel-primary">
+                            <div class="panel-heading">
+                                <h5 class="panel-title"><i class="fa fa-tag"></i> 当前券SKU: {$inventory.current_sku.sku_difference}</h5>
+                            </div>
+                            <div class="panel-body text-center">
+                                <div style="font-size: 48px; font-weight: bold; color: #337ab7;">
+                                    {$inventory.current_sku.weight_ratio}%
+                                </div>
+                                <p class="text-muted">占平台同维度总重量</p>
+                                <hr>
+                                <div class="row">
+                                    <div class="col-xs-6">
+                                        <div style="font-size: 24px; font-weight: bold;">{$inventory.current_sku.voucher_count}</div>
+                                        <small class="text-muted">券数量</small>
+                                    </div>
+                                    <div class="col-xs-6">
+                                        <div style="font-size: 24px; font-weight: bold;">{$inventory.current_sku.total_weight}</div>
+                                        <small class="text-muted">总重量(斤)</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SKU分布图表 -->
+                    <div class="col-md-8">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <h5 class="panel-title"><i class="fa fa-bar-chart"></i> 各SKU库存分布</h5>
+                            </div>
+                            <div class="panel-body">
+                                {foreach $inventory.sku_list as $sku}
+                                <div class="sku-bar-item" style="margin-bottom: 15px;">
+                                    <div class="clearfix" style="margin-bottom: 5px;">
+                                        <span class="pull-left">
+                                            {if $sku.is_current}
+                                                <span class="label label-primary"><i class="fa fa-star"></i> {$sku.sku_difference}</span>
+                                                <span class="text-danger" style="margin-left: 5px;">(当前券)</span>
+                                            {else}
+                                                <span class="label label-default">{$sku.sku_difference}</span>
+                                            {/if}
+                                        </span>
+                                        <span class="pull-right">
+                                            <strong>{$sku.total_weight}</strong> 斤
+                                            ({$sku.voucher_count}张)
+                                            <span class="text-primary" style="margin-left: 10px;">{$sku.weight_ratio}%</span>
+                                        </span>
+                                    </div>
+                                    <div class="progress" style="height: 20px; margin-bottom: 0;">
+                                        {if $sku.is_current}
+                                        <div class="progress-bar progress-bar-primary progress-bar-striped"
+                                             role="progressbar"
+                                             style="width: {$sku.weight_ratio}%; min-width: 30px;">
+                                            {$sku.weight_ratio}%
+                                        </div>
+                                        {else}
+                                        <div class="progress-bar progress-bar-info"
+                                             role="progressbar"
+                                             style="width: {$sku.weight_ratio}%; min-width: 30px;">
+                                            {$sku.weight_ratio}%
+                                        </div>
+                                        {/if}
+                                    </div>
+                                </div>
+                                {/foreach}
+
+                                {if empty($inventory.sku_list)}
+                                <div class="text-center text-muted">
+                                    <i class="fa fa-inbox fa-3x"></i>
+                                    <p>暂无库存数据</p>
+                                </div>
+                                {/if}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SKU详细数据表 -->
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h5 class="panel-title"><i class="fa fa-table"></i> SKU库存明细表</h5>
+                    </div>
+                    <table class="table table-bordered table-striped table-hover">
+                        <thead>
+                            <tr class="active">
+                                <th width="20%">SKU规格</th>
+                                <th width="15%">券数量</th>
+                                <th width="15%">总重量(斤)</th>
+                                <th width="20%">重量占比</th>
+                                <th width="20%">数量占比</th>
+                                <th width="10%">标记</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {foreach $inventory.sku_list as $sku}
+                            <tr {if $sku.is_current}class="warning"{/if}>
+                                <td>
+                                    {if $sku.is_current}
+                                        <strong>{$sku.sku_difference}</strong>
+                                    {else}
+                                        {$sku.sku_difference}
+                                    {/if}
+                                </td>
+                                <td>{$sku.voucher_count}</td>
+                                <td>{$sku.total_weight}</td>
+                                <td>
+                                    <div class="progress" style="margin-bottom: 0; height: 16px;">
+                                        <div class="progress-bar {if $sku.is_current}progress-bar-warning{else}progress-bar-info{/if}"
+                                             style="width: {$sku.weight_ratio}%;">
+                                        </div>
+                                    </div>
+                                    <small>{$sku.weight_ratio}%</small>
+                                </td>
+                                <td>
+                                    <div class="progress" style="margin-bottom: 0; height: 16px;">
+                                        <div class="progress-bar {if $sku.is_current}progress-bar-warning{else}progress-bar-success{/if}"
+                                             style="width: {$sku.count_ratio}%;">
+                                        </div>
+                                    </div>
+                                    <small>{$sku.count_ratio}%</small>
+                                </td>
+                                <td>
+                                    {if $sku.is_current}
+                                        <span class="label label-warning"><i class="fa fa-star"></i> 当前</span>
+                                    {else}
+                                        -
+                                    {/if}
+                                </td>
+                            </tr>
+                            {/foreach}
+                        </tbody>
+                        <tfoot>
+                            <tr class="active">
+                                <th>合计</th>
+                                <th>{$inventory.total.voucher_count}</th>
+                                <th>{$inventory.total.total_weight}</th>
+                                <th>100%</th>
+                                <th>100%</th>
+                                <th>-</th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                {elseif isset($inventory.error)}
+                <div class="alert alert-warning">
+                    <i class="fa fa-warning"></i> 库存分析数据获取失败：{$inventory.error}
+                </div>
+                {/if}
+
+                {if $row.goods}
+                <h4>商品信息</h4>
+                <table class="table table-bordered table-striped">
+                    <tr>
+                        <th width="15%">商品ID</th>
+                        <td width="35%">{$row.goods.id|default='-'}</td>
+                        <th width="15%">商品标题</th>
+                        <td>{$row.goods.title|default='-'}</td>
+                    </tr>
+                    <tr>
+                        <th>商品价格</th>
+                        <td>¥{$row.goods.price|default='0.00'}</td>
+                        <th>分类ID</th>
+                        <td>{$row.goods.category_id|default='-'}</td>
+                    </tr>
+                    <tr>
+                        <th>所属城市</th>
+                        <td>{$row.goods.region_city_name|default='-'}</td>
+                        <th>城市编码</th>
+                        <td>{$row.goods.region_city_code|default='-'}</td>
+                    </tr>
+                </table>
+                {/if}
+
+                {if $row.voucherOrder}
+                <h4>订单信息</h4>
+                <table class="table table-bordered table-striped">
+                    <tr>
+                        <th width="15%">订单ID</th>
+                        <td width="35%">{$row.voucherOrder.id|default='-'}</td>
+                        <th width="15%">订单号</th>
+                        <td>{$row.voucherOrder.order_no|default='-'}</td>
+                    </tr>
+                    <tr>
+                        <th>支付金额</th>
+                        <td>¥{$row.voucherOrder.actual_payment|default='0.00'}</td>
+                        <th>支付时间</th>
+                        <td>{:isset($row['voucherOrder']['paymenttime']) && $row['voucherOrder']['paymenttime'] ? date('Y-m-d H:i:s', $row['voucherOrder']['paymenttime']) : '-'}</td>
+                    </tr>
+                </table>
+                {/if}
+
+                {if $row.voucherRule}
+                <h4>规则信息</h4>
+                <table class="table table-bordered table-striped">
+                    <tr>
+                        <th width="15%">规则ID</th>
+                        <td width="35%">{$row.voucherRule.id|default='-'}</td>
+                        <th width="15%">规则名称</th>
+                        <td>{$row.voucherRule.name|default='-'}</td>
+                    </tr>
+                    <tr>
+                        <th>免费期天数</th>
+                        <td>{$row.voucherRule.free_days|default='0'}</td>
+                        <th>福利损耗期天数</th>
+                        <td>{$row.voucherRule.welfare_days|default='0'}</td>
+                    </tr>
+                    <tr>
+                        <th>货物损耗期天数</th>
+                        <td>{$row.voucherRule.goods_days|default='0'}</td>
+                        <th>有效期天数</th>
+                        <td>{$row.voucherRule.expire_days|default='0'}</td>
+                    </tr>
+                </table>
+                {/if}
+
+                <h4>时间信息</h4>
+                <table class="table table-bordered table-striped">
+                    <tr>
+                        <th width="15%">创建时间</th>
+                        <td width="35%">{:isset($row['createtime']) && $row['createtime'] ? date('Y-m-d H:i:s', $row['createtime']) : '-'}</td>
+                        <th width="15%">更新时间</th>
+                        <td>{:isset($row['updatetime']) && $row['updatetime'] ? date('Y-m-d H:i:s', $row['updatetime']) : '-'}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

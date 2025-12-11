@@ -3,6 +3,7 @@
 namespace app\admin\controller\wanlshop\voucher;
 
 use app\admin\service\RebateTransferService;
+use app\admin\service\CustodyRefundService;
 use app\common\controller\Backend;
 
 /**
@@ -174,6 +175,32 @@ class Rebate extends Backend
             throw $e;
         } catch (\Exception $e) {
             $this->error('重试失败：' . $e->getMessage());
+        }
+    }
+
+    /**
+     * 重试代管理退款
+     *
+     * 用于重试失败的代管理等量退款
+     */
+    public function retryRefund()
+    {
+        $rebateId = $this->request->post('rebate_id');
+        if (!$rebateId) {
+            $this->error(__('Parameter %s can not be empty', 'rebate_id'));
+        }
+
+        try {
+            $service = new CustodyRefundService();
+            $result = $service->retryCustodyRefund((int)$rebateId);
+            if (!empty($result['success'])) {
+                $this->success('重试退款成功', null, $result['data'] ?? []);
+            }
+            $this->error('重试退款失败：' . ($result['message'] ?? '未知错误'));
+        } catch (\think\exception\HttpResponseException $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            $this->error('重试退款失败：' . $e->getMessage());
         }
     }
 }

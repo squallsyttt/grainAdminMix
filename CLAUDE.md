@@ -1,6 +1,23 @@
 # GrainAdminMix 开发指南
 
-最后更新时间：2025-11-27
+最后更新时间：2025-12-11
+
+## ⚠️⚠️ 最高优先级：数据库配置来源
+
+**数据库连接信息必须以 `.env` 文件为准，不得使用文档中的硬编码值。**
+
+当前 `.env` 配置：
+```
+[database]
+hostname = 127.0.0.1
+database = grainProOL
+username = root
+password = 123
+hostport = 3306
+prefix = grain_
+```
+
+执行任何数据库操作前，必须使用以上配置信息。
 
 ## ⚠️ 重要：语言要求
 

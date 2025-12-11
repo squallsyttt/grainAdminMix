@@ -13,6 +13,7 @@ use app\common\library\WechatPayment;
 use app\admin\model\wanlshop\Goods;
 use app\common\model\PaymentCallbackLog;
 use app\common\service\PriceCalculator;
+use app\admin\service\CustodyRefundService;
 use think\Db;
 use think\Exception;
 
@@ -1269,6 +1270,14 @@ class Order extends Api
     {
         \think\Log::info('处理退款成功: ' . $outRefundNo);
 
+        // 判断是否为代管理退款（CRF开头）
+        if (strpos($outRefundNo, 'CRF') === 0) {
+            $custodyRefundService = new CustodyRefundService();
+            $custodyRefundService->handleRefundSuccess($outRefundNo);
+            return;
+        }
+
+        // 以下是普通用户退款处理逻辑
         Db::startTrans();
         try {
             // 查询退款记录（商户退款单号 = refund_no）
@@ -1341,6 +1350,14 @@ class Order extends Api
     {
         \think\Log::warning('退款关闭: ' . $outRefundNo . ', 数据: ' . json_encode($resource, JSON_UNESCAPED_UNICODE));
 
+        // 判断是否为代管理退款（CRF开头）
+        if (strpos($outRefundNo, 'CRF') === 0) {
+            $custodyRefundService = new CustodyRefundService();
+            $custodyRefundService->handleRefundFailed($outRefundNo, '微信退款关闭');
+            return;
+        }
+
+        // 以下是普通用户退款处理逻辑
         // 退款关闭意味着退款请求被取消
         // 可根据业务需求决定是否恢复券状态
         try {

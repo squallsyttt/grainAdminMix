@@ -1,6 +1,6 @@
 # 返利模块技术文档
 
-> 最后更新：2025-12-10
+> 最后更新：2025-12-11
 
 ## 目录
 
@@ -441,49 +441,217 @@ public function canTransfer()
 ### 6.1 流程图
 
 ```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│ 用户申请    │ ──► │ 后台审核    │ ──► │ 创建返利记录 │ ──► │ 自动打款    │
-│ 代管理      │     │ (通过/拒绝) │     │ (custody)   │     │ (无需7天)   │
-└─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
+┌─────────────┐     ┌─────────────┐     ┌─────────────────────────────┐
+│ 用户申请    │ ──► │ 后台审核    │ ──► │ 按审核时间计算返利+货物退款  │
+│ 代管理      │     │ (通过/拒绝) │     │ (应用模块4计算逻辑)         │
+└─────────────┘     └─────────────┘     └──────────────┬──────────────┘
+                                                       │
+                                                       ▼
+                    ┌─────────────────────────────────────────────────┐
+                    │              双重打款                            │
+                    │  ┌──────────────────┐  ┌──────────────────────┐ │
+                    │  │  返利金额打款    │  │  货物等量退款        │ │
+                    │  │  (面值×实际返利%) │  │  (实际货物重量×单价) │ │
+                    │  └──────────────────┘  └──────────────────────┘ │
+                    └─────────────────────────────────────────────────┘
 ```
 
-### 6.2 详细步骤
+### 6.2 核心概念：审核时间结算 + 等量退款
+
+代管理返利与普通核销返利的**关键区别**在于：
+
+1. **结算时间点**：以**审核通过时间**（而非核销时间）作为计算返利的基准时间
+2. **双重打款机制**：
+   - **返利打款**：按模块4计算逻辑计算的返利金额
+   - **等量退款**：按规则下实际货物存量的等值退款（这是代管理独有的）
+
+#### 6.2.1 审核时间结算逻辑
+
+```php
+// 计算距付款的天数时，使用审核通过时间而非核销时间
+$daysFromPayment = ceil(($approveTime - $paymentTime) / 86400);
+
+// 根据天数判断阶段并计算返利（与模块4逻辑完全一致）
+$stage = $this->determineStage($daysFromPayment, $rule);
+$actualBonusRatio = $this->calculateActualBonusRatio($daysFromPayment, $userBonusRatio, $rule);
+$actualGoodsWeight = $this->calculateActualGoodsWeight($daysFromPayment, $originalWeight, $rule);
+```
+
+#### 6.2.2 等量退款逻辑（核心特性）
+
+**等量退款**是代管理返利的关键特性：用户将券交给平台代管理后，平台需要按照当前阶段的**实际货物存量**进行等值退款。
+
+```php
+/**
+ * 等量退款计算公式
+ *
+ * 退款金额 = 实际货物重量(斤) × 单价(元/斤)
+ *
+ * 其中：
+ * - 实际货物重量：根据模块4计算逻辑，按审核通过时间计算的货物存量
+ * - 单价：券对应商品的供货单价（supply_price / original_weight）
+ */
+$unitPrice = $supplyPrice / $originalGoodsWeight;  // 供货单价（元/斤）
+$refundAmount = $actualGoodsWeight * $unitPrice;   // 等量退款金额
+```
+
+**退款场景示例**：
+
+| 审核时间（距付款天数） | 阶段 | 实际货物重量 | 单价 | 等量退款金额 |
+|------------------------|------|-------------|------|-------------|
+| 第 10 天 | 免费期 | 10 斤 | ¥5/斤 | ¥50.00 |
+| 第 45 天 | 福利损耗期 | 10 斤 | ¥5/斤 | ¥50.00 |
+| 第 60 天 | 福利损耗期末 | 10 斤 | ¥5/斤 | ¥50.00 |
+| 第 75 天 | 货物损耗期 | 5 斤 | ¥5/斤 | ¥25.00 |
+| 第 90 天 | 货物损耗期末 | 0 斤 | ¥5/斤 | ¥0.00 |
+
+> **重要说明**：
+> - 免费期和福利损耗期：货物不损耗，等量退款金额等于全部供货价
+> - 货物损耗期：货物线性递减，退款金额按剩余货物计算
+> - 已过期：货物为 0，无退款
+
+### 6.3 详细步骤
 
 #### Step 1：用户申请代管理
 
 用户在小程序端对未核销的券申请代管理，券的 `custody_state` 变为 `1`（申请中）。
 
-#### Step 2：后台审核
+#### Step 2：后台审核（返利计算时间点）
 
 **接口**：`POST /admin/wanlshop/voucher.custody/approve`
 
 审核通过时执行：
 
 ```php
+$approveTime = time();  // 审核通过时间，作为返利计算基准
+
 // 更新券状态
 $voucher->state = 2;  // 已核销
 $voucher->custody_state = '2';  // 已通过
 $voucher->shop_id = 1;  // 平台店铺
 $voucher->shop_name = '平台代管理';
 
-// 创建虚拟核销记录（核销方式为 custody）
+// 创建虚拟核销记录（核销方式为 custody，核销时间为审核通过时间）
 $verification->verify_method = 'custody';
+$verification->verifytime = $approveTime;  // 使用审核通过时间
 
-// 创建返利记录（类型为 custody）
-$rebateService->createRebateRecord($voucher, $verification, $now, 1, $platformGoodsInfo, 'custody');
-
-// 自动发起打款（无需等待 7 天）
-$transferService->transferCustody((int)$rebate->id);
+// 创建返利记录（类型为 custody，按审核通过时间计算返利阶段和金额）
+$rebateService->createRebateRecord(
+    $voucher,
+    $verification,
+    $approveTime,      // 审核通过时间作为计算基准
+    1,                 // 平台店铺ID
+    $platformGoodsInfo,
+    'custody'
+);
 ```
 
-### 6.3 与普通核销的区别
+#### Step 3：返利计算（应用模块4逻辑）
+
+代管理返利**完全遵循模块4的返利计算逻辑**，唯一区别是时间基准为审核通过时间：
+
+```php
+// 计算距付款天数（以审核通过时间为准）
+$daysFromPayment = ceil(($approveTime - $paymentTime) / 86400);
+
+// 获取规则配置
+$rule = VoucherRule::get($voucher->rule_id);
+$freeDays = $rule->free_days;
+$welfareDays = $rule->welfare_days;
+$goodsDays = $rule->goods_days;
+
+// 判断阶段（与模块4完全一致）
+if ($daysFromPayment <= $freeDays) {
+    $stage = 'free';
+} elseif ($daysFromPayment <= $freeDays + $welfareDays) {
+    $stage = 'welfare';
+} elseif ($daysFromPayment <= $freeDays + $welfareDays + $goodsDays) {
+    $stage = 'goods';
+} else {
+    $stage = 'expired';
+}
+
+// 计算实际返利比例和货物重量（与模块4公式完全一致）
+// 详见模块4计算公式
+```
+
+#### Step 4：等量退款计算
+
+```php
+// 计算单价
+$unitPrice = $voucher->supply_price / $voucher->original_goods_weight;
+
+// 计算实际货物重量（模块4逻辑）
+$actualGoodsWeight = $this->calculateActualGoodsWeight($daysFromPayment, $originalWeight, $rule);
+
+// 计算等量退款金额
+$refundAmount = round($actualGoodsWeight * $unitPrice, 2);
+```
+
+#### Step 5：双重打款
+
+代管理审核通过后，发起**两笔打款**：
+
+```php
+// 打款1：返利金额（基于面值和实际返利比例）
+$rebateAmount = $faceValue * ($actualBonusRatio / 100);
+$transferService->transferCustody($rebate->id, 'rebate');
+
+// 打款2：等量退款（基于实际货物存量）
+$refundAmount = $actualGoodsWeight * $unitPrice;
+$transferService->transferCustody($rebate->id, 'refund');
+
+// 总打款金额 = 返利金额 + 等量退款金额
+$totalTransferAmount = $rebateAmount + $refundAmount;
+```
+
+### 6.4 计算示例
+
+假设用户返利比例为 10%，券面值 100 元，供货价 50 元，货物重量 10 斤（单价 5 元/斤），规则配置：
+- 免费期：30 天
+- 福利损耗期：30 天
+- 货物损耗期：30 天
+
+| 审核通过时间（距付款天数） | 阶段 | 实际返利比例 | 返利金额 | 实际货物重量 | 等量退款 | **总打款** |
+|---------------------------|------|-------------|----------|-------------|---------|-----------|
+| 第 10 天 | 免费期 | 10% | ¥10.00 | 10 斤 | ¥50.00 | **¥60.00** |
+| 第 30 天 | 免费期 | 10% | ¥10.00 | 10 斤 | ¥50.00 | **¥60.00** |
+| 第 45 天 | 福利损耗期 | 5% | ¥5.00 | 10 斤 | ¥50.00 | **¥55.00** |
+| 第 60 天 | 福利损耗期末 | 0% | ¥0.00 | 10 斤 | ¥50.00 | **¥50.00** |
+| 第 75 天 | 货物损耗期 | 0% | ¥0.00 | 5 斤 | ¥25.00 | **¥25.00** |
+| 第 90 天 | 货物损耗期末 | 0% | ¥0.00 | 0 斤 | ¥0.00 | **¥0.00** |
+
+### 6.5 与普通核销的区别
 
 | 对比项 | 普通核销返利 | 代管理返利 |
 |--------|------------|-----------|
 | 核销店铺 | 实际商家店铺 | 平台店铺 (shop_id=1) |
 | 核销方式 | scan/code | custody |
+| **时间基准** | 核销时间 | **审核通过时间** |
+| **返利计算** | 模块4逻辑 | **模块4逻辑（相同）** |
+| **等量退款** | 无 | **有（按实际货物存量退款）** |
 | 打款时机 | 付款后 7 天 | 审核通过后立即 |
+| 打款内容 | 仅返利金额 | **返利金额 + 等量退款** |
 | 单号前缀 | RBT | CUS |
+
+### 6.6 数据库记录
+
+代管理返利记录需要额外存储等量退款相关信息：
+
+```php
+// 返利记录 (grain_wanlshop_voucher_rebate)
+[
+    'rebate_type' => 'custody',
+    'rebate_amount' => $rebateAmount,        // 返利金额
+    'refund_amount' => $refundAmount,        // 等量退款金额（新增字段）
+    'total_amount' => $rebateAmount + $refundAmount,  // 总打款金额（新增字段）
+    'unit_price' => $unitPrice,              // 货物单价（新增字段）
+    'actual_goods_weight' => $actualGoodsWeight,
+    'stage' => $stage,
+    'verify_time' => $approveTime,           // 审核通过时间
+    // ...其他字段
+]
+```
 
 ---
 

@@ -23,11 +23,12 @@ class VoucherRebate extends Model
     protected $updateTime = 'updatetime';
     protected $deleteTime = 'deletetime';
 
-    // 追加属性：阶段文本、返现状态、返利类型文本
+    // 追加属性：阶段文本、返现状态、返利类型文本、代管理退款状态文本
     protected $append = [
         'stage_text',
         'payment_status_text',
-        'rebate_type_text'
+        'rebate_type_text',
+        'custody_refund_status_text'
     ];
 
     /**
@@ -150,6 +151,33 @@ class VoucherRebate extends Model
     }
 
     /**
+     * 代管理退款状态枚举
+     * @return array
+     */
+    public function getCustodyRefundStatusList()
+    {
+        return [
+            'none' => '无退款',
+            'pending' => '退款中',
+            'success' => '退款成功',
+            'failed' => '退款失败',
+        ];
+    }
+
+    /**
+     * 代管理退款状态文本获取器
+     * @param mixed $value
+     * @param array $data
+     * @return string
+     */
+    public function getCustodyRefundStatusTextAttr($value, $data)
+    {
+        $value = $value ? $value : (isset($data['custody_refund_status']) ? $data['custody_refund_status'] : 'none');
+        $list = $this->getCustodyRefundStatusList();
+        return isset($list[$value]) ? $list[$value] : '无退款';
+    }
+
+    /**
      * 关联：所属券
      * @return \think\model\relation\BelongsTo
      */
@@ -210,5 +238,23 @@ class VoucherRebate extends Model
     public function inviteShop()
     {
         return $this->belongsTo('Shop', 'invite_shop_id', 'id');
+    }
+
+    /**
+     * 关联：代管理退款记录
+     * @return \think\model\relation\BelongsTo
+     */
+    public function custodyRefund()
+    {
+        return $this->belongsTo('VoucherRefund', 'custody_refund_id', 'id');
+    }
+
+    /**
+     * 计算总打款金额（返利 + 等量退款）
+     * @return float
+     */
+    public function getTotalAmountAttr()
+    {
+        return round((float)$this->rebate_amount + (float)$this->refund_amount, 2);
     }
 }
