@@ -348,16 +348,16 @@ class Voucher extends Api
         $regionCityCode = $voucherGoods['region_city_code'];
         $categoryId = isset($data['category_id']) ? (int)$data['category_id'] : 0;
         $goodsSkuId = isset($data['goods_sku_id']) ? (int)$data['goods_sku_id'] : 0;
+        $skuDifference = isset($data['sku_difference']) ? (string)$data['sku_difference'] : '';
         // 使用 face_value（券面值/用户实际支付价格）来判断，而非 supply_price（核销时才产生）
         $voucherFaceValue = isset($data['face_value']) ? (float)$data['face_value'] : 0;
 
-        // 必须有有效的SKU ID
-        if (!$goodsSkuId) {
+        // 必须有有效的SKU ID 和规格
+        if (!$goodsSkuId || !$skuDifference) {
             return false;
         }
 
-        // 6. 查询 shopid=1 的店铺中，该城市、该分类、该 SKU 对应的商品
-        // 使用原生 SQL 进行联合查询：找到该SKU对应的商品，再验证该商品在shopid=1是否存在
+        // 6. 查询 shopid=1 的店铺中，该城市、该分类的商品
         $shopOneGoods = Db::name('wanlshop_goods')
             ->where([
                 'shop_id' => 1,
@@ -372,10 +372,11 @@ class Voucher extends Api
             return false;
         }
 
-        // 7. 获取 shopid=1 店铺中对应 SKU 的价格
+        // 7. 获取 shopid=1 店铺中对应规格的 SKU 价格（必须匹配 goods_id + difference）
         $shopOneSku = Db::name('wanlshop_goods_sku')
             ->where([
                 'goods_id' => $shopOneGoods['id'],
+                'difference' => $skuDifference,
                 'state' => 0  // 正常状态
             ])
             ->field('id,price')

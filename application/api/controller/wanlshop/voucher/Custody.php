@@ -227,18 +227,27 @@ class Custody extends Api
      */
     protected function getPlatformPrice($categoryId, $skuDifference)
     {
-        // 查询平台店铺（shop_id=1）对应分类和规格的 SKU
+        // Step 1: 先找平台店铺（shop_id=1）对应分类的商品
+        $goods = Db::name('wanlshop_goods')
+            ->where('shop_id', 1)
+            ->where('category_id', $categoryId)
+            ->where('status', 'normal')
+            ->where('deletetime', null)
+            ->field('id')
+            ->find();
+
+        if (!$goods) {
+            return null;
+        }
+
+        // Step 2: 再根据 goods_id + difference 找对应 SKU
         $sku = Db::name('wanlshop_goods_sku')
-            ->alias('sku')
-            ->join('wanlshop_goods goods', 'goods.id = sku.goods_id')
-            ->where('goods.shop_id', 1)  // 平台店铺
-            ->where('goods.category_id', $categoryId)
-            ->where('goods.status', 'normal')
-            ->where('goods.deletetime', null)
-            ->where('sku.status', 'normal')
-            ->where('sku.deletetime', null)
-            ->where('sku.difference', $skuDifference)
-            ->field('sku.price')
+            ->where('goods_id', $goods['id'])
+            ->where('difference', $skuDifference)
+            ->where('state', '0')  // state=0 表示启用中
+            ->where('status', 'normal')
+            ->where('deletetime', null)
+            ->field('price')
             ->find();
 
         return $sku ? (float)$sku['price'] : null;
