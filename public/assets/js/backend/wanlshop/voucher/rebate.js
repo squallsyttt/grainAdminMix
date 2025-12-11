@@ -139,7 +139,7 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
                             field: 'rebate_amount',
                             title: '返利金额',
                             operate: 'BETWEEN',
-                            formatter: Formatter.totalAmount
+                            formatter: Formatter.money
                         },
                         {
                             field: 'refund_amount',

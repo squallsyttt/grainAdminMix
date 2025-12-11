@@ -103,14 +103,16 @@ class VoucherRebateService
         $rebateAmount = round($faceValue * ($actualBonusRatio / 100), 2);
 
         // 8. 计算等量退款（代管理专用）
+        // 代管理退款 = 券面值（实际支付金额）全额退款
         $refundAmount = 0;
         $unitPrice = 0;
-        if ($calculateRefund && $originalWeight > 0) {
-            // 计算货物单价（元/斤）= 供货价 / 原始货物重量
-            $supplyPrice = $shopSupplyPrice !== null ? $shopSupplyPrice : round((float)$voucher->supply_price, 2);
-            $unitPrice = round($supplyPrice / $originalWeight, 2);
-            // 等量退款金额 = 实际货物重量 × 单价
-            $refundAmount = round($actualGoodsWeight * $unitPrice, 2);
+        if ($calculateRefund) {
+            // 退款金额 = 券面值（用户实际支付金额）
+            $refundAmount = $faceValue;
+            // 单价仅作记录用途
+            if ($originalWeight > 0) {
+                $unitPrice = round($faceValue / $originalWeight, 2);
+            }
         }
 
         return [
