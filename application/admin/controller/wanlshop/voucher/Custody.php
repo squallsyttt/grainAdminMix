@@ -224,6 +224,12 @@ class Custody extends Backend
         $voucherList = [];
         $totalOriginalWeight = 0;
         $totalActualWeight = 0;
+        $safeTotalCount = 0;
+        $safeTotalOriginalWeight = 0;
+        $safeTotalActualWeight = 0;
+        $safeCurrentSkuCount = 0;
+        $safeCurrentSkuTotalWeight = 0;
+        $safeCurrentSkuActualWeight = 0;
 
         foreach ($voucherRows as $row) {
             $originalWeight = round((float)($row['sku_weight'] ?? 0), 2);
@@ -235,12 +241,15 @@ class Custody extends Backend
             $daysFromPayment = null;
             $stage = 'unknown';
             $actualWeight = 0;
+            $isSafe = false;
 
             if ($paymentTime > 0) {
                 $daysFromPayment = (int)floor(($now - $paymentTime) / 86400);
                 if ($daysFromPayment < 0) {
                     $daysFromPayment = 0;
                 }
+
+                $isSafe = $daysFromPayment > 7;
 
                 // 阶段与损耗计算（参考 VoucherRebateService::calculateRebate）
                 if ($daysFromPayment <= $freeDays) {
@@ -271,6 +280,7 @@ class Custody extends Backend
                 'actual_weight' => $actualWeight,
                 'stage' => $stage,
                 'days_from_payment' => $daysFromPayment,
+                'is_safe' => $isSafe,
                 'valid_end' => isset($row['valid_end']) ? (int)$row['valid_end'] : null,
                 'user_nickname' => $row['user_nickname'] ?? '',
                 'face_value' => isset($row['face_value']) ? (float)$row['face_value'] : 0,
@@ -278,6 +288,18 @@ class Custody extends Backend
 
             $totalOriginalWeight += $originalWeight;
             $totalActualWeight += $actualWeight;
+
+            if ($isSafe) {
+                $safeTotalCount++;
+                $safeTotalOriginalWeight += $originalWeight;
+                $safeTotalActualWeight += $actualWeight;
+
+                if ($row['sku_difference'] == $currentSkuDifference) {
+                    $safeCurrentSkuCount++;
+                    $safeCurrentSkuTotalWeight += $originalWeight;
+                    $safeCurrentSkuActualWeight += $actualWeight;
+                }
+            }
         }
 
         // 计算当前SKU的实际可用重量（汇总该SKU下所有券的损耗后重量）
@@ -311,6 +333,17 @@ class Custody extends Backend
                 // 兼容旧字段名
                 'total_weight' => $totalWeight,
             ],
+            'safe_total' => [
+                'voucher_count' => $safeTotalCount,
+                'original_weight' => round($safeTotalOriginalWeight, 2),
+                'actual_weight' => round($safeTotalActualWeight, 2),
+            ],
+            'safe_current_sku' => [
+                'voucher_count' => $safeCurrentSkuCount,
+                'total_weight' => round($safeCurrentSkuTotalWeight, 2),
+                'actual_weight' => round($safeCurrentSkuActualWeight, 2),
+            ],
+            'safe_ratio' => $totalActualWeight > 0 ? round($safeTotalActualWeight / $totalActualWeight * 100, 2) : 0,
             // SKU 汇总（保留原有能力）
             'sku_summary' => $skuList,
             'sku_list' => $skuList,
