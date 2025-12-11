@@ -44,15 +44,16 @@ class CustodyRefundService
             return ['success' => false, 'message' => '仅支持代管理返利类型', 'refund' => null];
         }
 
-        // 验证退款金额
-        $refundAmount = (float)$rebate->refund_amount;
+        // 代管理退款金额 = 券的实际支付金额（face_value）全额退款
+        $refundAmount = (float)$voucher->face_value;
         if ($refundAmount <= 0) {
-            Log::info("代管理退款[rebate_id={$rebate->id}]: 退款金额为0，无需退款");
-            return ['success' => true, 'message' => '退款金额为0，无需退款', 'refund' => null];
+            Log::info("代管理退款[rebate_id={$rebate->id}]: 券面值为0，无需退款");
+            return ['success' => true, 'message' => '券面值为0，无需退款', 'refund' => null];
         }
 
-        // 检查是否已存在退款记录
-        if ($rebate->custody_refund_id) {
+        // 检查是否已存在退款记录（使用 getData 安全访问，避免字段不存在报错）
+        $custodyRefundId = isset($rebate['custody_refund_id']) ? $rebate['custody_refund_id'] : null;
+        if ($custodyRefundId) {
             return ['success' => false, 'message' => '已存在退款记录', 'refund' => null];
         }
 
@@ -78,7 +79,7 @@ class CustodyRefundService
             $refund->order_id = $voucher->order_id;
             $refund->user_id = $voucher->user_id;
             $refund->refund_amount = $refundAmount;
-            $refund->refund_reason = '代管理等量退款（货物' . $rebate->actual_goods_weight . '斤 × ' . $rebate->unit_price . '元/斤）';
+            $refund->refund_reason = '代管理本金退还';
             $refund->state = 1;  // 同意退款（直接发起）
             $refund->refund_source = 'custody';  // 代管理退款
             $refund->rebate_id = $rebate->id;
@@ -192,11 +193,12 @@ class CustodyRefundService
             return ['success' => false, 'message' => '返利记录不存在或非代管理类型'];
         }
 
-        if (!$rebate->custody_refund_id) {
+        $custodyRefundId = isset($rebate['custody_refund_id']) ? $rebate['custody_refund_id'] : null;
+        if (!$custodyRefundId) {
             return ['success' => false, 'message' => '无退款记录'];
         }
 
-        $refund = VoucherRefund::get($rebate->custody_refund_id);
+        $refund = VoucherRefund::get($custodyRefundId);
         if (!$refund) {
             return ['success' => false, 'message' => '退款记录不存在'];
         }

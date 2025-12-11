@@ -23,6 +23,9 @@ class VoucherRebate extends Model
     protected $updateTime = 'updatetime';
     protected $deleteTime = 'deletetime';
 
+    // 关闭字段严格模式，允许访问所有数据库字段
+    protected $strict = false;
+
     // 追加属性：阶段文本、返现状态、返利类型文本、代管理退款状态文本
     protected $append = [
         'stage_text',
