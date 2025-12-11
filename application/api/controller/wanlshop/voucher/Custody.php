@@ -257,7 +257,7 @@ class Custody extends Api
      * 计算预估返利金额
      *
      * @param Voucher $voucher 券模型
-     * @param float $platformPrice 平台基准价
+     * @param float $platformPrice 平台基准价（未使用，保留参数兼容）
      * @return float
      */
     protected function calculateEstimatedRebate($voucher, $platformPrice)
@@ -270,8 +270,9 @@ class Custody extends Api
 
         $bonusRatio = $user ? (float)$user['bonus_ratio'] : 0;
 
-        // 预估返利 = 平台供货价 * 用户返利比例
-        return round($platformPrice * ($bonusRatio / 100), 2);
+        // 预估返利 = 券面值（实际支付价格） * 用户返利比例
+        $faceValue = (float)$voucher->face_value;
+        return round($faceValue * ($bonusRatio / 100), 2);
     }
 
     /**
