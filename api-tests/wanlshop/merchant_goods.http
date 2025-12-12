@@ -8,19 +8,19 @@
 
 ### 获取商品列表 - 全部
 # @name getGoodsList
-GET {{baseUrl}}/api/wanlshop/merchantGoods/list
+GET {{baseUrl}}/api/wanlshop/merchant_goods/list
 token: {{token}}
 
 ### 获取商品列表 - 上架中
-GET {{baseUrl}}/api/wanlshop/merchantGoods/list?status=normal
+GET {{baseUrl}}/api/wanlshop/merchant_goods/list?status=normal
 token: {{token}}
 
 ### 获取商品列表 - 已下架
-GET {{baseUrl}}/api/wanlshop/merchantGoods/list?status=hidden
+GET {{baseUrl}}/api/wanlshop/merchant_goods/list?status=hidden
 token: {{token}}
 
 ### 获取商品列表 - 分页
-GET {{baseUrl}}/api/wanlshop/merchantGoods/list?page=1&limit=20
+GET {{baseUrl}}/api/wanlshop/merchant_goods/list?page=1&limit=20
 token: {{token}}
 
 ### 预期响应
@@ -59,18 +59,18 @@ token: {{token}}
 
 ### 获取仓库商品列表
 # @name getStockList
-GET {{baseUrl}}/api/wanlshop/merchantGoods/stockList
+GET {{baseUrl}}/api/wanlshop/merchant_goods/stockList
 token: {{token}}
 
 ### 获取仓库商品列表 - 分页
-GET {{baseUrl}}/api/wanlshop/merchantGoods/stockList?page=1&limit=10
+GET {{baseUrl}}/api/wanlshop/merchant_goods/stockList?page=1&limit=10
 token: {{token}}
 
 ### ========== 同步规范商品 ==========
 
 ### 同步规范商品
 # @name syncStandard
-POST {{baseUrl}}/api/wanlshop/merchantGoods/syncStandard
+POST {{baseUrl}}/api/wanlshop/merchant_goods/syncStandard
 token: {{token}}
 
 ### 预期响应
@@ -87,7 +87,7 @@ token: {{token}}
 
 ### 批量上架
 # @name batchOnline
-POST {{baseUrl}}/api/wanlshop/merchantGoods/multi
+POST {{baseUrl}}/api/wanlshop/merchant_goods/multi
 Content-Type: application/x-www-form-urlencoded
 token: {{token}}
 
@@ -95,7 +95,7 @@ ids=1,2,3&params=status=normal
 
 ### 批量下架
 # @name batchOffline
-POST {{baseUrl}}/api/wanlshop/merchantGoods/multi
+POST {{baseUrl}}/api/wanlshop/merchant_goods/multi
 Content-Type: application/x-www-form-urlencoded
 token: {{token}}
 
@@ -115,7 +115,7 @@ ids=1,2,3&params=status=hidden
 
 ### 获取商品详情（编辑用）
 # @name getGoodsDetail
-GET {{baseUrl}}/api/wanlshop/merchantGoods/detail?id=1
+GET {{baseUrl}}/api/wanlshop/merchant_goods/detail?id=1
 token: {{token}}
 
 ### 预期响应
@@ -163,7 +163,7 @@ token: {{token}}
 
 ### 编辑商品 - 修改状态
 # @name editGoodsStatus
-POST {{baseUrl}}/api/wanlshop/merchantGoods/edit
+POST {{baseUrl}}/api/wanlshop/merchant_goods/edit
 Content-Type: application/x-www-form-urlencoded
 token: {{token}}
 
@@ -171,7 +171,7 @@ id=1&status=normal
 
 ### 编辑商品 - 修改价格和库存
 # @name editGoodsPriceStock
-POST {{baseUrl}}/api/wanlshop/merchantGoods/edit
+POST {{baseUrl}}/api/wanlshop/merchant_goods/edit
 Content-Type: application/x-www-form-urlencoded
 token: {{token}}
 
@@ -179,7 +179,7 @@ id=1&price=88.00&stock=200
 
 ### 编辑商品 - 修改 SKU（JSON 格式）
 # @name editGoodsSku
-POST {{baseUrl}}/api/wanlshop/merchantGoods/edit
+POST {{baseUrl}}/api/wanlshop/merchant_goods/edit
 Content-Type: application/json
 token: {{token}}
 
@@ -211,7 +211,7 @@ token: {{token}}
 
 ### 删除商品（单个）
 # @name deleteGoods
-POST {{baseUrl}}/api/wanlshop/merchantGoods/del
+POST {{baseUrl}}/api/wanlshop/merchant_goods/del
 Content-Type: application/x-www-form-urlencoded
 token: {{token}}
 
@@ -219,7 +219,7 @@ ids=1
 
 ### 删除商品（批量）
 # @name deleteGoodsBatch
-POST {{baseUrl}}/api/wanlshop/merchantGoods/del
+POST {{baseUrl}}/api/wanlshop/merchant_goods/del
 Content-Type: application/x-www-form-urlencoded
 token: {{token}}
 
