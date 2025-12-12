@@ -44,14 +44,14 @@ class ShopInviteRebate extends Backend
 
             $list = Db::name('shop_invite_pending')
                 ->alias('p')
-                ->leftJoin('wanlshop_shop s', 's.id = p.shop_id')
-                ->leftJoin('user u', 'u.id = p.inviter_id')
-                ->leftJoin('user cu', 'cu.id = p.user_id')
-                ->leftJoin('wanlshop_voucher v', 'v.id = p.voucher_id')
+                ->join('__WANLSHOP_SHOP__ s', 's.id = p.shop_id', 'LEFT')
+                ->join('__USER__ u', 'u.id = p.inviter_id', 'LEFT')
+                ->join('__USER__ cu', 'cu.id = p.user_id', 'LEFT')
+                ->join('__WANLSHOP_VOUCHER__ v', 'v.id = p.voucher_id', 'LEFT')
                 ->where('p.state', 0)
                 ->where($where)
-                ->field('p.*, 
-                        s.shopname, s.avatar as shop_avatar, s.mobile as shop_mobile,
+                ->field('p.*,
+                        s.shopname, s.avatar as shop_avatar,
                         u.nickname as inviter_name, u.mobile as inviter_mobile, u.bonus_level as inviter_level,
                         cu.nickname as consumer_name,
                         v.state as voucher_state')
@@ -226,10 +226,14 @@ class ShopInviteRebate extends Backend
         $supplyPrice = (float)$pending['supply_price'];
         $rebateAmount = round($supplyPrice * ($afterRatio / 100), 2);
 
-        // 7. 获取店铺名称
+        // 7. 获取店铺和券信息
         $shop = Db::name('wanlshop_shop')
             ->where('id', $shopId)
             ->field('shopname')
+            ->find();
+
+        $voucher = Db::name('wanlshop_voucher')
+            ->where('id', $pending['voucher_id'])
             ->find();
 
         // 8. 记录返利日志
@@ -254,13 +258,36 @@ class ShopInviteRebate extends Backend
         Db::name('wanlshop_voucher_rebate')->insert([
             'user_id' => $inviterId,
             'voucher_id' => $pending['voucher_id'],
+            'voucher_no' => $voucher['voucher_no'] ?? '',
             'verification_id' => $pending['verification_id'],
+            'order_id' => $voucher['order_id'] ?? 0,
             'shop_id' => $pending['shop_id'],
+            'shop_name' => $shop['shopname'] ?? '',
             'rebate_type' => 'shop_invite',
             'invite_shop_id' => $shopId,
             'invite_shop_name' => $shop['shopname'] ?? '',
+            'supply_price' => $supplyPrice,
+            'face_value' => $voucher['face_value'] ?? 0,
             'rebate_amount' => $rebateAmount,
             'bonus_ratio' => $afterRatio,
+            'refund_amount' => 0,
+            'unit_price' => 0,
+            'user_bonus_ratio' => 0,
+            'actual_bonus_ratio' => $afterRatio,
+            'stage' => 'free',
+            'days_from_payment' => 0,
+            'goods_title' => $voucher['goods_title'] ?? '',
+            'shop_goods_id' => $voucher['goods_id'] ?? 0,
+            'shop_goods_title' => $voucher['goods_title'] ?? '',
+            'sku_weight' => $voucher['sku_weight'] ?? 0,
+            'original_goods_weight' => $voucher['sku_weight'] ?? 0,
+            'actual_goods_weight' => $voucher['sku_weight'] ?? 0,
+            'rule_id' => $voucher['rule_id'] ?? 0,
+            'free_days' => 0,
+            'welfare_days' => 0,
+            'goods_days' => 0,
+            'payment_time' => $voucher['createtime'] ?? $now,
+            'verify_time' => $pending['verify_time'],
             'payment_status' => 'unpaid',
             'createtime' => $now,
             'updatetime' => $now
