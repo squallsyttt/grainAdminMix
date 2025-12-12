@@ -222,11 +222,7 @@ class ShopInviteRebate extends Backend
             ]);
         }
 
-        // 6. 计算返利金额（按升级后的比例）
-        $supplyPrice = (float)$pending['supply_price'];
-        $rebateAmount = round($supplyPrice * ($afterRatio / 100), 2);
-
-        // 7. 获取店铺和券信息
+        // 6. 获取店铺和券信息
         $shop = Db::name('wanlshop_shop')
             ->where('id', $shopId)
             ->field('shopname')
@@ -236,6 +232,10 @@ class ShopInviteRebate extends Backend
             ->where('id', $pending['voucher_id'])
             ->find();
 
+        // 7. 计算返利金额（按券面值和升级后的比例）
+        $faceValue = (float)$voucher['face_value'];
+        $rebateAmount = round($faceValue * ($afterRatio / 100), 2);
+
         // 8. 记录返利日志
         Db::name('shop_invite_rebate_log')->insert([
             'inviter_id' => $inviterId,
@@ -244,7 +244,8 @@ class ShopInviteRebate extends Backend
             'verification_id' => $pending['verification_id'],
             'voucher_id' => $pending['voucher_id'],
             'user_id' => $pending['user_id'],
-            'supply_price' => $supplyPrice,
+            'supply_price' => $pending['supply_price'],
+            'face_value' => $faceValue,
             'rebate_amount' => $rebateAmount,
             'bonus_ratio' => $afterRatio,
             'before_level' => $currentLevel,

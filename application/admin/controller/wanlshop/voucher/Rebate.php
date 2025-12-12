@@ -86,11 +86,11 @@ class Rebate extends Backend
     /**
      * 详情
      */
-    public function detail($id = null)
+    public function detail($ids = null)
     {
         $row = $this->model
             ->with(['voucher', 'voucherOrder', 'user', 'shop', 'voucherRule', 'verification'])
-            ->find($id);
+            ->find($ids);
         if (!$row) {
             $this->error(__('No Results were found'));
         }

@@ -83,15 +83,29 @@ class VoucherRebate extends Model
 
     /**
      * 判断是否可以打款
-     * 条件：1.付款时间超过7天 2.未打款或打款失败 3.已核销
+     * 条件：
+     * - 普通返利/代管理返利：付款时间超过7天 + 未打款或打款失败 + 已核销
+     * - 店铺邀请返利：无需等待7天（已经过24小时审核期），直接可打款
      * @return bool
      */
     public function canTransfer()
     {
-        $sevenDaysAgo = time() - 7 * 86400;
-        return $this->payment_time < $sevenDaysAgo
-            && in_array($this->payment_status, [self::PAYMENT_STATUS_UNPAID, self::PAYMENT_STATUS_FAILED])
+        // 基本条件：未打款或打款失败，且已核销
+        $statusOk = in_array($this->payment_status, [self::PAYMENT_STATUS_UNPAID, self::PAYMENT_STATUS_FAILED])
             && $this->verify_time > 0;
+
+        if (!$statusOk) {
+            return false;
+        }
+
+        // 店铺邀请返利：已经过后台审核（24小时等待期），无需再等7天
+        if ($this->rebate_type === 'shop_invite') {
+            return true;
+        }
+
+        // 其他类型：需要付款时间超过7天
+        $sevenDaysAgo = time() - 7 * 86400;
+        return $this->payment_time < $sevenDaysAgo;
     }
 
     /**

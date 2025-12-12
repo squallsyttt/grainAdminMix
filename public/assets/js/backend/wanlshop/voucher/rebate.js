@@ -51,8 +51,8 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
         paymentStatus: function (value, row) {
             var current = paymentStatusMap[value] || {text: '未知', className: 'label-default'};
             var html = '<span class="label ' + current.className + '">' + current.text + '</span>';
-            // 显示剩余天数提示
-            if (value === 'unpaid' && row.days_until_transfer > 0) {
+            // 显示剩余天数提示（店铺邀请返利不显示，因为无需等待7天）
+            if (value === 'unpaid' && row.days_until_transfer > 0 && row.rebate_type !== 'shop_invite') {
                 html += ' <small class="text-muted">(' + row.days_until_transfer + '天后可打)</small>';
             }
             return html;
