@@ -109,7 +109,7 @@ class Settlement extends Api
      * @ApiParams   (name="pagesize", type="integer", required=false, description="每页数量，默认10，最大50")
      * @ApiParams   (name="order_type", type="string", required=false, description="业务类型：settlement=结算，rebate=返利，all=全部，默认settlement")
      * @ApiParams   (name="rebate_id", type="integer", required=false, description="返利记录ID，指定后只返回该记录")
-     * @ApiParams   (name="rebate_type", type="string", required=false, description="返利类型筛选：normal=核销返利，custody=代管理返利，all=全部，默认all")
+     * @ApiParams   (name="rebate_type", type="string", required=false, description="返利类型筛选：normal=核销返利，custody=代管理返利，shop_invite=店铺邀请返利，all=全部，默认all")
      */
     public function pendingTransfers()
     {
@@ -144,7 +144,7 @@ class Settlement extends Api
         }
 
         // 验证 rebate_type 参数
-        $rebateTypes = ['normal', 'custody', 'all'];
+        $rebateTypes = ['normal', 'custody', 'shop_invite', 'all'];
         if (!in_array($rebateType, $rebateTypes, true)) {
             $rebateType = 'all';
         }
