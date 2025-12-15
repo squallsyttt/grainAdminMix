@@ -231,6 +231,12 @@ class Voucher extends Api
      * @ApiMethod   (GET)
      *
      * @param int $voucher_id 核销券ID
+     *
+     * 返回字段说明:
+     * - service_ids: 逗号分隔的服务ID字符串
+     * - services: 服务名称数组
+     * - has_delivery: 是否支持送货上门(service_id=7)
+     * - 列表按配送意愿排序(支持送货上门的在前面)
      */
     public function verifiableShops()
     {
@@ -261,6 +267,7 @@ class Voucher extends Api
         $faceValue = (float)$voucher['face_value'];
         $maxSupplyPrice = $faceValue * 0.8;
 
+        // 查询店铺列表，添加 service_ids 字段
         $shops = Db::name('wanlshop_shop')
             ->alias('shop')
             ->join('wanlshop_goods goods', 'goods.shop_id = shop.id')
@@ -275,9 +282,8 @@ class Voucher extends Api
             ->where('sku.deletetime', null)
             ->where('sku.price', '<=', $maxSupplyPrice)
             ->where('sku.stock', '>', 0)  // 有库存
-            ->field('shop.id AS shop_id, shop.shopname, shop.avatar, shop.city, shop.`return` AS address, MIN(sku.price) AS min_supply_price')
-            ->group('shop.id, shop.shopname, shop.avatar, shop.city, shop.`return`')
-            ->order('min_supply_price asc')
+            ->field('shop.id AS shop_id, shop.shopname, shop.avatar, shop.city, shop.`return` AS address, shop.service_ids, MIN(sku.price) AS min_supply_price')
+            ->group('shop.id, shop.shopname, shop.avatar, shop.city, shop.`return`, shop.service_ids')
             ->select();
 
         $shopList = [];
@@ -285,10 +291,64 @@ class Voucher extends Api
             // 兼容返回类型为数组或集合的情况
             $shopList = is_array($shops) ? $shops : $shops->toArray();
         }
+
+        // 收集所有服务ID，批量查询服务名称
+        $allServiceIds = [];
+        foreach ($shopList as $shop) {
+            if (!empty($shop['service_ids'])) {
+                $ids = array_filter(explode(',', $shop['service_ids']));
+                $allServiceIds = array_merge($allServiceIds, $ids);
+            }
+        }
+        $allServiceIds = array_unique($allServiceIds);
+
+        // 批量查询服务名称
+        $serviceMap = [];
+        if ($allServiceIds) {
+            $services = Db::name('wanlshop_shop_service')
+                ->where('id', 'in', $allServiceIds)
+                ->where('status', 'normal')
+                ->column('name', 'id');
+            $serviceMap = $services;
+        }
+
+        // 处理每个店铺的数据
         foreach ($shopList as &$shop) {
             $shop['min_supply_price'] = (float)$shop['min_supply_price'];
+
+            // 解析 service_ids 并映射服务名称
+            $serviceIds = [];
+            $serviceNames = [];
+            $hasDelivery = false;
+
+            if (!empty($shop['service_ids'])) {
+                $serviceIds = array_filter(explode(',', $shop['service_ids']));
+                foreach ($serviceIds as $sid) {
+                    // 检查是否包含送货上门服务(id=7)
+                    if ($sid == '7') {
+                        $hasDelivery = true;
+                    }
+                    // 获取服务名称
+                    if (isset($serviceMap[$sid])) {
+                        $serviceNames[] = $serviceMap[$sid];
+                    }
+                }
+            }
+
+            $shop['services'] = $serviceNames;
+            $shop['has_delivery'] = $hasDelivery;
         }
         unset($shop);
+
+        // 按配送意愿排序：支持送货上门的在前面，然后按价格排序
+        usort($shopList, function ($a, $b) {
+            // 优先按 has_delivery 排序（true在前）
+            if ($a['has_delivery'] !== $b['has_delivery']) {
+                return $b['has_delivery'] ? 1 : -1;
+            }
+            // 其次按价格排序
+            return $a['min_supply_price'] <=> $b['min_supply_price'];
+        });
 
         $this->success('ok', $shopList);
     }
