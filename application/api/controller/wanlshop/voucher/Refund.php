@@ -323,10 +323,17 @@ class Refund extends Api
             $this->error(__('非法请求'));
         }
 
-        // 获取当前用户的店铺
-        $shop = \app\admin\model\wanlshop\Shop::where('user_id', $this->auth->id)->find();
+        // 获取当前用户绑定的店铺（通过 user.bind_shop 字段）
+        $user = model('app\common\model\User')->get($this->auth->id);
+        $shopId = $user ? $user['bind_shop'] : null;
+        if (!$shopId) {
+            $this->error(__('您未绑定商家，无法审核'));
+        }
+
+        // 验证店铺存在
+        $shop = \app\admin\model\wanlshop\Shop::where('id', $shopId)->find();
         if (!$shop) {
-            $this->error(__('您不是商家，无法审核'));
+            $this->error(__('绑定的商家不存在'));
         }
 
         $id = $this->request->post('id/d');
