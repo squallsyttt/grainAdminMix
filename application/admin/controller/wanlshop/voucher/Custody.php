@@ -135,6 +135,13 @@ class Custody extends Backend
         $currentSkuDifference = $voucher->sku_difference;
         $currentSkuWeight = (float)$voucher->sku_weight;
 
+        // 获取品类名称
+        $categoryName = '';
+        if ($categoryId) {
+            $category = Db::name('wanlshop_category')->where('id', $categoryId)->find();
+            $categoryName = $category ? $category['name'] : '';
+        }
+
         // 基础筛选：同城市、同品类、待使用、状态正常
         $baseWhere = function ($query) use ($categoryId, $regionCityCode) {
             $query->where('v.state', 1)
@@ -314,6 +321,7 @@ class Custody extends Backend
             'region_city_code' => $regionCityCode,
             'region_city_name' => $regionCityName,
             'category_id' => $categoryId,
+            'category_name' => $categoryName,
             'current_sku' => [
                 'sku_difference' => $currentSkuDifference,
                 'sku_weight' => $currentSkuWeight,

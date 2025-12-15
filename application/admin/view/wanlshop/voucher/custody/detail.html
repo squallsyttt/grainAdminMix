@@ -98,7 +98,7 @@
                 <div class="alert alert-info">
                     <strong>统计范围：</strong>
                     城市 <span class="label label-default">{$inventory.region_city_name}</span> |
-                    品类ID <span class="label label-default">{$inventory.category_id}</span> |
+                    品类 <span class="label label-default">{$inventory.category_id} - {$inventory.category_name|default='未知品类'}</span> |
                     待使用券总数 <span class="label label-success">{$inventory.total.voucher_count}</span> 张 |
                     原始总重量 <span class="label label-success">{$inventory.total.original_weight|default='-'}</span> KG |
                     实际可用总重量 <span class="label label-primary">{$inventory.total.actual_weight|default='-'}</span> KG |
