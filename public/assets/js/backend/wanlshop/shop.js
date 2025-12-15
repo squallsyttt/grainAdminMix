@@ -59,52 +59,6 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
                                     callback: function (data) {
 										$(".btn-refresh").trigger("click"); //刷新数据
                                     }
-						        },
-						        {
-						            name: 'brand',
-                                    text: __('品牌'),
-                                    title: function (row) {
-										return `${row.shopname}  店铺 品牌`;
-								    },
-                                    classname: 'btn btn-xs btn-danger btn-dialog',
-                                    icon: 'fa fa-star',
-                                    extend: 'data-area=\'["80%", "70%"]\'',
-                                    url: function (row) {
-										return `wanlshop/brand?shop_id=${row.id}`;
-								    },
-                                    callback: function (data) {
-										$(".btn-refresh").trigger("click"); //刷新数据
-                                    }
-						        },
-						        {
-						            name: 'freight',
-                                    title: function (row) {
-										return `${row.shopname}  店铺 运费模板`;
-								    },
-                                    classname: 'btn btn-xs btn-info btn-dialog',
-                                    icon: 'fa fa-truck',
-                                    extend: 'data-area=\'["80%", "70%"]\'',
-                                    url: function (row) {
-										return `wanlshop/freight?shop_id=${row.id}`;
-								    },
-                                    callback: function (data) {
-										$(".btn-refresh").trigger("click"); //刷新数据
-                                    }
-						        },
-						        {
-						            name: 'shopsort',
-                                    title: function (row) {
-										return `${row.shopname}  店铺 类目`;
-								    },
-                                    classname: 'btn btn-xs btn-success btn-dialog',
-                                    icon: 'fa fa-list-ol',
-                                    extend: 'data-area=\'["80%", "70%"]\'',
-                                    url: function (row) {
-										return `wanlshop/shopsort?shop_id=${row.id}`;
-								    },
-                                    callback: function (data) {
-										$(".btn-refresh").trigger("click"); //刷新数据
-                                    }
 						        }
 						    ], 
 							formatter: Table.api.formatter.buttons
