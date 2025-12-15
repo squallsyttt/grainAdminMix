@@ -56,89 +56,20 @@ class Service extends Backend
 	 */
 	public function lists()
 	{
-		if(!$this->wanlchat->isWsStart()){
-			$this->error('请启动IM即时通讯服务');
-		}
-		//设置过滤方法
-		$this->request->filter(['strip_tags']);
+		// IM功能已禁用，直接返回空数据
 		if ($this->request->isAjax()) {
-		    $user_id = bcadd(8080000, $this->auth->id);
-			$chatModel = model('app\admin\model\wanlshop\Chat');
-		    $formlist = [];
-		    $tolist = [];
-		    
-			
-		    $history = $chatModel->where("(form_uid={$user_id} or to_id={$user_id}) and type='service'")
-		        ->order('createtime esc')
-		        ->select();
-		    foreach (collection($history)->toArray() as $vo) {
-		        if ($vo['form_uid'] == $user_id) {
-		            $formlist[] = $vo['to_id'];
-		        }
-		        if ($vo['to_id'] == $user_id) {
-		            $tolist[] = $vo['form_uid'];
-		        }
-		    }
-		    $list = model('app\common\model\User')
-		        ->where('id', 'in', array_unique(array_merge($formlist, $tolist)))
-		        ->field('id,username,nickname,avatar')
-		        ->select();
-			$chat = [];
-		    $message = [];
-			$datetime = [];
-			$countNum = 0;
-		    foreach (collection($list)->toArray() as $user) {
-		        //查询店铺为读消息
-		        $count = $chatModel
-		            ->where(['form_uid' => $user['id'], 'to_id' => $user_id, 'isread' => 0])
-		            ->count();
-		        //查询和店铺最新消息
-		        $content = $chatModel->where("((form_uid={$user_id} and to_id={$user['id']}) or (form_uid={$user['id']} and to_id={$user_id})) and type='service'")
-		            ->order('createtime desc')
-		            ->limit(1)
-		            ->find();
-		        //转换图片类型
-				if($content['message']['type'] == 'img'){
-					$msgtext = '[图片消息]';
-				}else if($content['message']['type'] == 'voice'){
-					$msgtext = '[语音消息]';
-				}else if($content['message']['type'] == 'goods'){
-					$msgtext = '[商品消息]';
-				}else if($content['message']['type'] == 'order'){
-					$msgtext = '[订单消息]';
-				}else if($content['message']['type'] == 'text'){
-					$msgtext = $content['message']['content']['text'];
-				}else{
-					$msgtext = '[未知消息类型]';
-				}
-		        //整理输出
-		        $chat[] = [
-		            'user_id' => $user['id'],
-		            'nickname' => $user['nickname'],
-		            'avatar' => $user['avatar'],
-		            'content' => $msgtext,
-		            'count' => $count,
-					'createtime' => $content['createtime'],
-					'isOnline' => $this->wanlchat->isOnline($user['id'])
-		        ];
-				// 时间排序
-				$datetime[] = $content['createtime'];
-		    }
-			if($datetime){
-				array_multisort($datetime, SORT_DESC, $chat);
-			}
-			// 获取配置
 			$config = get_addon_config('wanlshop');
-		    $this->success("拉取成功", null, [
-				'chat' => $chat,
+			$this->success("拉取成功", null, [
+				'chat' => [],
 				'service' => [
-					'id' => $user_id,
+					'id' => bcadd(8080000, $this->auth->id),
 					'avatar' => $this->auth->avatar,
 					'nickname' => $this->auth->nickname,
-					'socketurl' => $config['ini']['socketurl']
+					'socketurl' => isset($config['ini']['socketurl']) ? $config['ini']['socketurl'] : ''
 				]
 			]);
 		}
+		$this->error('IM功能已禁用');
 	}
 	
 	
