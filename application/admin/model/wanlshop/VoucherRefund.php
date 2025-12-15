@@ -25,7 +25,9 @@ class VoucherRefund extends Model
 
     // 追加属性：状态文本
     protected $append = [
-        'state_text'
+        'state_text',
+        'merchant_audit_state_text',
+        'refund_source_text'
     ];
 
     /**
@@ -45,15 +47,69 @@ class VoucherRefund extends Model
 
     /**
      * 状态文本获取器
+     *
+     * 对于已核销券退款，根据商家审核状态细化显示：
+     * - 商家待审核：显示"待商家审核"
+     * - 商家已同意：显示"待平台审核"
+     * - 商家已拒绝：显示"商家已拒绝"
+     *
      * @param mixed $value
      * @param array $data
      * @return string
      */
     public function getStateTextAttr($value, $data)
     {
-        $value = $value ? $value : (isset($data['state']) ? $data['state'] : '');
+        $state = $value ? $value : (isset($data['state']) ? $data['state'] : '');
         $list = $this->getStateList();
-        return isset($list[$value]) ? $list[$value] : '';
+        $stateText = isset($list[$state]) ? $list[$state] : '';
+
+        // 对于已核销券退款，细化状态显示
+        if (isset($data['refund_source']) && $data['refund_source'] == 'verified_24h' && $state == '0') {
+            $merchantState = isset($data['merchant_audit_state']) ? $data['merchant_audit_state'] : null;
+            if ($merchantState === 0 || $merchantState === '0') {
+                return '待商家审核';
+            } elseif ($merchantState == 1) {
+                return '待平台审核';
+            } elseif ($merchantState == 2) {
+                return '商家已拒绝';
+            }
+        }
+
+        return $stateText;
+    }
+
+    /**
+     * 商家审核状态文本获取器
+     * @param mixed $value
+     * @param array $data
+     * @return string
+     */
+    public function getMerchantAuditStateTextAttr($value, $data)
+    {
+        $state = isset($data['merchant_audit_state']) ? $data['merchant_audit_state'] : null;
+        $list = [
+            0 => '待审核',
+            1 => '已同意',
+            2 => '已拒绝',
+        ];
+        return ($state !== null && isset($list[$state])) ? $list[$state] : '-';
+    }
+
+    /**
+     * 退款来源文本获取器
+     * @param mixed $value
+     * @param array $data
+     * @return string
+     */
+    public function getRefundSourceTextAttr($value, $data)
+    {
+        $source = isset($data['refund_source']) ? $data['refund_source'] : '';
+        $list = [
+            'user' => '未使用券退款',
+            'custody' => '托管退款',
+            'verified_24h' => '核销后退款',
+        ];
+        return isset($list[$source]) ? $list[$source] : $source;
     }
 
     /**

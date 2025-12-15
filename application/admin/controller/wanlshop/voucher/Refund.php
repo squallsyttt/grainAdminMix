@@ -96,9 +96,11 @@ class Refund extends Backend
      * - grain_wanlshop_voucher.state: 1/5 -> 5 (退款中)
      *
      * 流程说明：
-     * 1. 更新本地数据库状态为"同意退款"
-     * 2. 调用微信退款 API
-     * 3. 微信异步通知退款结果（通过 refundNotify 回调处理最终状态）
+     * 1. 普通退款（未使用券）：state=0 可直接审核
+     * 2. 已核销券退款：state=0 且 merchant_audit_state=1（商家已同意）才可审核
+     * 3. 更新本地数据库状态为"同意退款"
+     * 4. 调用微信退款 API
+     * 5. 微信异步通知退款结果（通过 refundNotify 回调处理最终状态）
      */
     public function approve()
     {
@@ -110,6 +112,13 @@ class Refund extends Backend
         // 只能审核申请中的退款
         if ($row->state != 0) {
             $this->error(__('该退款不可审核'));
+        }
+
+        // 已核销券退款需要商家先审核同意
+        if ($row->refund_source == 'verified_24h') {
+            if ($row->merchant_audit_state != 1) {
+                $this->error(__('该退款需等待商家审核同意后才能处理'));
+            }
         }
 
         // 获取关联的订单信息

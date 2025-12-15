@@ -369,8 +369,9 @@ class Refund extends Api
             $refund->merchant_audit_remark = $remark;
 
             if ($action == 1) {
-                // 商家同意：进入后台退款流程
-                $refund->state = 1;  // 同意退款（等待后台处理）
+                // 商家同意：等待管理后台审核，state 保持 0（申请中）
+                // 管理后台会检查 merchant_audit_state=1 来识别商家已同意的退款
+                // $refund->state 保持不变（0=申请中）
             } else {
                 // 商家拒绝：流程结束
                 $refund->state = 2;  // 拒绝退款
@@ -381,7 +382,7 @@ class Refund extends Api
 
             Db::commit();
 
-            $message = $action == 1 ? '已同意退款，等待平台处理' : '已拒绝退款';
+            $message = $action == 1 ? '已同意退款申请，等待平台审核后打款' : '已拒绝退款';
             $this->success($message, [
                 'refund_id' => $refund->id,
                 'merchant_audit_state' => $refund->merchant_audit_state
