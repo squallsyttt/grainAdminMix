@@ -32,6 +32,12 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
                         {field: 'refund_amount', title: '退款金额', operate: 'BETWEEN'},
                         {field: 'refund_reason', title: '退款理由', operate: false},
                         {
+                            field: 'refund_source_text',
+                            title: '退款来源',
+                            operate: false,
+                            formatter: Controller.api.formatter.refundSource
+                        },
+                        {
                             field: 'state',
                             title: '退款状态',
                             searchList: {'0': '申请中', '1': '同意退款', '2': '拒绝退款', '3': '退款成功'},
@@ -159,8 +165,31 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
                 Form.api.bindevent($("form[role=form]"));
             },
             formatter: {
+                // 退款来源格式化器
+                refundSource: function (value, row, index) {
+                    var sourceMap = {
+                        '未使用券退款': {class: 'label-default'},
+                        '托管退款': {class: 'label-info'},
+                        '核销后退款': {class: 'label-primary'}
+                    };
+                    var source = sourceMap[value] || {class: 'label-default'};
+                    return '<span class="label ' + source.class + '">' + (value || '-') + '</span>';
+                },
                 // 状态格式化器
                 state: function (value, row, index) {
+                    // 核销后退款，根据商家审核状态细化显示
+                    if (row.refund_source === 'verified_24h' && (value === '0' || value === 0)) {
+                        var merchantState = row.merchant_audit_state;
+                        if (merchantState === 0 || merchantState === '0') {
+                            return '<span class="label label-warning"><i class="fa fa-clock-o"></i> 待商家审核</span>';
+                        } else if (merchantState == 1) {
+                            return '<span class="label label-info"><i class="fa fa-check"></i> 商家已同意</span>';
+                        } else if (merchantState == 2) {
+                            return '<span class="label label-danger"><i class="fa fa-times"></i> 商家已拒绝</span>';
+                        }
+                    }
+
+                    // 普通退款状态显示
                     var stateMap = {
                         '0': {text: '申请中', class: 'label-warning'},
                         '1': {text: '同意退款', class: 'label-info'},
@@ -176,8 +205,25 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
 
                     // 申请中状态：显示同意和拒绝按钮
                     if (row.state === '0' || row.state === 0) {
-                        buttons.push('<a href="javascript:;" class="btn btn-xs btn-success btn-approve" data-id="' + row.id + '" title="同意退款"><i class="fa fa-check"></i> 同意</a>');
-                        buttons.push('<a href="javascript:;" class="btn btn-xs btn-danger btn-reject" data-id="' + row.id + '" title="拒绝退款"><i class="fa fa-times"></i> 拒绝</a>');
+                        // 核销后退款需要判断商家审核状态
+                        if (row.refund_source === 'verified_24h') {
+                            var merchantState = row.merchant_audit_state;
+                            if (merchantState == 1) {
+                                // 商家已同意，可以操作
+                                buttons.push('<a href="javascript:;" class="btn btn-xs btn-success btn-approve" data-id="' + row.id + '" title="同意退款"><i class="fa fa-check"></i> 同意</a>');
+                                buttons.push('<a href="javascript:;" class="btn btn-xs btn-danger btn-reject" data-id="' + row.id + '" title="拒绝退款"><i class="fa fa-times"></i> 拒绝</a>');
+                            } else if (merchantState === 0 || merchantState === '0') {
+                                // 商家待审核，显示禁用按钮
+                                buttons.push('<span class="btn btn-xs btn-default disabled" title="需等待商家审核同意"><i class="fa fa-hourglass-half"></i> 待商家审核</span>');
+                            } else if (merchantState == 2) {
+                                // 商家已拒绝
+                                buttons.push('<span class="text-danger">商家已拒绝</span>');
+                            }
+                        } else {
+                            // 普通退款，直接显示操作按钮
+                            buttons.push('<a href="javascript:;" class="btn btn-xs btn-success btn-approve" data-id="' + row.id + '" title="同意退款"><i class="fa fa-check"></i> 同意</a>');
+                            buttons.push('<a href="javascript:;" class="btn btn-xs btn-danger btn-reject" data-id="' + row.id + '" title="拒绝退款"><i class="fa fa-times"></i> 拒绝</a>');
+                        }
                     }
 
                     // 同意退款状态：显示确认完成按钮（用于手动确认，正常情况由微信回调处理）
