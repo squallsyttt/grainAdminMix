@@ -36,7 +36,7 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
                         {
                             field: 'state',
                             title: '订单状态',
-                            searchList: {'1': '待支付', '2': '已支付', '3': '已取消'},
+                            searchList: {'1': '待支付', '2': '已支付', '3': '已取消', '4': '存在退款'},
                             formatter: Table.api.formatter.normal
                         },
                         {
