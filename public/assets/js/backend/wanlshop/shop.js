@@ -39,9 +39,9 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
 						{field: 'like', title: __('Like')},
                         {field: 'status', title: __('Status'), searchList: {"normal":__('Normal'),"hidden":__('Hidden')}, formatter: Table.api.formatter.status},
                         {
-							field: 'operate', 
-							title: __('Operate'), 
-							table: table, 
+							field: 'operate',
+							title: __('Operate'),
+							table: table,
 							events: Table.api.events.operate,
 							buttons: [
 							    {
@@ -60,8 +60,8 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
 										$(".btn-refresh").trigger("click"); //刷新数据
                                     }
 						        }
-						    ], 
-							formatter: Table.api.formatter.buttons
+						    ],
+							formatter: Table.api.formatter.operate
 						}
                     ]
                 ]
