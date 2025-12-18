@@ -1,0 +1,61 @@
+<form id="edit-form" class="form-horizontal" role="form" data-toggle="validator" method="POST" action="">
+    <div class="form-group">
+        <label class="control-label col-xs-12 col-sm-2">{:__('任务名称')}:</label>
+        <div class="col-xs-12 col-sm-8">
+            <input id="c-name" data-rule="required" class="form-control" name="row[name]" type="text" value="{$row.name}">
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="control-label col-xs-12 col-sm-2">{:__('任务类型')}:</label>
+        <div class="col-xs-12 col-sm-8">
+            <p class="form-control-static">{$row.type_text}</p>
+            <input type="hidden" name="row[type]" value="{$row.type}">
+        </div>
+    </div>
+    {if $row.type == 'rebate_amount'}
+    <div class="form-group">
+        <label class="control-label col-xs-12 col-sm-2">{:__('目标金额')}:</label>
+        <div class="col-xs-12 col-sm-8">
+            <p class="form-control-static">¥{$row.target_amount}</p>
+        </div>
+    </div>
+    {else}
+    <div class="form-group">
+        <label class="control-label col-xs-12 col-sm-2">{:__('目标数量')}:</label>
+        <div class="col-xs-12 col-sm-8">
+            <p class="form-control-static">{$row.target_count}个</p>
+        </div>
+    </div>
+    {/if}
+    <div class="form-group">
+        <label class="control-label col-xs-12 col-sm-2">{:__('奖励金额')}:</label>
+        <div class="col-xs-12 col-sm-8">
+            <p class="form-control-static">¥{$row.reward_amount}</p>
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="control-label col-xs-12 col-sm-2">{:__('任务描述')}:</label>
+        <div class="col-xs-12 col-sm-8">
+            <textarea id="c-description" class="form-control" rows="3" name="row[description]" cols="50">{$row.description}</textarea>
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="control-label col-xs-12 col-sm-2">{:__('状态')}:</label>
+        <div class="col-xs-12 col-sm-8">
+            {:build_select('row[status]', $statusList, $row.status, ['class'=>'form-control selectpicker'])}
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="control-label col-xs-12 col-sm-2">{:__('排序')}:</label>
+        <div class="col-xs-12 col-sm-8">
+            <input id="c-weigh" class="form-control" name="row[weigh]" type="number" value="{$row.weigh}">
+        </div>
+    </div>
+    <div class="form-group layer-footer">
+        <label class="control-label col-xs-12 col-sm-2"></label>
+        <div class="col-xs-12 col-sm-8">
+            <button type="submit" class="btn btn-success btn-embossed disabled">{:__('OK')}</button>
+            <button type="reset" class="btn btn-default btn-embossed">{:__('Reset')}</button>
+        </div>
+    </div>
+</form>

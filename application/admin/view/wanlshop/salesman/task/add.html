@@ -1,0 +1,87 @@
+<form id="add-form" class="form-horizontal" role="form" data-toggle="validator" method="POST" action="">
+    <div class="form-group">
+        <label class="control-label col-xs-12 col-sm-2">{:__('任务名称')}:</label>
+        <div class="col-xs-12 col-sm-8">
+            <input id="c-name" data-rule="required" class="form-control" name="row[name]" type="text" value="" placeholder="如：邀请10个用户核销">
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="control-label col-xs-12 col-sm-2">{:__('任务类型')}:</label>
+        <div class="col-xs-12 col-sm-8">
+            {:build_select('row[type]', $typeList, '', ['class'=>'form-control selectpicker', 'id'=>'c-type', 'data-rule'=>'required'])}
+            <span class="help-block">
+                用户核销: 邀请新用户并成功核销<br>
+                商家核销: 邀请商家入驻并产生首单核销<br>
+                返利金额: 累计返利达到指定金额
+            </span>
+        </div>
+    </div>
+    <div class="form-group target-count-group">
+        <label class="control-label col-xs-12 col-sm-2">{:__('目标数量')}:</label>
+        <div class="col-xs-12 col-sm-8">
+            <input id="c-target_count" class="form-control" name="row[target_count]" type="number" min="1" value="" placeholder="如：10">
+            <span class="help-block">需要完成的数量</span>
+        </div>
+    </div>
+    <div class="form-group target-amount-group" style="display:none;">
+        <label class="control-label col-xs-12 col-sm-2">{:__('目标金额')}:</label>
+        <div class="col-xs-12 col-sm-8">
+            <div class="input-group">
+                <span class="input-group-addon">¥</span>
+                <input id="c-target_amount" class="form-control" name="row[target_amount]" type="number" min="0.01" step="0.01" value="" placeholder="如：1000.00">
+            </div>
+            <span class="help-block">累计返利需要达到的金额</span>
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="control-label col-xs-12 col-sm-2">{:__('奖励金额')}:</label>
+        <div class="col-xs-12 col-sm-8">
+            <div class="input-group">
+                <span class="input-group-addon">¥</span>
+                <input id="c-reward_amount" data-rule="required" class="form-control" name="row[reward_amount]" type="number" min="0.01" step="0.01" value="" placeholder="如：100.00">
+            </div>
+            <span class="help-block">任务完成后的奖励金额</span>
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="control-label col-xs-12 col-sm-2">{:__('任务描述')}:</label>
+        <div class="col-xs-12 col-sm-8">
+            <textarea id="c-description" class="form-control" rows="3" name="row[description]" cols="50" placeholder="任务详细说明（可选）"></textarea>
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="control-label col-xs-12 col-sm-2">{:__('状态')}:</label>
+        <div class="col-xs-12 col-sm-8">
+            {:build_select('row[status]', $statusList, 'normal', ['class'=>'form-control selectpicker'])}
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="control-label col-xs-12 col-sm-2">{:__('排序')}:</label>
+        <div class="col-xs-12 col-sm-8">
+            <input id="c-weigh" class="form-control" name="row[weigh]" type="number" value="0">
+            <span class="help-block">越大越靠前</span>
+        </div>
+    </div>
+    <div class="form-group layer-footer">
+        <label class="control-label col-xs-12 col-sm-2"></label>
+        <div class="col-xs-12 col-sm-8">
+            <button type="submit" class="btn btn-success btn-embossed disabled">{:__('OK')}</button>
+            <button type="reset" class="btn btn-default btn-embossed">{:__('Reset')}</button>
+        </div>
+    </div>
+</form>
+<script>
+$(function(){
+    // 根据任务类型显示/隐藏对应的目标输入框
+    $('#c-type').on('change', function(){
+        var type = $(this).val();
+        if(type === 'rebate_amount'){
+            $('.target-count-group').hide();
+            $('.target-amount-group').show();
+        } else {
+            $('.target-count-group').show();
+            $('.target-amount-group').hide();
+        }
+    });
+});
+</script>

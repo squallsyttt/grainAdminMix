@@ -1,0 +1,75 @@
+<form id="grant-form" class="form-horizontal" role="form" data-toggle="validator" method="POST" action="">
+    <div class="panel panel-default">
+        <div class="panel-heading">任务信息</div>
+        <div class="panel-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <table class="table table-bordered">
+                        <tr>
+                            <th width="30%">业务员</th>
+                            <td>{$row.salesman.user.nickname ?? '-'} ({$row.salesman.user.mobile ?? '-'})</td>
+                        </tr>
+                        <tr>
+                            <th>任务名称</th>
+                            <td>{$row.task.name ?? '-'}</td>
+                        </tr>
+                        <tr>
+                            <th>任务类型</th>
+                            <td>{$row.task.type_text ?? '-'}</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <table class="table table-bordered">
+                        <tr>
+                            <th width="30%">目标</th>
+                            <td>{$row.task.target_text ?? '-'}</td>
+                        </tr>
+                        <tr>
+                            <th>完成进度</th>
+                            <td>
+                                {if $row.task.type == 'rebate_amount'}
+                                ¥{$row.current_amount}
+                                {else}
+                                {$row.current_count}个
+                                {/if}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>审核时间</th>
+                            <td>{$row.audit_time|date='Y-m-d H:i:s',###}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="control-label col-xs-12 col-sm-2">{:__('发放金额')}:</label>
+        <div class="col-xs-12 col-sm-8">
+            <div class="input-group">
+                <span class="input-group-addon">¥</span>
+                <input id="c-reward_amount" data-rule="required" class="form-control" name="row[reward_amount]" type="number" min="0.01" step="0.01" value="{$row.reward_amount}">
+            </div>
+            <span class="help-block">默认为任务配置的奖励金额，可根据实际情况调整</span>
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="control-label col-xs-12 col-sm-2">{:__('发放备注')}:</label>
+        <div class="col-xs-12 col-sm-8">
+            <textarea id="c-reward_remark" class="form-control" rows="3" name="row[reward_remark]" cols="50" placeholder="可选"></textarea>
+        </div>
+    </div>
+    <div class="alert alert-warning">
+        <i class="fa fa-exclamation-triangle"></i>
+        <strong>注意：</strong>此操作将记录奖励已发放，实际发放方式请自行处理。
+    </div>
+    <div class="form-group layer-footer">
+        <label class="control-label col-xs-12 col-sm-2"></label>
+        <div class="col-xs-12 col-sm-8">
+            <button type="submit" class="btn btn-success btn-embossed"><i class="fa fa-gift"></i> 确认发放</button>
+            <button type="reset" class="btn btn-default btn-embossed">{:__('Reset')}</button>
+        </div>
+    </div>
+</form>
