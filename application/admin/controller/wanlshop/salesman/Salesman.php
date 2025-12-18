@@ -51,8 +51,8 @@ class Salesman extends Backend
 
             $list = Db::name('user')
                 ->alias('u')
-                ->leftJoin('salesman_stats s', 's.user_id = u.id')
-                ->leftJoin('admin a', 'a.id = u.salesman_admin_id')
+                ->join('__SALESMAN_STATS__ s', 's.user_id = u.id', 'LEFT')
+                ->join('__ADMIN__ a', 'a.id = u.salesman_admin_id', 'LEFT')
                 ->where($where)
                 ->field('u.id, u.nickname, u.mobile, u.avatar, u.status, u.salesman_remark,
                     u.salesman_admin_id, u.createtime, u.bonus_level,
@@ -246,7 +246,7 @@ class Salesman extends Backend
     public function detail($ids = null)
     {
         $row = Db::name('user')->alias('u')
-            ->leftJoin('salesman_stats s', 's.user_id = u.id')
+            ->join('__SALESMAN_STATS__ s', 's.user_id = u.id', 'LEFT')
             ->where('u.id', $ids)
             ->where('u.is_salesman', 1)
             ->field('u.*, s.invite_user_count, s.invite_user_verified, s.invite_shop_count,
@@ -262,7 +262,7 @@ class Salesman extends Backend
 
         // 重新获取数据
         $row = Db::name('user')->alias('u')
-            ->leftJoin('salesman_stats s', 's.user_id = u.id')
+            ->join('__SALESMAN_STATS__ s', 's.user_id = u.id', 'LEFT')
             ->where('u.id', $ids)
             ->field('u.*, s.invite_user_count, s.invite_user_verified, s.invite_shop_count,
                 s.invite_shop_verified, s.total_rebate_amount, s.total_reward_amount, s.pending_reward_amount')
