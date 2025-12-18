@@ -282,8 +282,8 @@ class Voucher extends Api
             ->where('sku.deletetime', null)
             ->where('sku.price', '<=', $maxSupplyPrice)
             ->where('sku.stock', '>', 0)  // 有库存
-            ->field('shop.id AS shop_id, shop.shopname, shop.avatar, shop.city, shop.`return` AS address, shop.service_ids, MIN(sku.price) AS min_supply_price')
-            ->group('shop.id, shop.shopname, shop.avatar, shop.city, shop.`return`, shop.service_ids')
+            ->field('shop.id AS shop_id, shop.shopname, shop.avatar, shop.city, shop.`return` AS address, shop.service_ids, shop.wecom_service_url, MIN(sku.price) AS min_supply_price')
+            ->group('shop.id, shop.shopname, shop.avatar, shop.city, shop.`return`, shop.service_ids, shop.wecom_service_url')
             ->select();
 
         $shopList = [];
