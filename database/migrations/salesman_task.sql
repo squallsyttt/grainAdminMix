@@ -93,7 +93,8 @@ VALUES
 ('file', @salesman_pid, 'wanlshop/salesman/salesman/add', '添加', 'fa fa-plus', '', '', 0, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), 0, 'normal'),
 ('file', @salesman_pid, 'wanlshop/salesman/salesman/edit', '编辑', 'fa fa-pencil', '', '', 0, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), 0, 'normal'),
 ('file', @salesman_pid, 'wanlshop/salesman/salesman/del', '删除', 'fa fa-trash', '', '', 0, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), 0, 'normal'),
-('file', @salesman_pid, 'wanlshop/salesman/salesman/detail', '详情', 'fa fa-eye', '', '', 0, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), 0, 'normal');
+('file', @salesman_pid, 'wanlshop/salesman/salesman/detail', '详情', 'fa fa-eye', '', '', 0, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), 0, 'normal'),
+('file', @salesman_pid, 'wanlshop/salesman/salesman/refreshstats', '刷新统计', 'fa fa-refresh', '', '', 0, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), 0, 'normal');
 
 -- 任务配置
 INSERT INTO `grain_auth_rule` (`type`, `pid`, `name`, `title`, `icon`, `condition`, `remark`, `ismenu`, `createtime`, `updatetime`, `weigh`, `status`)
@@ -115,7 +116,8 @@ INSERT INTO `grain_auth_rule` (`type`, `pid`, `name`, `title`, `icon`, `conditio
 VALUES
 ('file', @salesman_pid, 'wanlshop/salesman/progress/audit', '审核', 'fa fa-check', '', '', 0, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), 0, 'normal'),
 ('file', @salesman_pid, 'wanlshop/salesman/progress/grant', '发放奖励', 'fa fa-gift', '', '', 0, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), 0, 'normal'),
-('file', @salesman_pid, 'wanlshop/salesman/progress/cancel', '取消', 'fa fa-times', '', '', 0, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), 0, 'normal');
+('file', @salesman_pid, 'wanlshop/salesman/progress/cancel', '取消', 'fa fa-times', '', '', 0, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), 0, 'normal'),
+('file', @salesman_pid, 'wanlshop/salesman/progress/batchrefresh', '批量刷新', 'fa fa-refresh', '', '', 0, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), 0, 'normal');
 
 -- 待审核列表
 INSERT INTO `grain_auth_rule` (`type`, `pid`, `name`, `title`, `icon`, `condition`, `remark`, `ismenu`, `createtime`, `updatetime`, `weigh`, `status`)
