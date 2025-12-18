@@ -82,11 +82,12 @@ class SalesmanTaskProgress extends Model
     }
 
     /**
-     * 关联：业务员
+     * 关联：用户（业务员）
      */
-    public function salesman()
+    public function user()
     {
-        return $this->belongsTo('Salesman', 'salesman_id', 'id');
+        return $this->belongsTo('\\app\\common\\model\\User', 'user_id', 'id')
+            ->field('id, username, nickname, mobile, avatar');
     }
 
     /**

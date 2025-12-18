@@ -3,7 +3,6 @@
 namespace app\admin\controller\wanlshop\salesman;
 
 use app\common\controller\Backend;
-use app\admin\model\wanlshop\salesman\Salesman as SalesmanModel;
 use app\admin\model\wanlshop\salesman\SalesmanStats;
 use app\admin\model\wanlshop\salesman\SalesmanTask;
 use app\admin\model\wanlshop\salesman\SalesmanTaskProgress;
@@ -18,14 +17,15 @@ use think\Exception;
 class Salesman extends Backend
 {
     protected $model = null;
-    protected $relationSearch = true;
-    protected $searchFields = 'id,user.nickname,user.mobile';
+    protected $noNeedRight = ['selectuser'];
 
     public function _initialize()
     {
         parent::_initialize();
-        $this->model = new SalesmanModel();
-        $this->view->assign('statusList', $this->model->getStatusList());
+        $this->view->assign('statusList', [
+            'normal' => '正常',
+            'hidden' => '禁用'
+        ]);
     }
 
     /**
@@ -36,32 +36,68 @@ class Salesman extends Backend
         $this->request->filter(['strip_tags', 'trim']);
 
         if ($this->request->isAjax()) {
-            if ($this->request->request('keyField')) {
-                return $this->selectpage();
+            $search = $this->request->get('search', '');
+            $sort = $this->request->get('sort', 'id');
+            $order = $this->request->get('order', 'desc');
+            $offset = $this->request->get('offset/d', 0);
+            $limit = $this->request->get('limit/d', 10);
+
+            $where = ['is_salesman' => 1];
+
+            // 搜索条件
+            if ($search) {
+                $where['nickname|mobile'] = ['like', "%{$search}%"];
             }
 
-            list($where, $sort, $order, $offset, $limit) = $this->buildparams();
-
-            $list = $this->model
-                ->with(['user', 'admin', 'stats'])
+            $list = Db::name('user')
+                ->alias('u')
+                ->leftJoin('salesman_stats s', 's.user_id = u.id')
+                ->leftJoin('admin a', 'a.id = u.salesman_admin_id')
                 ->where($where)
+                ->field('u.id, u.nickname, u.mobile, u.avatar, u.status, u.salesman_remark,
+                    u.salesman_admin_id, u.createtime, u.bonus_level,
+                    s.invite_user_count, s.invite_user_verified, s.invite_shop_count, s.invite_shop_verified,
+                    s.total_rebate_amount, s.total_reward_amount, s.pending_reward_amount,
+                    a.nickname as admin_nickname')
                 ->order($sort, $order)
                 ->paginate($limit);
-
-            foreach ($list as $row) {
-                $row->visible(['id', 'user_id', 'status', 'status_text', 'remark', 'createtime']);
-                if ($row->user) {
-                    $row->user->visible(['id', 'nickname', 'mobile', 'avatar', 'bonus_level']);
-                }
-                if ($row->admin) {
-                    $row->admin->visible(['nickname']);
-                }
-            }
 
             return json(['total' => $list->total(), 'rows' => $list->items()]);
         }
 
         return $this->view->fetch();
+    }
+
+    /**
+     * 选择用户（用于添加业务员时选择）
+     */
+    public function selectuser()
+    {
+        if ($this->request->isAjax()) {
+            $search = $this->request->get('q_word/a', []);
+            $keyword = $search[0] ?? '';
+
+            $list = Db::name('user')
+                ->where('is_salesman', 0)
+                ->where(function ($query) use ($keyword) {
+                    if ($keyword) {
+                        $query->where('nickname|mobile', 'like', "%{$keyword}%");
+                    }
+                })
+                ->field('id, nickname, mobile, avatar')
+                ->limit(20)
+                ->select();
+
+            $result = [];
+            foreach ($list as $item) {
+                $result[] = [
+                    'id' => $item['id'],
+                    'name' => $item['nickname'] . ' (' . $item['mobile'] . ')'
+                ];
+            }
+
+            return json(['list' => $result]);
+        }
     }
 
     /**
@@ -87,31 +123,25 @@ class Salesman extends Backend
             }
 
             // 检查是否已是业务员
-            $exists = $this->model->where('user_id', $userId)->find();
-            if ($exists) {
+            if ($user['is_salesman'] == 1) {
                 $this->error('该用户已经是业务员');
             }
 
             Db::startTrans();
             try {
-                $data = [
-                    'user_id' => $userId,
-                    'status' => $params['status'] ?? 'normal',
-                    'remark' => $params['remark'] ?? '',
-                    'admin_id' => $this->auth->id,
-                    'createtime' => time(),
+                // 设置为业务员
+                Db::name('user')->where('id', $userId)->update([
+                    'is_salesman' => 1,
+                    'salesman_remark' => $params['remark'] ?? '',
+                    'salesman_admin_id' => $this->auth->id,
                     'updatetime' => time()
-                ];
+                ]);
 
-                $result = $this->model->save($data);
+                // 初始化统计数据
+                SalesmanStats::refreshStats($userId);
 
-                if ($result) {
-                    // 初始化统计数据
-                    SalesmanStats::refreshStats($this->model->id, $userId);
-
-                    // 为业务员分配所有启用的任务
-                    $this->assignTasksToSalesman($this->model->id, $userId);
-                }
+                // 为业务员分配所有启用的任务
+                $this->assignTasksToSalesman($userId);
 
                 Db::commit();
                 $this->success();
@@ -129,7 +159,7 @@ class Salesman extends Backend
      */
     public function edit($ids = null)
     {
-        $row = $this->model->get($ids);
+        $row = Db::name('user')->where('id', $ids)->where('is_salesman', 1)->find();
         if (!$row) {
             $this->error(__('No Results were found'));
         }
@@ -141,9 +171,9 @@ class Salesman extends Backend
             }
 
             try {
-                $result = $row->save([
-                    'status' => $params['status'] ?? $row->status,
-                    'remark' => $params['remark'] ?? $row->remark,
+                $result = Db::name('user')->where('id', $ids)->update([
+                    'status' => $params['status'] ?? $row['status'],
+                    'salesman_remark' => $params['remark'] ?? $row['salesman_remark'],
                     'updatetime' => time()
                 ]);
 
@@ -161,7 +191,7 @@ class Salesman extends Backend
     }
 
     /**
-     * 删除业务员
+     * 删除业务员（取消业务员身份）
      */
     public function del($ids = null)
     {
@@ -170,13 +200,13 @@ class Salesman extends Backend
         }
 
         $ids = $ids ?: $this->request->post('ids');
-        $row = $this->model->get($ids);
+        $row = Db::name('user')->where('id', $ids)->where('is_salesman', 1)->find();
         if (!$row) {
             $this->error(__('No Results were found'));
         }
 
         // 检查是否有进行中的任务
-        $hasOngoing = SalesmanTaskProgress::where('salesman_id', $ids)
+        $hasOngoing = SalesmanTaskProgress::where('user_id', $ids)
             ->whereIn('state', [
                 SalesmanTaskProgress::STATE_ONGOING,
                 SalesmanTaskProgress::STATE_COMPLETED,
@@ -191,11 +221,16 @@ class Salesman extends Backend
         Db::startTrans();
         try {
             // 删除统计数据
-            SalesmanStats::where('salesman_id', $ids)->delete();
+            SalesmanStats::where('user_id', $ids)->delete();
             // 删除任务进度
-            SalesmanTaskProgress::where('salesman_id', $ids)->delete();
-            // 删除业务员
-            $row->delete();
+            SalesmanTaskProgress::where('user_id', $ids)->delete();
+            // 取消业务员身份
+            Db::name('user')->where('id', $ids)->update([
+                'is_salesman' => 0,
+                'salesman_remark' => '',
+                'salesman_admin_id' => null,
+                'updatetime' => time()
+            ]);
 
             Db::commit();
             $this->success();
@@ -210,24 +245,38 @@ class Salesman extends Backend
      */
     public function detail($ids = null)
     {
-        $row = $this->model->with(['user', 'admin', 'stats'])->find($ids);
+        $row = Db::name('user')->alias('u')
+            ->leftJoin('salesman_stats s', 's.user_id = u.id')
+            ->where('u.id', $ids)
+            ->where('u.is_salesman', 1)
+            ->field('u.*, s.invite_user_count, s.invite_user_verified, s.invite_shop_count,
+                s.invite_shop_verified, s.total_rebate_amount, s.total_reward_amount, s.pending_reward_amount')
+            ->find();
+
         if (!$row) {
             $this->error(__('No Results were found'));
         }
 
         // 刷新统计数据
-        SalesmanStats::refreshStats($row->id, $row->user_id);
-        $row = $this->model->with(['user', 'admin', 'stats'])->find($ids);
+        SalesmanStats::refreshStats($ids);
+
+        // 重新获取数据
+        $row = Db::name('user')->alias('u')
+            ->leftJoin('salesman_stats s', 's.user_id = u.id')
+            ->where('u.id', $ids)
+            ->field('u.*, s.invite_user_count, s.invite_user_verified, s.invite_shop_count,
+                s.invite_shop_verified, s.total_rebate_amount, s.total_reward_amount, s.pending_reward_amount')
+            ->find();
 
         // 获取任务进度列表
         $taskProgress = SalesmanTaskProgress::with(['task'])
-            ->where('salesman_id', $ids)
+            ->where('user_id', $ids)
             ->order('id', 'asc')
             ->select();
 
         // 获取邀请的用户列表（最近10条）
         $invitedUsers = Db::name('user')
-            ->where('inviter_id', $row->user_id)
+            ->where('inviter_id', $ids)
             ->order('createtime', 'desc')
             ->limit(10)
             ->field('id, nickname, mobile, createtime')
@@ -235,7 +284,7 @@ class Salesman extends Backend
 
         // 获取邀请的商家列表（最近10条）
         $invitedShops = Db::name('wanlshop_shop')
-            ->where('inviter_id', $row->user_id)
+            ->where('inviter_id', $ids)
             ->order('createtime', 'desc')
             ->limit(10)
             ->field('id, shopname, mobile, createtime')
@@ -254,16 +303,16 @@ class Salesman extends Backend
      */
     public function refreshStats($ids = null)
     {
-        $row = $this->model->get($ids);
+        $row = Db::name('user')->where('id', $ids)->where('is_salesman', 1)->find();
         if (!$row) {
             $this->error(__('No Results were found'));
         }
 
         try {
-            SalesmanStats::refreshStats($row->id, $row->user_id);
+            SalesmanStats::refreshStats($ids);
 
             // 同时刷新任务进度
-            $this->refreshTaskProgress($row->id, $row->user_id);
+            $this->refreshTaskProgress($ids);
 
             $this->success('刷新成功');
         } catch (Exception $e) {
@@ -274,14 +323,14 @@ class Salesman extends Backend
     /**
      * 为业务员分配所有启用的任务
      */
-    protected function assignTasksToSalesman($salesmanId, $userId)
+    protected function assignTasksToSalesman($userId)
     {
         $tasks = SalesmanTask::where('status', 'normal')->select();
         $now = time();
 
         foreach ($tasks as $task) {
             // 检查是否已有该任务的进度记录
-            $exists = SalesmanTaskProgress::where('salesman_id', $salesmanId)
+            $exists = SalesmanTaskProgress::where('user_id', $userId)
                 ->where('task_id', $task->id)
                 ->find();
 
@@ -291,7 +340,7 @@ class Salesman extends Backend
 
                 $progress = new SalesmanTaskProgress();
                 $progress->save([
-                    'salesman_id' => $salesmanId,
+                    'user_id' => $userId,
                     'task_id' => $task->id,
                     'current_count' => $task->isCountType() ? $currentValue : 0,
                     'current_amount' => $task->isAmountType() ? $currentValue : 0,
@@ -315,10 +364,10 @@ class Salesman extends Backend
     /**
      * 刷新业务员任务进度
      */
-    protected function refreshTaskProgress($salesmanId, $userId)
+    protected function refreshTaskProgress($userId)
     {
         $progressList = SalesmanTaskProgress::with(['task'])
-            ->where('salesman_id', $salesmanId)
+            ->where('user_id', $userId)
             ->where('state', SalesmanTaskProgress::STATE_ONGOING)
             ->select();
 

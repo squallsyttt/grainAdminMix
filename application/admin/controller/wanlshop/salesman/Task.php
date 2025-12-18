@@ -4,7 +4,6 @@ namespace app\admin\controller\wanlshop\salesman;
 
 use app\common\controller\Backend;
 use app\admin\model\wanlshop\salesman\SalesmanTask as TaskModel;
-use app\admin\model\wanlshop\salesman\Salesman;
 use app\admin\model\wanlshop\salesman\SalesmanTaskProgress;
 use app\admin\model\wanlshop\salesman\SalesmanStats;
 use think\Db;
@@ -239,22 +238,25 @@ class Task extends Backend
             return;
         }
 
-        $salesmen = Salesman::where('status', 'normal')->select();
+        // 获取所有业务员（is_salesman = 1）
+        $salesmen = Db::name('user')->where('is_salesman', 1)->where('status', 'normal')->select();
         $now = time();
 
         foreach ($salesmen as $salesman) {
+            $userId = $salesman['id'];
+
             // 检查是否已有该任务的进度记录
-            $exists = SalesmanTaskProgress::where('salesman_id', $salesman->id)
+            $exists = SalesmanTaskProgress::where('user_id', $userId)
                 ->where('task_id', $taskId)
                 ->find();
 
             if (!$exists) {
                 // 获取当前进度值
-                $currentValue = SalesmanStats::getProgressValue($salesman->user_id, $task->type);
+                $currentValue = SalesmanStats::getProgressValue($userId, $task->type);
 
                 $progress = new SalesmanTaskProgress();
                 $progress->save([
-                    'salesman_id' => $salesman->id,
+                    'user_id' => $userId,
                     'task_id' => $taskId,
                     'current_count' => $task->isCountType() ? $currentValue : 0,
                     'current_amount' => $task->isAmountType() ? $currentValue : 0,

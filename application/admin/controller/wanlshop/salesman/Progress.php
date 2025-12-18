@@ -17,7 +17,7 @@ class Progress extends Backend
 {
     protected $model = null;
     protected $relationSearch = true;
-    protected $searchFields = 'salesman.user.nickname,salesman.user.mobile,task.name';
+    protected $searchFields = 'user.nickname,user.mobile,task.name';
 
     public function _initialize()
     {
@@ -41,19 +41,19 @@ class Progress extends Backend
             list($where, $sort, $order, $offset, $limit) = $this->buildparams();
 
             $list = $this->model
-                ->with(['salesman.user', 'task'])
+                ->with(['user', 'task'])
                 ->where($where)
                 ->order($sort, $order)
                 ->paginate($limit);
 
             foreach ($list as $row) {
                 $row->visible([
-                    'id', 'salesman_id', 'task_id', 'current_count', 'current_amount',
+                    'id', 'user_id', 'task_id', 'current_count', 'current_amount',
                     'state', 'state_text', 'progress_percent', 'reward_amount',
                     'complete_time', 'audit_time', 'reward_time', 'createtime'
                 ]);
-                if ($row->salesman && $row->salesman->user) {
-                    $row->salesman->user->visible(['nickname', 'mobile']);
+                if ($row->user) {
+                    $row->user->visible(['nickname', 'mobile']);
                 }
                 if ($row->task) {
                     $row->task->visible(['name', 'type', 'type_text', 'target_text']);
@@ -77,7 +77,7 @@ class Progress extends Backend
             list($where, $sort, $order, $offset, $limit) = $this->buildparams();
 
             $list = $this->model
-                ->with(['salesman.user', 'task'])
+                ->with(['user', 'task'])
                 ->where('state', ProgressModel::STATE_COMPLETED)
                 ->where($where)
                 ->order('complete_time', 'asc')
@@ -85,12 +85,12 @@ class Progress extends Backend
 
             foreach ($list as $row) {
                 $row->visible([
-                    'id', 'salesman_id', 'task_id', 'current_count', 'current_amount',
+                    'id', 'user_id', 'task_id', 'current_count', 'current_amount',
                     'state', 'state_text', 'progress_percent', 'reward_amount',
                     'complete_time', 'createtime'
                 ]);
-                if ($row->salesman && $row->salesman->user) {
-                    $row->salesman->user->visible(['nickname', 'mobile']);
+                if ($row->user) {
+                    $row->user->visible(['nickname', 'mobile']);
                 }
                 if ($row->task) {
                     $row->task->visible(['name', 'type', 'type_text', 'target_text', 'reward_amount']);
@@ -108,7 +108,7 @@ class Progress extends Backend
      */
     public function audit($ids = null)
     {
-        $row = $this->model->with(['salesman.user', 'task'])->find($ids);
+        $row = $this->model->with(['user', 'task'])->find($ids);
         if (!$row) {
             $this->error(__('No Results were found'));
         }
@@ -163,7 +163,7 @@ class Progress extends Backend
      */
     public function grant($ids = null)
     {
-        $row = $this->model->with(['salesman.user', 'task'])->find($ids);
+        $row = $this->model->with(['user', 'task'])->find($ids);
         if (!$row) {
             $this->error(__('No Results were found'));
         }
@@ -190,8 +190,8 @@ class Progress extends Backend
                 ]);
 
                 // 更新统计数据
-                if ($row->salesman) {
-                    SalesmanStats::refreshStats($row->salesman->id, $row->salesman->user_id);
+                if ($row->user_id) {
+                    SalesmanStats::refreshStats($row->user_id);
                 }
 
                 Db::commit();
@@ -257,8 +257,8 @@ class Progress extends Backend
         $updated = 0;
 
         foreach ($ids as $id) {
-            $progress = $this->model->with(['salesman', 'task'])->find($id);
-            if (!$progress || !$progress->salesman || !$progress->task) {
+            $progress = $this->model->with(['user', 'task'])->find($id);
+            if (!$progress || !$progress->user || !$progress->task) {
                 continue;
             }
 
@@ -268,7 +268,7 @@ class Progress extends Backend
             }
 
             $currentValue = SalesmanStats::getProgressValue(
-                $progress->salesman->user_id,
+                $progress->user_id,
                 $progress->task->type
             );
 

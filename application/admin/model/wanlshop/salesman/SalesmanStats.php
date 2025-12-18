@@ -20,15 +20,7 @@ class SalesmanStats extends Model
     protected $updateTime = 'updatetime';
 
     /**
-     * 关联：业务员
-     */
-    public function salesman()
-    {
-        return $this->belongsTo('Salesman', 'salesman_id', 'id');
-    }
-
-    /**
-     * 关联：用户
+     * 关联：用户（业务员）
      */
     public function user()
     {
@@ -38,11 +30,10 @@ class SalesmanStats extends Model
     /**
      * 刷新统计数据
      *
-     * @param int $salesmanId 业务员ID
-     * @param int $userId 用户ID
+     * @param int $userId 业务员用户ID
      * @return bool
      */
-    public static function refreshStats($salesmanId, $userId)
+    public static function refreshStats($userId)
     {
         $now = time();
 
@@ -73,20 +64,19 @@ class SalesmanStats extends Model
 
         // 6. 统计累计任务奖励（已发放）
         $totalRewardAmount = Db::name('salesman_task_progress')
-            ->where('salesman_id', $salesmanId)
+            ->where('user_id', $userId)
             ->where('state', SalesmanTaskProgress::STATE_GRANTED)
             ->sum('reward_amount') ?: 0;
 
         // 7. 统计待发放奖励
         $pendingRewardAmount = Db::name('salesman_task_progress')
-            ->where('salesman_id', $salesmanId)
+            ->where('user_id', $userId)
             ->whereIn('state', [SalesmanTaskProgress::STATE_COMPLETED, SalesmanTaskProgress::STATE_AUDITED])
             ->sum('reward_amount') ?: 0;
 
         // 更新或插入统计记录
-        $exists = self::where('salesman_id', $salesmanId)->find();
+        $exists = self::where('user_id', $userId)->find();
         $data = [
-            'salesman_id' => $salesmanId,
             'user_id' => $userId,
             'invite_user_count' => $inviteUserCount,
             'invite_user_verified' => $inviteUserVerified,
@@ -111,9 +101,9 @@ class SalesmanStats extends Model
      */
     public static function refreshAllStats()
     {
-        $salesmen = Salesman::where('status', 'normal')->select();
+        $salesmen = Db::name('user')->where('is_salesman', 1)->select();
         foreach ($salesmen as $salesman) {
-            self::refreshStats($salesman->id, $salesman->user_id);
+            self::refreshStats($salesman['id']);
         }
     }
 
