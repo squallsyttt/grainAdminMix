@@ -284,10 +284,12 @@ class Salesman extends Backend
 
         // 获取邀请的商家列表（最近10条）
         $invitedShops = Db::name('wanlshop_shop')
-            ->where('inviter_id', $ids)
-            ->order('createtime', 'desc')
+            ->alias('s')
+            ->join('__USER__ u', 'u.id = s.user_id', 'LEFT')
+            ->where('s.inviter_id', $ids)
+            ->order('s.createtime', 'desc')
             ->limit(10)
-            ->field('id, shopname, mobile, createtime')
+            ->field('s.id, s.shopname, u.mobile, s.createtime')
             ->select();
 
         $this->view->assign('row', $row);
