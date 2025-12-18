@@ -282,7 +282,7 @@ class Product extends Api
 			// 查询评论
 			$goods['comment_list'] = $goods->comment_list;
             // 获取店铺详情
-            $goods->shop && $goods->shop->visible(['shopname','service_ids','avatar','city','like','score_describe','score_service','score_logistics']);
+            $goods->shop && $goods->shop->visible(['shopname','service_ids','avatar','city','like','score_describe','score_service','score_logistics','wecom_service_url']);
 			// 查询快递 运费ID 商品重量 邮递城市 商品数量
 			$goods['freight'] = $this->freight($goods['freight_id']);
 			// 查询促销
