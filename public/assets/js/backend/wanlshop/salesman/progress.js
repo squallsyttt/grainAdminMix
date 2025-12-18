@@ -26,12 +26,12 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
                     [
                         {checkbox: true},
                         {field: 'id', title: __('ID'), sortable: true},
-                        {field: 'salesman.user.nickname', title: __('业务员'), operate: 'LIKE'},
-                        {field: 'salesman.user.mobile', title: __('手机号'), operate: 'LIKE'},
-                        {field: 'task.name', title: __('任务名称'), operate: 'LIKE'},
-                        {field: 'task.type_text', title: __('任务类型')},
-                        {field: 'task.target_text', title: __('目标')},
-                        {field: 'progress', title: __('当前进度'), formatter: function(value, row) {
+                        {field: 'salesman.user.nickname', title: __('业务员'), operate: false},
+                        {field: 'salesman.user.mobile', title: __('手机号'), operate: false},
+                        {field: 'task.name', title: __('任务名称'), operate: false},
+                        {field: 'task.type_text', title: __('任务类型'), operate: false},
+                        {field: 'task.target_text', title: __('目标'), operate: false},
+                        {field: 'progress', title: __('当前进度'), operate: false, formatter: function(value, row) {
                             if (row.task && row.task.type === 'rebate_amount') {
                                 return '¥' + row.current_amount + ' (' + row.progress_percent + '%)';
                             }
@@ -40,7 +40,7 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
                         {field: 'reward_amount', title: __('奖励金额'), formatter: function(value) {
                             return '¥' + value;
                         }},
-                        {field: 'state_text', title: __('状态'), searchList: {"0": __('进行中'), "1": __('待审核'), "2": __('待发放'), "3": __('已发放'), "4": __('已取消')}, formatter: function(value, row) {
+                        {field: 'state', title: __('状态'), searchList: {"0": __('进行中'), "1": __('待审核'), "2": __('待发放'), "3": __('已发放'), "4": __('已取消')}, formatter: function(value, row) {
                             var classMap = {
                                 0: 'info',
                                 1: 'warning',
@@ -48,7 +48,14 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
                                 3: 'success',
                                 4: 'default'
                             };
-                            return '<span class="label label-' + (classMap[row.state] || 'default') + '">' + value + '</span>';
+                            var textMap = {
+                                0: '进行中',
+                                1: '待审核',
+                                2: '待发放',
+                                3: '已发放',
+                                4: '已取消'
+                            };
+                            return '<span class="label label-' + (classMap[value] || 'default') + '">' + (textMap[value] || value) + '</span>';
                         }},
                         {field: 'createtime', title: __('创建时间'), operate:'RANGE', addclass:'datetimerange', autocomplete:false, formatter: Table.api.formatter.datetime},
                         {field: 'operate', title: __('操作'), table: table, events: Table.api.events.operate, formatter: function(value, row, index) {
@@ -138,12 +145,12 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
                     [
                         {checkbox: true},
                         {field: 'id', title: __('ID'), sortable: true},
-                        {field: 'salesman.user.nickname', title: __('业务员'), operate: 'LIKE'},
-                        {field: 'salesman.user.mobile', title: __('手机号'), operate: 'LIKE'},
-                        {field: 'task.name', title: __('任务名称'), operate: 'LIKE'},
-                        {field: 'task.type_text', title: __('任务类型')},
-                        {field: 'task.target_text', title: __('目标')},
-                        {field: 'progress', title: __('完成进度'), formatter: function(value, row) {
+                        {field: 'salesman.user.nickname', title: __('业务员'), operate: false},
+                        {field: 'salesman.user.mobile', title: __('手机号'), operate: false},
+                        {field: 'task.name', title: __('任务名称'), operate: false},
+                        {field: 'task.type_text', title: __('任务类型'), operate: false},
+                        {field: 'task.target_text', title: __('目标'), operate: false},
+                        {field: 'progress', title: __('完成进度'), operate: false, formatter: function(value, row) {
                             if (row.task && row.task.type === 'rebate_amount') {
                                 return '¥' + row.current_amount;
                             }
