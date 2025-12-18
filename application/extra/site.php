@@ -20,7 +20,7 @@ return array (
     'article' => 'Article',
     'test' => 'Test',
   ),
-  'configgroup' =>
+  'configgroup' => 
   array (
     'basic' => 'Basic',
     'email' => 'Email',
@@ -28,7 +28,6 @@ return array (
     'user' => 'User',
     'example' => 'Example',
     'invite' => 'Invite',
-    'mp' => 'MiniProgram',
   ),
   'mail_type' => '1',
   'mail_smtp_host' => 'smtp.qq.com',
