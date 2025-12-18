@@ -16,7 +16,7 @@
         <label class="control-label col-xs-12 col-sm-2">{:__('Flag')}:</label>
         <div class="col-xs-12 col-sm-8">
                         
-            <select  id="c-flag" data-rule="required" class="form-control selectpicker" multiple="" name="row[flag][]">
+            <select  id="c-flag" class="form-control selectpicker" multiple="" name="row[flag][]">
                 {foreach name="flagList" item="vo"}
                     <option value="{$key}" {in name="key" value="$row.flag"}selected{/in}>{$vo}</option>
                 {/foreach}
@@ -55,7 +55,7 @@
 	    <label class="control-label col-xs-12 col-sm-2">{:__('Images')}:</label>
 	    <div class="col-xs-12 col-sm-8">
 	        <div class="input-group">
-	            <input id="c-images" data-rule="required" class="form-control" size="50" name="row[images]" type="text" value="{$row.images|htmlentities}">
+	            <input id="c-images" class="form-control" size="50" name="row[images]" type="text" value="{$row.images|htmlentities}">
 	            <div class="input-group-addon no-border no-padding">
 	                <span><button type="button" id="plupload-images" class="btn btn-danger plupload" data-input-id="c-images" data-mimetype="image/gif,image/jpeg,image/png,image/jpg,image/bmp" data-multiple="true" data-preview-id="p-images"><i class="fa fa-upload"></i> {:__('Upload')}</button></span>
 	                <span><button type="button" id="fachoose-images" class="btn btn-primary fachoose" data-input-id="c-images" data-mimetype="image/*" data-multiple="true"><i class="fa fa-list"></i> {:__('Choose')}</button></span>
@@ -72,7 +72,7 @@
         <label class="control-label col-xs-12 col-sm-2">{:__('Attachfile')}:</label>
         <div class="col-xs-12 col-sm-8">
             <div class="input-group">
-                <input id="c-attachfile" data-rule="required" class="form-control" size="50" name="row[attachfile]" type="text" value="{$row.attachfile|htmlentities}">
+                <input id="c-attachfile" class="form-control" size="50" name="row[attachfile]" type="text" value="{$row.attachfile|htmlentities}">
                 <div class="input-group-addon no-border no-padding">
                     <span><button type="button" id="plupload-attachfile" class="btn btn-danger plupload" data-input-id="c-attachfile" data-multiple="false" data-preview-id="p-attachfile"><i class="fa fa-upload"></i> {:__('Upload')}</button></span>
                     <span><button type="button" id="fachoose-attachfile" class="btn btn-primary fachoose" data-input-id="c-attachfile" data-multiple="false"><i class="fa fa-list"></i> {:__('Choose')}</button></span>
