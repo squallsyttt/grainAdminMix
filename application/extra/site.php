@@ -20,7 +20,7 @@ return array (
     'article' => 'Article',
     'test' => 'Test',
   ),
-  'configgroup' => 
+  'configgroup' =>
   array (
     'basic' => 'Basic',
     'email' => 'Email',
@@ -28,6 +28,7 @@ return array (
     'user' => 'User',
     'example' => 'Example',
     'invite' => 'Invite',
+    'mp' => 'MiniProgram',
   ),
   'mail_type' => '1',
   'mail_smtp_host' => 'smtp.qq.com',
@@ -45,4 +46,6 @@ return array (
   'invite_base_ratio' => '1.2',
   'invite_level1_ratio' => '1.5',
   'invite_level2_ratio' => '2',
+  'mp_show_merchant' => '1',
+  'mp_show_news' => '1',
 );

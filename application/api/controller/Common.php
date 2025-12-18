@@ -65,11 +65,18 @@ class Common extends Api
             $upload['cdnurl'] = $upload['cdnurl'] ? $upload['cdnurl'] : cdnurl('', true);
             $upload['uploadurl'] = preg_match("/^((?:[a-z]+:)?\/\/)(.*)/i", $upload['uploadurl']) ? $upload['uploadurl'] : url($upload['storage'] == 'local' ? '/api/common/upload' : $upload['uploadurl'], '', false, true);
 
+            // 获取 TabBar 配置
+            $tabbarConfig = [
+                'merchant' => (bool)config('site.mp_show_merchant'),
+                'news'     => (bool)config('site.mp_show_news'),
+            ];
+
             $content = [
                 'citydata'    => Area::getCityFromLngLat($lng, $lat),
                 'versiondata' => Version::check($version),
                 'uploaddata'  => $upload,
                 'coverdata'   => Config::get("cover"),
+                'tabbardata'  => $tabbarConfig,
             ];
             $this->success('', $content);
         } else {
