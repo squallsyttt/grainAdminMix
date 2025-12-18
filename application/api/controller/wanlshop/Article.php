@@ -125,7 +125,7 @@ class Article extends Api
 	 *
 	 * @ApiSummary  (WanlShop 获取内容详情)
 	 * @ApiMethod   (POST)
-	 * 
+	 *
 	 * @param string $id 文章ID
 	 */
 	public function adDetails($id = null)
@@ -139,5 +139,38 @@ class Article extends Api
 		$row->setInc('views');
 		$this->success('返回成功', $row);
 	}
-	
+
+	/**
+	 * 获取协议文章（用户服务协议/隐私政策）
+	 *
+	 * 根据分类ID获取该分类下权重最高的文章内容
+	 *
+	 * @ApiSummary  (获取协议文章)
+	 * @ApiMethod   (GET)
+	 *
+	 * @param int $category_id 分类ID（137=用户服务协议，138=隐私政策）
+	 */
+	public function getAgreement()
+	{
+		$category_id = $this->request->get('category_id');
+		if (!$category_id) {
+			$this->error(__('缺少分类ID参数'));
+		}
+
+		$row = model('app\api\model\wanlshop\Article')
+			->where([
+				'category_id' => $category_id,
+				'status' => 'normal'
+			])
+			->field('id,title,content,updatetime')
+			->order('weigh desc, id desc')
+			->find();
+
+		if (!$row) {
+			$this->error(__('没有找到协议内容'));
+		}
+
+		$this->success('返回成功', $row);
+	}
+
 }
