@@ -20,7 +20,7 @@ return array (
     'article' => 'Article',
     'test' => 'Test',
   ),
-  'configgroup' =>
+  'configgroup' => 
   array (
     'basic' => 'Basic',
     'email' => 'Email',
