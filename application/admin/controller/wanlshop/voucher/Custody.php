@@ -311,17 +311,38 @@ class Custody extends Backend
 
         // 计算当前SKU的实际可用重量（汇总该SKU下所有券的损耗后重量）
         $currentSkuActualWeight = 0;
+        // 计算当前这张券的实际可用重量
+        $currentVoucherActualWeight = 0;
         foreach ($voucherList as $v) {
             if ($v['sku_difference'] == $currentSkuDifference) {
                 $currentSkuActualWeight += $v['actual_weight'];
             }
+            // 找到当前券的实际可用重量
+            if ($v['voucher_id'] == $voucher->id) {
+                $currentVoucherActualWeight = $v['actual_weight'];
+            }
         }
+
+        // 当前券占平台同维度总重量的比例
+        $currentVoucherWeightRatio = $totalActualWeight > 0
+            ? round($currentVoucherActualWeight / $totalActualWeight * 100, 2)
+            : 0;
 
         return [
             'region_city_code' => $regionCityCode,
             'region_city_name' => $regionCityName,
             'category_id' => $categoryId,
             'category_name' => $categoryName,
+            // 当前这张券的信息
+            'current_voucher' => [
+                'voucher_id' => $voucher->id,
+                'voucher_no' => $voucher->voucher_no,
+                'sku_difference' => $currentSkuDifference,
+                'sku_weight' => $currentSkuWeight,
+                'actual_weight' => round($currentVoucherActualWeight, 2),
+                'weight_ratio' => $currentVoucherWeightRatio,
+            ],
+            // 当前SKU的汇总信息（保留）
             'current_sku' => [
                 'sku_difference' => $currentSkuDifference,
                 'sku_weight' => $currentSkuWeight,

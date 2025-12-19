@@ -118,29 +118,25 @@
                 </div>
 
                 <div class="row">
-                    <!-- 当前券SKU概览 -->
+                    <!-- 当前券概览 -->
                     <div class="col-md-4">
                         <div class="panel panel-primary">
                             <div class="panel-heading">
-                                <h5 class="panel-title"><i class="fa fa-tag"></i> 当前券SKU: {$inventory.current_sku.sku_difference}</h5>
+                                <h5 class="panel-title"><i class="fa fa-tag"></i> 当前券: {$inventory.current_voucher.sku_difference}</h5>
                             </div>
                             <div class="panel-body text-center">
                                 <div style="font-size: 48px; font-weight: bold; color: #337ab7;">
-                                    {$inventory.current_sku.weight_ratio}%
+                                    {$inventory.current_voucher.weight_ratio}%
                                 </div>
                                 <p class="text-muted">占平台同维度总重量</p>
                                 <hr>
                                 <div class="row">
-                                    <div class="col-xs-4">
-                                        <div style="font-size: 24px; font-weight: bold;">{$inventory.current_sku.voucher_count}</div>
-                                        <small class="text-muted">券数量</small>
-                                    </div>
-                                    <div class="col-xs-4">
-                                        <div style="font-size: 24px; font-weight: bold;">{$inventory.current_sku.total_weight}</div>
+                                    <div class="col-xs-6">
+                                        <div style="font-size: 24px; font-weight: bold;">{$inventory.current_voucher.sku_weight}</div>
                                         <small class="text-muted">原始重量(KG)</small>
                                     </div>
-                                    <div class="col-xs-4">
-                                        <div style="font-size: 24px; font-weight: bold;">{$inventory.current_sku.actual_weight|default='-'}</div>
+                                    <div class="col-xs-6">
+                                        <div style="font-size: 24px; font-weight: bold;">{$inventory.current_voucher.actual_weight}</div>
                                         <small class="text-muted">实际可用(KG)</small>
                                     </div>
                                 </div>
@@ -148,16 +144,16 @@
                             <div class="panel-footer" style="background: #f9f9f9;">
                                 <div class="row text-center" style="margin: 0;">
                                     <div class="col-xs-4" style="padding: 5px 0;">
-                                        <div style="font-size: 18px; font-weight: bold;">{$inventory.safe_current_sku.voucher_count|default='0'}</div>
-                                        <small class="text-muted">安全券数量</small>
+                                        <div style="font-size: 18px; font-weight: bold;">{$inventory.current_sku.voucher_count}</div>
+                                        <small class="text-muted">同SKU券数</small>
                                     </div>
                                     <div class="col-xs-4" style="padding: 5px 0;">
-                                        <div style="font-size: 18px; font-weight: bold;">{$inventory.safe_current_sku.total_weight|default='0'}</div>
-                                        <small class="text-muted">安全原始重量(KG)</small>
+                                        <div style="font-size: 18px; font-weight: bold;">{$inventory.current_sku.total_weight}</div>
+                                        <small class="text-muted">同SKU总重量</small>
                                     </div>
                                     <div class="col-xs-4" style="padding: 5px 0;">
-                                        <div style="font-size: 18px; font-weight: bold;">{$inventory.safe_current_sku.actual_weight|default='0'}</div>
-                                        <small class="text-muted">安全实际可用(KG)</small>
+                                        <div style="font-size: 18px; font-weight: bold;">{$inventory.current_sku.actual_weight}</div>
+                                        <small class="text-muted">同SKU可用</small>
                                     </div>
                                 </div>
                             </div>
