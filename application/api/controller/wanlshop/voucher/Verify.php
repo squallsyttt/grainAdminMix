@@ -460,8 +460,8 @@ class Verify extends Api
             $this->processInviterUpgrade($voucher->user_id, $verification->id, $voucher->id);
             // 轨道2：邀请人自核销返利发放
             $this->processCashbackReward($voucher->user_id, $verification->id, $voucher->id);
-            // 轨道3：店铺邀请返利待审核
-            $this->processShopInviteRebatePending($shop, $verification, $voucher);
+            // 轨道3：店铺邀请返利 - 已移除
+            // 新逻辑：店铺注册审核通过时直接触发升级，核销不再触发店铺邀请返利
 
             Db::commit();
 
@@ -646,55 +646,5 @@ class Verify extends Api
         }
 
         return $shop;
-    }
-
-    /**
-     * 轨道3：店铺邀请返利待审核
-     *
-     * 检查店铺是否由邀请注册，且尚未产生过返利，
-     * 如是则插入待审核队列，等待后台管理员审核处理
-     *
-     * @param Shop $shop 核销店铺
-     * @param VoucherVerification $verification 核销记录
-     * @param Voucher $voucher 核销券
-     */
-    protected function processShopInviteRebatePending(Shop $shop, $verification, $voucher)
-    {
-        // 1. 检查店铺是否有邀请人
-        if (empty($shop->inviter_id)) {
-            return;
-        }
-
-        // 2. 检查该店铺是否已产生过返利记录（每店仅首单）
-        $exists = Db::name('shop_invite_rebate_log')
-            ->where('shop_id', $shop->id)
-            ->find();
-        if ($exists) {
-            return;
-        }
-
-        // 3. 检查待审核队列是否已有该店铺的记录
-        $pending = Db::name('shop_invite_pending')
-            ->where('shop_id', $shop->id)
-            ->where('state', 0)
-            ->find();
-        if ($pending) {
-            return;
-        }
-
-        // 4. 插入待审核队列
-        $now = time();
-        Db::name('shop_invite_pending')->insert([
-            'shop_id' => $shop->id,
-            'inviter_id' => $shop->inviter_id,
-            'verification_id' => $verification->id,
-            'voucher_id' => $voucher->id,
-            'user_id' => $voucher->user_id,
-            'supply_price' => $verification->supply_price,
-            'verify_time' => $now,
-            'state' => 0,
-            'createtime' => $now,
-            'updatetime' => $now
-        ]);
     }
 }

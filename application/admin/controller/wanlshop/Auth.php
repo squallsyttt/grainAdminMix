@@ -106,6 +106,11 @@ class Auth extends Backend
 						$config = model('app\index\model\wanlshop\ShopConfig');
 						$config->shop_id = $shop->id;
 						$result = $config->save();
+
+						// 【店铺邀请升级】审核通过时触发邀请人升级
+						if ($shop->inviter_id) {
+						    $this->processShopInviterUpgrade($shop->inviter_id, $shop->id);
+						}
 					}
 				}
 			    Db::commit();
@@ -181,5 +186,81 @@ class Auth extends Backend
 		$this->view->assign("row", $row);
 		return $this->view->fetch();
 	}
-	
+
+	/**
+	 * 店铺邀请触发邀请人升级
+	 *
+	 * 当店铺审核通过时，如果店铺有邀请人且邀请人等级<2，则升级邀请人
+	 *
+	 * @param int $inviterId 邀请人用户ID
+	 * @param int $shopId 店铺ID
+	 */
+	protected function processShopInviterUpgrade($inviterId, $shopId)
+	{
+	    // 检查是否已升级过（幂等）
+	    $existsUpgrade = Db::name('shop_invite_upgrade_log')
+	        ->where('user_id', $inviterId)
+	        ->where('shop_id', $shopId)
+	        ->find();
+	    if ($existsUpgrade) {
+	        return;
+	    }
+
+	    // 获取邀请人信息并加锁
+	    $inviter = Db::name('user')
+	        ->where('id', $inviterId)
+	        ->lock(true)
+	        ->field('id, bonus_level, bonus_ratio')
+	        ->find();
+	    if (!$inviter) {
+	        return;
+	    }
+
+	    $currentLevel = (int)$inviter['bonus_level'];
+	    if ($currentLevel >= 2) {
+	        return; // 已满级，不升级
+	    }
+
+	    // 计算升级后的等级和比例
+	    $afterLevel = $currentLevel + 1;
+	    $ratios = $this->getInviteRatios();
+	    $beforeRatio = (float)$inviter['bonus_ratio'];
+	    $afterRatio = isset($ratios[$afterLevel]) ? (float)$ratios[$afterLevel] : $beforeRatio;
+
+	    $now = time();
+
+	    // 更新邀请人等级
+	    Db::name('user')->where('id', $inviterId)->update([
+	        'bonus_level' => $afterLevel,
+	        'bonus_ratio' => $afterRatio
+	    ]);
+
+	    // 记录升级日志
+	    Db::name('shop_invite_upgrade_log')->insert([
+	        'user_id' => $inviterId,
+	        'shop_id' => $shopId,
+	        'verification_id' => 0, // 注册时升级，无核销记录
+	        'voucher_id' => 0,
+	        'before_level' => $currentLevel,
+	        'after_level' => $afterLevel,
+	        'before_ratio' => $beforeRatio,
+	        'after_ratio' => $afterRatio,
+	        'createtime' => $now
+	    ]);
+	}
+
+	/**
+	 * 获取返利比例配置
+	 *
+	 * @return array
+	 */
+	protected function getInviteRatios()
+	{
+	    return [
+	        0 => (float)config('site.invite_base_ratio') ?: 1.0,
+	        1 => (float)config('site.invite_level1_ratio') ?: 1.5,
+	        2 => (float)config('site.invite_level2_ratio') ?: 2.0,
+	    ];
+	}
+
 }

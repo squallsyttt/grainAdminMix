@@ -517,18 +517,14 @@ class MiniProgramAuth extends Api
                 }
             }
 
-            // 【新增】店铺邀请统计
+            // 【新增】店铺邀请统计（简化版：只统计邀请数和已触发升级数）
             $shopInvitedTotal = (int)Db::name('wanlshop_shop')
                 ->where('inviter_id', $userId)
                 ->count();
 
-            $shopRebatedCount = (int)Db::name('shop_invite_rebate_log')
-                ->where('inviter_id', $userId)
-                ->count();
-
-            $shopPendingCount = (int)Db::name('shop_invite_pending')
-                ->where('inviter_id', $userId)
-                ->where('state', 0)
+            // 已触发升级的店铺数（通过升级日志表判断）
+            $shopUpgradedCount = (int)Db::name('shop_invite_upgrade_log')
+                ->where('user_id', $userId)
                 ->count();
 
             $this->success('ok', [
@@ -545,10 +541,9 @@ class MiniProgramAuth extends Api
                 'upgradeRule' => $upgradeRule,
                 'recentRebates' => [],
                 'boundInviter' => $boundInviter,
-                // 【新增】店铺邀请统计
+                // 【简化】店铺邀请统计：只保留总数和已升级数
                 'shopInvitedTotal' => $shopInvitedTotal,
-                'shopRebatedCount' => $shopRebatedCount,
-                'shopPendingCount' => $shopPendingCount
+                'shopUpgradedCount' => $shopUpgradedCount
             ]);
         } catch (Exception $e) {
             Log::error('获取邀请信息失败：' . $e->getMessage());
@@ -753,7 +748,7 @@ class MiniProgramAuth extends Api
     /**
      * 获取邀请的店铺列表
      *
-     * @ApiSummary  (获取当前用户邀请的店铺列表及返利状态)
+     * @ApiSummary  (获取当前用户邀请的店铺列表及升级状态)
      * @ApiMethod   (GET)
      * @param int $page 页码
      * @param int $limit 每页数量
@@ -767,17 +762,14 @@ class MiniProgramAuth extends Api
         $limit = $limit > 0 ? $limit : 10;
 
         try {
-            // 查询邀请的店铺列表
+            // 查询邀请的店铺列表（简化版：只关联升级记录）
             $list = Db::name('wanlshop_shop')
                 ->alias('s')
-                ->join('shop_invite_rebate_log r', 'r.shop_id = s.id', 'LEFT')
-                ->join('shop_invite_pending p', 'p.shop_id = s.id AND p.state = 0', 'LEFT')
+                ->join('shop_invite_upgrade_log u', 'u.shop_id = s.id AND u.user_id = ' . $userId, 'LEFT')
                 ->where('s.inviter_id', $userId)
                 ->field('s.id, s.shopname, s.avatar, s.city, s.createtime as bind_time,
-                         r.rebate_amount, r.bonus_ratio, r.createtime as rebate_time,
-                         CASE WHEN r.id IS NOT NULL THEN 2
-                              WHEN p.id IS NOT NULL THEN 1
-                              ELSE 0 END as rebate_state')
+                         u.after_level as upgrade_level, u.createtime as upgrade_time,
+                         CASE WHEN u.id IS NOT NULL THEN 1 ELSE 0 END as is_upgraded')
                 ->order('s.createtime DESC')
                 ->page($page, $limit)
                 ->select();
@@ -795,10 +787,9 @@ class MiniProgramAuth extends Api
                     'avatar' => $shop['avatar'],
                     'city' => $shop['city'],
                     'bindTime' => $shop['bind_time'] ? (int)$shop['bind_time'] : null,
-                    'rebateAmount' => $shop['rebate_amount'] ? (float)$shop['rebate_amount'] : null,
-                    'bonusRatio' => $shop['bonus_ratio'] ? (float)$shop['bonus_ratio'] : null,
-                    'rebateTime' => $shop['rebate_time'] ? (int)$shop['rebate_time'] : null,
-                    'rebateState' => (int)$shop['rebate_state'] // 0=未触发 1=待处理 2=已返利
+                    'isUpgraded' => (bool)$shop['is_upgraded'], // 是否已触发升级
+                    'upgradeLevel' => $shop['upgrade_level'] ? (int)$shop['upgrade_level'] : null,
+                    'upgradeTime' => $shop['upgrade_time'] ? (int)$shop['upgrade_time'] : null
                 ];
             }
 
