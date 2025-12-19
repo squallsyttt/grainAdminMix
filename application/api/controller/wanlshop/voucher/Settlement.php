@@ -144,7 +144,7 @@ class Settlement extends Api
         }
 
         // 验证 rebate_type 参数
-        $rebateTypes = ['normal', 'custody', 'shop_invite', 'all'];
+        $rebateTypes = ['normal', 'custody', 'shop_invite', 'user_invite', 'all'];
         if (!in_array($rebateType, $rebateTypes, true)) {
             $rebateType = 'all';
         }
