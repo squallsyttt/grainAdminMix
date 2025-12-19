@@ -484,10 +484,12 @@ class MiniProgramAuth extends Api
             $rebateRate = isset($ratios[$level]) ? (float)$ratios[$level] : (float)$user['bonus_ratio'];
 
             $invitedTotal = (int)Db::name('user')->where('inviter_id', $userId)->count();
+            // 已核销人数：只统计绑定邀请码之后的核销
             $verifiedInvitees = (int)Db::name('wanlshop_voucher_verification')
                 ->alias('vv')
                 ->join('__USER__ u', 'u.id = vv.user_id')
                 ->where('u.inviter_id', $userId)
+                ->whereRaw('vv.createtime >= u.invite_bind_time')
                 ->count('DISTINCT vv.user_id');
             $pendingInvitees = max($invitedTotal - $verifiedInvitees, 0);
 
@@ -886,12 +888,14 @@ class MiniProgramAuth extends Api
                 }
             }
 
-            // 获取核销记录（判断是否已核销）
+            // 获取核销记录（判断是否已核销）- 只统计绑定邀请码之后的核销
             $verifyMap = [];
             if (!empty($inviteeIds)) {
                 $verifyRecords = Db::name('wanlshop_voucher_verification')
                     ->alias('vv')
+                    ->join('__USER__ u', 'u.id = vv.user_id')
                     ->where('vv.user_id', 'in', $inviteeIds)
+                    ->whereRaw('vv.createtime >= u.invite_bind_time')
                     ->field('vv.user_id, MIN(vv.createtime) as first_verify_time')
                     ->group('vv.user_id')
                     ->select();
