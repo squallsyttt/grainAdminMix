@@ -527,6 +527,20 @@ class MiniProgramAuth extends Api
                 ->where('user_id', $userId)
                 ->count();
 
+            // 【新增】用户邀请返利统计
+            $userRebatePending = (int)Db::name('user_invite_pending')
+                ->where('inviter_id', $userId)
+                ->where('state', 0)
+                ->count();
+
+            $userRebateGranted = (int)Db::name('user_invite_rebate_log')
+                ->where('inviter_id', $userId)
+                ->count();
+
+            $userRebateTotal = (float)Db::name('user_invite_rebate_log')
+                ->where('inviter_id', $userId)
+                ->sum('rebate_amount');
+
             $this->success('ok', [
                 'inviteCode' => $user['invite_code'],
                 'level' => $level,
@@ -543,7 +557,13 @@ class MiniProgramAuth extends Api
                 'boundInviter' => $boundInviter,
                 // 【简化】店铺邀请统计：只保留总数和已升级数
                 'shopInvitedTotal' => $shopInvitedTotal,
-                'shopUpgradedCount' => $shopUpgradedCount
+                'shopUpgradedCount' => $shopUpgradedCount,
+                // 【新增】用户邀请返利统计
+                'userRebateStats' => [
+                    'pendingCount' => $userRebatePending,
+                    'grantedCount' => $userRebateGranted,
+                    'totalAmount' => round($userRebateTotal, 2)
+                ]
             ]);
         } catch (Exception $e) {
             Log::error('获取邀请信息失败：' . $e->getMessage());
@@ -801,6 +821,128 @@ class MiniProgramAuth extends Api
             ]);
         } catch (Exception $e) {
             Log::error('获取邀请店铺列表失败：' . $e->getMessage());
+            $this->error($e->getMessage());
+        }
+    }
+
+    /**
+     * 获取邀请用户列表（带返利状态）
+     *
+     * @ApiSummary  (获取当前用户邀请的用户列表及返利状态)
+     * @ApiMethod   (GET)
+     * @param int $page 页码
+     * @param int $limit 每页数量
+     */
+    public function inviteeRebateList()
+    {
+        $userId = $this->auth->id;
+        $page = (int)$this->request->get('page', 1);
+        $limit = (int)$this->request->get('limit', 10);
+        $page = $page > 0 ? $page : 1;
+        $limit = $limit > 0 ? $limit : 10;
+
+        try {
+            // 查询邀请的用户列表
+            $list = Db::name('user')
+                ->alias('u')
+                ->where('u.inviter_id', $userId)
+                ->field('u.id, u.nickname, u.avatar, u.invite_bind_time')
+                ->order('u.invite_bind_time DESC')
+                ->page($page, $limit)
+                ->select();
+
+            $total = Db::name('user')
+                ->where('inviter_id', $userId)
+                ->count();
+
+            if ($list instanceof \think\Collection) {
+                $list = $list->toArray();
+            }
+
+            // 获取被邀请人ID列表
+            $inviteeIds = array_column($list, 'id');
+
+            // 获取返利待审核记录
+            $pendingMap = [];
+            if (!empty($inviteeIds)) {
+                $pendingRecords = Db::name('user_invite_pending')
+                    ->where('invitee_id', 'in', $inviteeIds)
+                    ->field('invitee_id, state, rebate_amount, verify_time')
+                    ->select();
+                foreach ($pendingRecords as $record) {
+                    $pendingMap[$record['invitee_id']] = $record;
+                }
+            }
+
+            // 获取已发放返利记录
+            $grantedMap = [];
+            if (!empty($inviteeIds)) {
+                $grantedRecords = Db::name('user_invite_rebate_log')
+                    ->where('invitee_id', 'in', $inviteeIds)
+                    ->field('invitee_id, rebate_amount, createtime')
+                    ->select();
+                foreach ($grantedRecords as $record) {
+                    $grantedMap[$record['invitee_id']] = $record;
+                }
+            }
+
+            // 获取核销记录（判断是否已核销）
+            $verifyMap = [];
+            if (!empty($inviteeIds)) {
+                $verifyRecords = Db::name('wanlshop_voucher_verification')
+                    ->alias('vv')
+                    ->where('vv.user_id', 'in', $inviteeIds)
+                    ->field('vv.user_id, MIN(vv.createtime) as first_verify_time')
+                    ->group('vv.user_id')
+                    ->select();
+                foreach ($verifyRecords as $record) {
+                    $verifyMap[$record['user_id']] = $record['first_verify_time'];
+                }
+            }
+
+            // 格式化返回数据
+            $formattedList = [];
+            foreach ($list as $user) {
+                $inviteeId = (int)$user['id'];
+                $pending = isset($pendingMap[$inviteeId]) ? $pendingMap[$inviteeId] : null;
+                $granted = isset($grantedMap[$inviteeId]) ? $grantedMap[$inviteeId] : null;
+                $verifyTime = isset($verifyMap[$inviteeId]) ? (int)$verifyMap[$inviteeId] : null;
+
+                // 确定返利状态
+                $rebateStatus = 'none'; // 未核销
+                $rebateAmount = null;
+
+                if ($granted) {
+                    $rebateStatus = 'granted'; // 已发放
+                    $rebateAmount = (float)$granted['rebate_amount'];
+                } elseif ($pending) {
+                    if ($pending['state'] == 0) {
+                        $rebateStatus = 'pending'; // 待发放
+                        $rebateAmount = (float)$pending['rebate_amount'];
+                    } elseif ($pending['state'] == 2) {
+                        $rebateStatus = 'cancelled'; // 已取消
+                    }
+                }
+
+                $formattedList[] = [
+                    'userId' => $inviteeId,
+                    'nickname' => $user['nickname'],
+                    'avatar' => $user['avatar'],
+                    'bindTime' => $user['invite_bind_time'] ? (int)$user['invite_bind_time'] : null,
+                    'verifyTime' => $verifyTime,
+                    'rebateStatus' => $rebateStatus,
+                    'rebateAmount' => $rebateAmount
+                ];
+            }
+
+            $this->success('ok', [
+                'list' => $formattedList,
+                'total' => (int)$total,
+                'page' => $page,
+                'limit' => $limit
+            ]);
+        } catch (Exception $e) {
+            Log::error('获取邀请用户返利列表失败：' . $e->getMessage());
             $this->error($e->getMessage());
         }
     }

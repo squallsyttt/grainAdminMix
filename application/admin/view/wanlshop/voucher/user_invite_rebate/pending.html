@@ -1,0 +1,112 @@
+<div class="panel panel-default panel-intro">
+    <div class="panel-heading">
+        {:build_heading(null,FALSE)}
+        <ul class="nav nav-tabs" data-field="state">
+            <li class="active"><a href="#t-all" data-value="" data-toggle="tab">全部待审核</a></li>
+        </ul>
+    </div>
+    <div class="panel-body">
+        <div id="myTabContent" class="tab-content">
+            <div class="tab-pane fade active in" id="t-all">
+                <div class="widget-body no-padding">
+                    <div id="toolbar" class="toolbar">
+                        {:build_toolbar('refresh')}
+                    </div>
+                    <table id="table" class="table table-striped table-bordered table-hover table-nowrap"
+                           data-operate-grant="{:$auth->check('wanlshop/voucher/user_invite_rebate/grantrebate')}"
+                           data-operate-cancel="{:$auth->check('wanlshop/voucher/user_invite_rebate/cancel')}"
+                           width="100%">
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+var Controller = {
+    pending: function () {
+        // 初始化表格参数配置
+        Table.api.init({
+            extend: {
+                index_url: 'wanlshop/voucher/user_invite_rebate/pending',
+                grant_url: 'wanlshop/voucher/user_invite_rebate/grantRebate',
+                cancel_url: 'wanlshop/voucher/user_invite_rebate/cancel',
+                table: 'user_invite_pending',
+            }
+        });
+
+        var table = $("#table");
+
+        // 初始化表格
+        table.bootstrapTable({
+            url: $.fn.bootstrapTable.defaults.extend.index_url,
+            pk: 'id',
+            sortName: 'createtime',
+            sortOrder: 'desc',
+            columns: [
+                [
+                    {checkbox: true},
+                    {field: 'id', title: 'ID', sortable: true},
+                    {field: 'inviter_name', title: '邀请人', operate: 'LIKE'},
+                    {field: 'inviter_mobile', title: '邀请人手机', operate: 'LIKE'},
+                    {field: 'invitee_name', title: '被邀请人', operate: 'LIKE'},
+                    {field: 'invitee_mobile', title: '被邀请人手机', operate: 'LIKE'},
+                    {field: 'voucher_no', title: '券号', operate: 'LIKE'},
+                    {field: 'face_value', title: '券面值', operate: false, formatter: function(value) {
+                        return '¥' + parseFloat(value).toFixed(2);
+                    }},
+                    {field: 'bonus_ratio', title: '返利比例', operate: false, formatter: function(value) {
+                        return value + '%';
+                    }},
+                    {field: 'rebate_amount', title: '预计返利', operate: false, formatter: function(value) {
+                        return '<span class="text-success">¥' + parseFloat(value).toFixed(2) + '</span>';
+                    }},
+                    {field: 'time_hint', title: '24h状态', operate: false, formatter: function(value, row) {
+                        if (row.is_refunded) {
+                            return '<span class="text-danger">' + value + '</span>';
+                        } else if (row.is_24h_passed) {
+                            return '<span class="text-success">' + value + '</span>';
+                        } else {
+                            return '<span class="text-warning">' + value + '</span>';
+                        }
+                    }},
+                    {field: 'verify_time', title: '核销时间', operate: false, formatter: Table.api.formatter.datetime, sortable: true},
+                    {field: 'operate', title: __('Operate'), table: table,
+                        buttons: [
+                            {
+                                name: 'grant',
+                                text: '发放',
+                                title: '发放返利',
+                                classname: 'btn btn-xs btn-success btn-grant btn-dialog',
+                                icon: 'fa fa-check',
+                                url: $.fn.bootstrapTable.defaults.extend.grant_url,
+                                visible: function(row) {
+                                    return row.can_grant;
+                                }
+                            },
+                            {
+                                name: 'cancel',
+                                text: '取消',
+                                title: '取消',
+                                classname: 'btn btn-xs btn-danger btn-cancel btn-ajax',
+                                icon: 'fa fa-times',
+                                url: $.fn.bootstrapTable.defaults.extend.cancel_url,
+                                confirm: '确认取消该记录？',
+                                success: function(data, ret) {
+                                    table.bootstrapTable('refresh');
+                                }
+                            }
+                        ],
+                        events: Table.api.events.operate,
+                        formatter: Table.api.formatter.operate
+                    }
+                ]
+            ]
+        });
+
+        // 为表格绑定事件
+        Table.api.bindevent(table);
+    }
+};
+</script>

@@ -463,6 +463,9 @@ class Verify extends Api
             // 轨道3：店铺邀请返利 - 已移除
             // 新逻辑：店铺注册审核通过时直接触发升级，核销不再触发店铺邀请返利
 
+            // 轨道4：被邀请人首次核销触发邀请人返利待审核（新增）
+            $this->processInviterRebatePending($voucher->user_id, $verification->id, $voucher->id, $voucher->face_value);
+
             Db::commit();
 
             return [
@@ -597,6 +600,64 @@ class Verify extends Api
             'bonus_ratio' => $bonusRatio,
             'shop_id' => $verification->shop_id,
             'verify_method' => $verification->verify_method,
+            'createtime' => $now,
+            'updatetime' => $now
+        ]);
+    }
+
+    /**
+     * 轨道4：被邀请人首次核销触发邀请人返利待审核
+     *
+     * 逻辑：核销后立即入队，后台审核时建议等待24h（但不阻止操作）
+     *
+     * @param int $inviteeUserId 被邀请人用户ID
+     * @param int $verificationId 核销记录ID
+     * @param int $voucherId 券ID
+     * @param float $faceValue 券面值（返利基数）
+     */
+    protected function processInviterRebatePending($inviteeUserId, $verificationId, $voucherId, $faceValue)
+    {
+        // 1. 检查被邀请人是否有邀请人
+        $invitee = Db::name('user')->where('id', $inviteeUserId)->field('inviter_id')->find();
+        if (empty($invitee['inviter_id'])) {
+            return; // 没有邀请人，跳过
+        }
+        $inviterId = (int)$invitee['inviter_id'];
+
+        // 2. 幂等检查：该被邀请人是否已触发过返利入队
+        $exists = Db::name('user_invite_pending')->where('invitee_id', $inviteeUserId)->find();
+        if ($exists) {
+            return; // 已入队，跳过
+        }
+
+        // 3. 获取邀请人当前返利比例
+        $inviter = Db::name('user')
+            ->where('id', $inviterId)
+            ->field('id, bonus_ratio, bonus_level')
+            ->find();
+        if (!$inviter) {
+            return; // 邀请人不存在，跳过
+        }
+
+        $ratioConfig = $this->getInviteRatios();
+        $bonusLevel = (int)$inviter['bonus_level'];
+        $bonusRatio = isset($ratioConfig[$bonusLevel]) ? (float)$ratioConfig[$bonusLevel] : (float)$inviter['bonus_ratio'];
+
+        // 4. 计算预计返利金额 = 券面值 × 返利比例
+        $rebateAmount = round((float)$faceValue * ($bonusRatio / 100), 2);
+        $now = time();
+
+        // 5. 写入待审核队列
+        Db::name('user_invite_pending')->insert([
+            'inviter_id' => $inviterId,
+            'invitee_id' => $inviteeUserId,
+            'verification_id' => $verificationId,
+            'voucher_id' => $voucherId,
+            'face_value' => (float)$faceValue,
+            'bonus_ratio' => $bonusRatio,
+            'rebate_amount' => $rebateAmount,
+            'verify_time' => $now,
+            'state' => 0, // 待审核
             'createtime' => $now,
             'updatetime' => $now
         ]);

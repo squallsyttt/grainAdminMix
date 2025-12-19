@@ -85,7 +85,7 @@ class VoucherRebate extends Model
      * 判断是否可以打款
      * 条件：
      * - 普通返利/代管理返利：付款时间超过7天 + 未打款或打款失败 + 已核销
-     * - 店铺邀请返利：无需等待7天（已经过24小时审核期），直接可打款
+     * - 店铺邀请返利/用户邀请返利：无需等待7天（已经过24小时审核期），直接可打款
      * @return bool
      */
     public function canTransfer()
@@ -98,8 +98,8 @@ class VoucherRebate extends Model
             return false;
         }
 
-        // 店铺邀请返利：已经过后台审核（24小时等待期），无需再等7天
-        if ($this->rebate_type === 'shop_invite') {
+        // 店铺邀请返利/用户邀请返利：已经过后台审核（24小时等待期），无需再等7天
+        if (in_array($this->rebate_type, ['shop_invite', 'user_invite'])) {
             return true;
         }
 
@@ -151,6 +151,7 @@ class VoucherRebate extends Model
             'normal' => '核销返利',
             'custody' => '代管理返利',
             'shop_invite' => '店铺邀请返利',
+            'user_invite' => '用户邀请返利',
         ];
     }
 

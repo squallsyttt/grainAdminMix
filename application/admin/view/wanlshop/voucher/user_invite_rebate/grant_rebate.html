@@ -1,0 +1,134 @@
+<form id="grant-form" class="form-horizontal" role="form" data-toggle="validator" method="POST" action="">
+
+    <div class="panel panel-info">
+        <div class="panel-heading">
+            <h3 class="panel-title">被邀请人信息</h3>
+        </div>
+        <div class="panel-body">
+            <div class="form-group">
+                <label class="control-label col-xs-12 col-sm-3">被邀请人昵称：</label>
+                <div class="col-xs-12 col-sm-8">
+                    <p class="form-control-static">{$invitee.nickname}</p>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="control-label col-xs-12 col-sm-3">被邀请人手机：</label>
+                <div class="col-xs-12 col-sm-8">
+                    <p class="form-control-static">{$invitee.mobile}</p>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="control-label col-xs-12 col-sm-3">被邀请人ID：</label>
+                <div class="col-xs-12 col-sm-8">
+                    <p class="form-control-static">{$invitee.id}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel panel-success">
+        <div class="panel-heading">
+            <h3 class="panel-title">邀请人信息</h3>
+        </div>
+        <div class="panel-body">
+            <div class="form-group">
+                <label class="control-label col-xs-12 col-sm-3">邀请人昵称：</label>
+                <div class="col-xs-12 col-sm-8">
+                    <p class="form-control-static">{$inviter.nickname}</p>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="control-label col-xs-12 col-sm-3">邀请人手机：</label>
+                <div class="col-xs-12 col-sm-8">
+                    <p class="form-control-static">{$inviter.mobile}</p>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="control-label col-xs-12 col-sm-3">邀请人等级：</label>
+                <div class="col-xs-12 col-sm-8">
+                    <p class="form-control-static">
+                        <span class="label label-{if condition="$inviter['bonus_level'] == 0"}default{elseif condition="$inviter['bonus_level'] == 1"}info{else}success{/if}">
+                            Lv{$inviter.bonus_level}
+                        </span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel panel-warning">
+        <div class="panel-heading">
+            <h3 class="panel-title">返利计算</h3>
+        </div>
+        <div class="panel-body">
+            <div class="form-group">
+                <label class="control-label col-xs-12 col-sm-3">券面值（基数）：</label>
+                <div class="col-xs-12 col-sm-8">
+                    <p class="form-control-static">¥{$pending.face_value}</p>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="control-label col-xs-12 col-sm-3">返利比例：</label>
+                <div class="col-xs-12 col-sm-8">
+                    <p class="form-control-static">
+                        <strong class="text-primary">{$pending.bonus_ratio}%</strong>
+                        <small class="text-muted">（入队时锁定）</small>
+                    </p>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="control-label col-xs-12 col-sm-3">返利金额：</label>
+                <div class="col-xs-12 col-sm-8">
+                    <p class="form-control-static">
+                        <strong style="color:#f00;font-size:20px;">¥{$pending.rebate_amount}</strong>
+                    </p>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="control-label col-xs-12 col-sm-3">核销时间：</label>
+                <div class="col-xs-12 col-sm-8">
+                    <p class="form-control-static">{:date('Y-m-d H:i:s', $pending['verify_time'])}</p>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="control-label col-xs-12 col-sm-3">24h状态：</label>
+                <div class="col-xs-12 col-sm-8">
+                    <p class="form-control-static">
+                        {if condition="$is24hPassed"}
+                        <span class="label label-success">✅ 已过24h（{$hoursPassed}小时）</span>
+                        {else/}
+                        <span class="label label-warning">⏳ 距24h还有{:round(24-$hoursPassed,1)}小时</span>
+                        <small class="text-muted">（仅提示，可继续操作）</small>
+                        {/if}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="alert alert-info">
+        <i class="fa fa-info-circle"></i>
+        点击「确认发放」后，系统将：
+        <ol style="margin-top:10px;">
+            <li>按 {$pending.bonus_ratio}% 比例计算返利金额 ¥{$pending.rebate_amount}</li>
+            <li>创建返利记录，等待后续打款</li>
+        </ol>
+    </div>
+
+    {if condition="!$is24hPassed"}
+    <div class="alert alert-warning">
+        <i class="fa fa-exclamation-triangle"></i>
+        <strong>提示：</strong>核销时间未超过24小时，建议稍后审核以确保无退款风险。
+        您仍然可以立即发放，但请确认无退款情况。
+    </div>
+    {/if}
+
+    <div class="form-group layer-footer">
+        <label class="control-label col-xs-12 col-sm-3"></label>
+        <div class="col-xs-12 col-sm-8">
+            <button type="submit" class="btn btn-success btn-lg btn-embossed">
+                <i class="fa fa-check"></i> 确认发放
+            </button>
+        </div>
+    </div>
+</form>
