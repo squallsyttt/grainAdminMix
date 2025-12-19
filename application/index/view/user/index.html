@@ -8,16 +8,16 @@
         transition: all 0.3s ease;
         overflow: hidden;
     }
-    
+
     .modern-card:hover {
         box-shadow: 0 8px 24px rgba(0,0,0,0.1);
         transform: translateY(-2px);
     }
-    
+
     .modern-card .panel-body {
         padding: 32px;
     }
-    
+
     /* 页面头部优化 */
     .modern-header {
         display: flex;
@@ -27,7 +27,7 @@
         padding-bottom: 24px;
         border-bottom: 2px solid #f0f2f5;
     }
-    
+
     .modern-header h2 {
         margin: 0;
         font-size: 28px;
@@ -38,7 +38,7 @@
         -webkit-text-fill-color: transparent;
         background-clip: text;
     }
-    
+
     .modern-btn {
         padding: 12px 24px;
         height: 46px;
@@ -50,12 +50,12 @@
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
     }
-    
+
     .modern-btn:hover {
         transform: translateY(-2px);
         box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
     }
-    
+
     /* 用户信息卡片 */
     .user-info-card {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -64,17 +64,17 @@
         margin-bottom: 24px;
         color: #fff;
     }
-    
+
     .avatar-wrapper {
         text-align: center;
         margin-bottom: 20px;
     }
-    
+
     .avatar-wrapper a {
         display: inline-block;
         position: relative;
     }
-    
+
     .avatar-img {
         display: inline-block;
         width: 120px;
@@ -85,48 +85,133 @@
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
         transition: all 0.3s ease;
     }
-    
+
     .avatar-img:hover {
         transform: scale(1.05);
         border-color: rgba(255, 255, 255, 0.6);
         box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
     }
-    
+
     .avatar-img img {
         width: 100%;
         height: 100%;
         object-fit: cover;
     }
-    
+
     .user-info-card h4 {
         margin: 16px 0 12px;
         font-size: 24px;
         font-weight: 600;
         text-align: center;
     }
-    
+
     .user-info-card h4 a {
         color: #fff;
         text-decoration: none;
         transition: opacity 0.3s ease;
     }
-    
+
     .user-info-card h4 a:hover {
         opacity: 0.8;
     }
-    
+
     .user-info-card .text-muted {
         color: rgba(255, 255, 255, 0.8);
         text-align: center;
         font-size: 14px;
         line-height: 1.6;
     }
-    
+
+    /* 店铺状态引导卡片 */
+    .shop-guide-card {
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+    }
+
+    .shop-guide-card.status-0 {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%);
+        color: #fff;
+    }
+
+    .shop-guide-card.status-1,
+    .shop-guide-card.status-2 {
+        background: linear-gradient(135deg, #ffa726 0%, #ff9800 100%);
+        color: #fff;
+    }
+
+    .shop-guide-card.status-3 {
+        background: linear-gradient(135deg, #66bb6a 0%, #43a047 100%);
+        color: #fff;
+    }
+
+    .shop-guide-info {
+        flex: 1;
+    }
+
+    .shop-guide-info h3 {
+        margin: 0 0 8px;
+        font-size: 20px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .shop-guide-info h3 i {
+        font-size: 24px;
+    }
+
+    .shop-guide-info p {
+        margin: 0;
+        font-size: 14px;
+        opacity: 0.9;
+    }
+
+    .shop-guide-btn {
+        padding: 12px 28px;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 15px;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .shop-guide-card.status-0 .shop-guide-btn {
+        background: #fff;
+        color: #ee5a5a;
+    }
+
+    .shop-guide-card.status-1 .shop-guide-btn,
+    .shop-guide-card.status-2 .shop-guide-btn {
+        background: #fff;
+        color: #ff9800;
+    }
+
+    .shop-guide-card.status-3 .shop-guide-btn {
+        background: #fff;
+        color: #43a047;
+    }
+
+    .shop-guide-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+        text-decoration: none;
+    }
+
     /* 基本信息样式 */
     .basicinfo {
         margin-top: 24px;
     }
-    
+
     .info-item {
         display: flex;
         align-items: center;
@@ -136,65 +221,79 @@
         border-radius: 12px;
         transition: all 0.3s ease;
     }
-    
+
     .info-item:hover {
         background: #e9ecef;
         transform: translateX(4px);
     }
-    
+
     .info-label {
         font-weight: 600;
         color: #495057;
         min-width: 100px;
         font-size: 14px;
     }
-    
+
     .info-value {
         color: #212529;
         flex: 1;
         font-size: 14px;
     }
-    
+
     .info-value a {
         color: #667eea;
         text-decoration: none;
         font-weight: 600;
         transition: color 0.3s ease;
     }
-    
+
     .info-value a:hover {
         color: #764ba2;
     }
-    
+
     /* 响应式优化 */
     @media (max-width: 768px) {
         .modern-card .panel-body {
             padding: 20px;
         }
-        
+
         .modern-header {
             flex-direction: column;
             align-items: flex-start;
             gap: 16px;
         }
-        
+
         .user-info-card {
             padding: 24px;
         }
-        
+
         .avatar-img {
             width: 100px;
             height: 100px;
         }
-        
+
         .info-item {
             flex-direction: column;
             align-items: flex-start;
             gap: 8px;
         }
-        
+
         .info-label {
             min-width: auto;
+        }
+
+        .shop-guide-card {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .shop-guide-info h3 {
+            justify-content: center;
+        }
+
+        .shop-guide-btn {
+            width: 100%;
+            justify-content: center;
         }
     }
 </style>
@@ -225,6 +324,42 @@
                         <p class="text-muted">
                             {$user.bio|default=__("This guy hasn't written anything yet")|htmlentities}
                         </p>
+                    </div>
+
+                    <!-- 店铺状态引导 -->
+                    <div class="shop-guide-card status-{$shopStatus}">
+                        <div class="shop-guide-info">
+                            {if $shopStatus == 0}
+                            <h3><i class="fa fa-store"></i> 店铺状态：未开通</h3>
+                            <p>您还未开通店铺，立即开通即可发布商品、管理订单</p>
+                            {elseif $shopStatus == 1}
+                            <h3><i class="fa fa-clock-o"></i> 店铺状态：申请中</h3>
+                            <p>您的店铺申请正在填写中，请继续完善资料</p>
+                            {elseif $shopStatus == 2}
+                            <h3><i class="fa fa-hourglass-half"></i> 店铺状态：审核中</h3>
+                            <p>您的店铺申请已提交，请耐心等待审核</p>
+                            {else}
+                            <h3><i class="fa fa-check-circle"></i> 店铺状态：已开通</h3>
+                            <p>店铺名称：{$shop.shopname|htmlentities}</p>
+                            {/if}
+                        </div>
+                        {if $shopStatus == 0}
+                        <a href="{:url('index/wanlshop.entry/index')}" class="shop-guide-btn">
+                            <i class="fa fa-plus-circle"></i> 立即开通店铺
+                        </a>
+                        {elseif $shopStatus == 1}
+                        <a href="{:url('index/wanlshop.entry/index')}" class="shop-guide-btn">
+                            <i class="fa fa-edit"></i> 继续填写
+                        </a>
+                        {elseif $shopStatus == 2}
+                        <a href="{:url('index/wanlshop.entry/stepfour')}" class="shop-guide-btn">
+                            <i class="fa fa-eye"></i> 查看进度
+                        </a>
+                        {else}
+                        <a href="{:url('index/wanlshop.console/index')}" class="shop-guide-btn">
+                            <i class="fa fa-dashboard"></i> 进入卖家控制台
+                        </a>
+                        {/if}
                     </div>
                     
                     <div class="basicinfo">

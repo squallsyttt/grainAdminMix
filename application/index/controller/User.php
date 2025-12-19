@@ -56,6 +56,39 @@ class User extends Frontend
      */
     public function index()
     {
+        // 查询用户店铺状态
+        $shop = \think\Db::name('wanlshop_shop')
+            ->where('user_id', $this->auth->id)
+            ->whereNull('deletetime')
+            ->find();
+
+        // 查询入驻申请状态
+        $auth = \think\Db::name('wanlshop_auth')
+            ->where('user_id', $this->auth->id)
+            ->find();
+
+        // 店铺状态：0-未申请 1-申请中 2-审核中 3-已开通
+        $shopStatus = 0;
+        $shopStatusText = '未开通';
+        if ($shop) {
+            $shopStatus = 3;
+            $shopStatusText = '已开通';
+        } elseif ($auth) {
+            if ($auth['verify'] == '3') {
+                $shopStatus = 3;
+                $shopStatusText = '已开通';
+            } elseif ($auth['verify'] == '2') {
+                $shopStatus = 2;
+                $shopStatusText = '审核中';
+            } elseif ($auth['verify'] == '1') {
+                $shopStatus = 1;
+                $shopStatusText = '申请中';
+            }
+        }
+
+        $this->view->assign('shop', $shop);
+        $this->view->assign('shopStatus', $shopStatus);
+        $this->view->assign('shopStatusText', $shopStatusText);
         $this->view->assign('title', __('User center'));
         return $this->view->fetch();
     }
@@ -131,7 +164,7 @@ class User extends Frontend
             }
             if ($this->auth->register($username, $password, $email, $mobile)) {
                 // PC端注册后直接跳转店铺入驻页面（普通消费者走小程序）
-                $this->success(__('Sign up successful'), $url ? $url : url('wanlshop/entry/index'));
+                $this->success(__('Sign up successful'), $url ? $url : url('index/wanlshop.entry/index'));
             } else {
                 $this->error($this->auth->getError(), null, ['token' => $this->request->token()]);
             }
