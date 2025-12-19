@@ -17,7 +17,8 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
     var rebateTypeMap = {
         normal: {text: '核销返利', className: 'label-default'},
         custody: {text: '代管理返利', className: 'label-primary'},
-        shop_invite: {text: '店铺邀请返利', className: 'label-info'}
+        shop_invite: {text: '店铺邀请返利', className: 'label-info'},
+        user_invite: {text: '邀请用户核销返利', className: 'label-warning'}
     };
 
     var custodyRefundStatusMap = {
@@ -51,8 +52,8 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
         paymentStatus: function (value, row) {
             var current = paymentStatusMap[value] || {text: '未知', className: 'label-default'};
             var html = '<span class="label ' + current.className + '">' + current.text + '</span>';
-            // 显示剩余天数提示（店铺邀请返利不显示，因为无需等待7天）
-            if (value === 'unpaid' && row.days_until_transfer > 0 && row.rebate_type !== 'shop_invite') {
+            // 显示剩余天数提示（店铺邀请返利、邀请用户核销返利不显示，因为无需等待7天）
+            if (value === 'unpaid' && row.days_until_transfer > 0 && row.rebate_type !== 'shop_invite' && row.rebate_type !== 'user_invite') {
                 html += ' <small class="text-muted">(' + row.days_until_transfer + '天后可打)</small>';
             }
             return html;
@@ -118,7 +119,7 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
                             field: 'rebate_type',
                             title: '返利类型',
                             operate: '=',
-                            searchList: {'normal': '核销返利', 'custody': '代管理返利', 'shop_invite': '店铺邀请返利'},
+                            searchList: {'normal': '核销返利', 'custody': '代管理返利', 'shop_invite': '店铺邀请返利', 'user_invite': '邀请用户核销返利'},
                             formatter: Formatter.rebateType
                         },
                         {field: 'goods_title', title: '商品标题', align: 'left', operate: 'LIKE'},
