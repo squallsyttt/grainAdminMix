@@ -72,15 +72,22 @@ class User extends Frontend
         if ($this->request->isPost()) {
             $username = $this->request->post('username');
             $password = $this->request->post('password', '', null);
-            $email = $this->request->post('email');
+            $email = $this->request->post('email', '');
             $mobile = $this->request->post('mobile', '');
+            $mobileConfirm = $this->request->post('mobile_confirm', '');
             $captcha = $this->request->post('captcha');
             $token = $this->request->post('__token__');
+
+            // 验证两次手机号是否一致
+            if ($mobile !== $mobileConfirm) {
+                $this->error('两次输入的手机号不一致，请检查', null, ['token' => $this->request->token()]);
+            }
+
             $rule = [
                 'username'  => 'require|length:3,30',
                 'password'  => 'require|length:6,30',
-                'email'     => 'require|email',
-                'mobile'    => 'regex:/^1\d{10}$/',
+                'email'     => 'email',
+                'mobile'    => 'require|regex:/^1\d{10}$/',
                 '__token__' => 'require|token',
             ];
 
@@ -90,7 +97,8 @@ class User extends Frontend
                 'password.require' => 'Password can not be empty',
                 'password.length'  => 'Password must be 6 to 30 characters',
                 'email'            => 'Email is incorrect',
-                'mobile'           => 'Mobile is incorrect',
+                'mobile.require'   => '请输入手机号',
+                'mobile.regex'     => '手机号格式不正确',
             ];
             $data = [
                 'username'  => $username,
@@ -122,7 +130,8 @@ class User extends Frontend
                 $this->error(__($validate->getError()), null, ['token' => $this->request->token()]);
             }
             if ($this->auth->register($username, $password, $email, $mobile)) {
-                $this->success(__('Sign up successful'), $url ? $url : url('user/index'));
+                // PC端注册后直接跳转店铺入驻页面（普通消费者走小程序）
+                $this->success(__('Sign up successful'), $url ? $url : url('wanlshop/entry/index'));
             } else {
                 $this->error($this->auth->getError(), null, ['token' => $this->request->token()]);
             }

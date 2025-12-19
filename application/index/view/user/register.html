@@ -366,14 +366,6 @@
                 {:token()}
 
                 <div class="form-group">
-                    <label for="email">{:__('Email')}</label>
-                    <div class="controls">
-                        <input type="text" name="email" id="email" data-rule="required;email" class="form-control" placeholder="{:__('Email')}">
-                        <p class="help-block"></p>
-                    </div>
-                </div>
-
-                <div class="form-group">
                     <label for="username">{:__('Username')}</label>
                     <div class="controls">
                         <input type="text" id="username" name="username" data-rule="required;username" class="form-control" placeholder="{:__('Username must be 3 to 30 characters')}">
@@ -392,7 +384,26 @@
                 <div class="form-group">
                     <label for="mobile">{:__('Mobile')}</label>
                     <div class="controls">
-                        <input type="text" id="mobile" name="mobile" data-rule="required;mobile" class="form-control" placeholder="{:__('Mobile')}">
+                        <input type="text" id="mobile" name="mobile" data-rule="required;mobile" class="form-control" placeholder="请输入手机号">
+                        <p class="help-block"></p>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="mobile_confirm">确认手机号</label>
+                    <div class="controls">
+                        <div style="position: relative;">
+                            <input type="text" id="mobile_confirm" name="mobile_confirm" data-rule="required;mobile;match[mobile, 两次输入的手机号不一致]" class="form-control" placeholder="请再次输入手机号" style="padding-right: 140px;">
+                            <span id="mobile-match-tip" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 12px; display: none;"></span>
+                        </div>
+                        <p class="help-block"></p>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">{:__('Email')} <span style="color: #94a3b8; font-weight: normal;">(选填)</span></label>
+                    <div class="controls">
+                        <input type="text" name="email" id="email" data-rule="email" class="form-control" placeholder="如需接收邮件通知请填写">
                         <p class="help-block"></p>
                     </div>
                 </div>
@@ -419,3 +430,34 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var mobileInput = document.getElementById('mobile');
+    var mobileConfirmInput = document.getElementById('mobile_confirm');
+    var matchTip = document.getElementById('mobile-match-tip');
+
+    function checkMobileMatch() {
+        var mobile = mobileInput.value.trim();
+        var mobileConfirm = mobileConfirmInput.value.trim();
+
+        if (mobileConfirm === '') {
+            matchTip.style.display = 'none';
+            return;
+        }
+
+        if (mobile === mobileConfirm) {
+            matchTip.textContent = '✓ 号码一致';
+            matchTip.style.color = '#22c55e';
+            matchTip.style.display = 'inline';
+        } else {
+            matchTip.textContent = '✗ 号码不一致';
+            matchTip.style.color = '#ef4444';
+            matchTip.style.display = 'inline';
+        }
+    }
+
+    mobileInput.addEventListener('input', checkMobileMatch);
+    mobileConfirmInput.addEventListener('input', checkMobileMatch);
+});
+</script>
