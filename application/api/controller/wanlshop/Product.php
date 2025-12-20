@@ -64,7 +64,9 @@ class Product extends Api
     	foreach ($list as $row) {
     	    $row->getRelation('shop')->visible(['city', 'shopname', 'state']);
     		$row->getRelation('category')->visible(['id','pid','name']);
-    	}	
+    		// 返回 SKU 数据，用于前端计算每斤价格
+    		$row['sku'] = $row->sku;
+    	}
     	$this->success('返回成功', $list);
     }
     
