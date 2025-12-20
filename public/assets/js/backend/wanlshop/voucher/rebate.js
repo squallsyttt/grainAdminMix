@@ -11,7 +11,8 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
         unpaid: {text: '未打款', className: 'label-warning'},
         pending: {text: '打款中', className: 'label-info'},
         paid: {text: '已打款', className: 'label-success'},
-        failed: {text: '打款失败', className: 'label-danger'}
+        failed: {text: '打款失败', className: 'label-danger'},
+        refunded: {text: '已退款', className: 'label-default'}
     };
 
     var rebateTypeMap = {
@@ -182,7 +183,7 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
                         {
                             field: 'payment_status',
                             title: '打款状态',
-                            searchList: {'unpaid': '未打款', 'pending': '打款中', 'paid': '已打款', 'failed': '打款失败'},
+                            searchList: {'unpaid': '未打款', 'pending': '打款中', 'paid': '已打款', 'failed': '打款失败', 'refunded': '已退款'},
                             formatter: Formatter.paymentStatus
                         },
                         {
