@@ -248,6 +248,7 @@ class Voucher extends Api
         }
 
         $now = time();
+        // 获取券信息，包括 SKU 规格和关联商品的城市
         $voucher = Db::name('wanlshop_voucher')
             ->where([
                 'id' => $voucherId,
@@ -257,40 +258,98 @@ class Voucher extends Api
             ])
             ->where('valid_start', '<=', $now)
             ->where('valid_end', '>=', $now)
-            ->field('id, category_id, face_value')
+            ->field('id, category_id, face_value, sku_difference, goods_id')
             ->find();
 
         if (!$voucher) {
             $this->error(__('券不存在或不可核销'));
         }
 
+        // 获取券对应商品的城市编码
+        $voucherCityCode = null;
+        if ($voucher['goods_id']) {
+            $voucherGoods = Db::name('wanlshop_goods')
+                ->where('id', $voucher['goods_id'])
+                ->field('region_city_code')
+                ->find();
+            if ($voucherGoods) {
+                $voucherCityCode = $voucherGoods['region_city_code'];
+            }
+        }
+
         $faceValue = (float)$voucher['face_value'];
         $maxSupplyPrice = $faceValue * 0.8;
+        $skuDifference = $voucher['sku_difference'];
 
-        // 查询店铺列表，添加 service_ids 字段
-        $shops = Db::name('wanlshop_shop')
-            ->alias('shop')
-            ->join('wanlshop_goods goods', 'goods.shop_id = shop.id')
-            ->join('wanlshop_goods_sku sku', 'sku.goods_id = goods.id')
-            ->where('shop.status', 'normal')
-            ->where('shop.id', '<>', 1)  // 过滤平台虚拟店铺
-            ->where('shop.state', '1')  // 店铺审核通过
-            ->where('goods.status', 'normal')
-            ->where('goods.deletetime', null)
-            ->where('goods.category_id', $voucher['category_id'])
-            ->where('sku.status', 'normal')
-            ->where('sku.deletetime', null)
-            ->where('sku.price', '<=', $maxSupplyPrice)
-            ->where('sku.stock', '>', 0)  // 有库存
-            ->field('shop.id AS shop_id, shop.shopname, shop.avatar, shop.city, shop.`return` AS address, shop.service_ids, shop.wecom_service_url, MIN(sku.price) AS min_supply_price')
-            ->group('shop.id, shop.shopname, shop.avatar, shop.city, shop.`return`, shop.service_ids, shop.wecom_service_url')
-            ->select();
+        // 基础查询条件构建器
+        $buildQuery = function($cityCode = null) use ($voucher, $maxSupplyPrice, $skuDifference) {
+            $query = Db::name('wanlshop_shop')
+                ->alias('shop')
+                ->join('wanlshop_goods goods', 'goods.shop_id = shop.id')
+                ->join('wanlshop_goods_sku sku', 'sku.goods_id = goods.id')
+                ->where('shop.status', 'normal')
+                ->where('shop.id', '<>', 1)  // 过滤平台虚拟店铺
+                ->where('shop.state', '1')  // 店铺审核通过
+                ->where('goods.status', 'normal')
+                ->where('goods.deletetime', null)
+                ->where('goods.category_id', $voucher['category_id'])
+                ->where('sku.status', 'normal')
+                ->where('sku.deletetime', null)
+                ->where('sku.price', '<=', $maxSupplyPrice)
+                ->where('sku.stock', '>', 0);  // 有库存
 
-        $shopList = [];
-        if ($shops) {
-            // 兼容返回类型为数组或集合的情况
-            $shopList = is_array($shops) ? $shops : $shops->toArray();
+            // 关键修复：匹配 SKU 规格
+            if ($skuDifference) {
+                $query->where('sku.difference', $skuDifference);
+            }
+
+            // 城市匹配（可选）
+            if ($cityCode) {
+                $query->where('goods.region_city_code', $cityCode);
+            }
+
+            return $query;
+        };
+
+        // 优先查找城市匹配的店铺
+        $shops = [];
+        $matchedShopIds = [];
+
+        if ($voucherCityCode) {
+            $cityShops = $buildQuery($voucherCityCode)
+                ->field('shop.id AS shop_id, shop.shopname, shop.avatar, shop.city, shop.`return` AS address, shop.service_ids, shop.wecom_service_url, MIN(sku.price) AS min_supply_price')
+                ->group('shop.id, shop.shopname, shop.avatar, shop.city, shop.`return`, shop.service_ids, shop.wecom_service_url')
+                ->select();
+
+            if ($cityShops) {
+                $cityShopList = is_array($cityShops) ? $cityShops : $cityShops->toArray();
+                foreach ($cityShopList as $shop) {
+                    $shop['city_matched'] = true;
+                    $shops[] = $shop;
+                    $matchedShopIds[] = $shop['shop_id'];
+                }
+            }
         }
+
+        // 查找其他城市的店铺（不重复）
+        $otherQuery = $buildQuery(null)
+            ->field('shop.id AS shop_id, shop.shopname, shop.avatar, shop.city, shop.`return` AS address, shop.service_ids, shop.wecom_service_url, MIN(sku.price) AS min_supply_price')
+            ->group('shop.id, shop.shopname, shop.avatar, shop.city, shop.`return`, shop.service_ids, shop.wecom_service_url');
+
+        if (!empty($matchedShopIds)) {
+            $otherQuery->where('shop.id', 'not in', $matchedShopIds);
+        }
+
+        $otherShops = $otherQuery->select();
+        if ($otherShops) {
+            $otherShopList = is_array($otherShops) ? $otherShops : $otherShops->toArray();
+            foreach ($otherShopList as $shop) {
+                $shop['city_matched'] = false;
+                $shops[] = $shop;
+            }
+        }
+
+        $shopList = $shops;
 
         // 收集所有服务ID，批量查询服务名称
         $allServiceIds = [];
@@ -340,13 +399,19 @@ class Voucher extends Api
         }
         unset($shop);
 
-        // 按配送意愿排序：支持送货上门的在前面，然后按价格排序
+        // 按优先级排序：城市匹配 > 配送意愿 > 价格
         usort($shopList, function ($a, $b) {
-            // 优先按 has_delivery 排序（true在前）
+            // 首先按城市匹配排序（匹配的在前）
+            $aCityMatched = isset($a['city_matched']) && $a['city_matched'];
+            $bCityMatched = isset($b['city_matched']) && $b['city_matched'];
+            if ($aCityMatched !== $bCityMatched) {
+                return $bCityMatched ? 1 : -1;
+            }
+            // 其次按 has_delivery 排序（true在前）
             if ($a['has_delivery'] !== $b['has_delivery']) {
                 return $b['has_delivery'] ? 1 : -1;
             }
-            // 其次按价格排序
+            // 最后按价格排序
             return $a['min_supply_price'] <=> $b['min_supply_price'];
         });
 

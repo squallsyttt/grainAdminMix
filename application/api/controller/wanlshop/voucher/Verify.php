@@ -159,36 +159,54 @@ class Verify extends Api
             'shop_goods_info' => null
         ];
 
-        // Step 1: 查找商家在该分类下的商品（优先匹配券城市）
-        $goodsConditions = [
+        // Step 1: 查找商家在该分类下的商品
+        // 重要：必须过滤 status='normal'，否则可能匹配到已下架的商品
+        // 优先级：1. 城市匹配+在售 2. 仅在售（跨城市兜底）3. 任意状态（用于诊断）
+        $baseConditions = [
             'shop_id' => $shopId,
             'category_id' => $categoryId
         ];
 
         $goods = null;
+        $matchType = null; // 记录匹配类型，便于调试
+
+        // 优先查找：城市匹配 + 状态正常
         if ($voucherCityCode) {
             $goods = Db::name('wanlshop_goods')
-                ->where($goodsConditions)
+                ->where($baseConditions)
+                ->where('status', 'normal')
                 ->where('region_city_code', $voucherCityCode)
                 ->order('id', 'desc')
                 ->find();
+            if ($goods) {
+                $matchType = 'city_and_status';
+            }
         }
 
+        // 兜底查找：状态正常（不限城市）
         if (!$goods) {
             $goods = Db::name('wanlshop_goods')
-                ->where($goodsConditions)
+                ->where($baseConditions)
+                ->where('status', 'normal')
+                ->order('id', 'desc')
+                ->find();
+            if ($goods) {
+                $matchType = 'status_only';
+            }
+        }
+
+        // 诊断查找：如果没有在售商品，查找任意状态的商品用于错误提示
+        $diagnosisGoods = null;
+        if (!$goods) {
+            $diagnosisGoods = Db::name('wanlshop_goods')
+                ->where($baseConditions)
                 ->order('id', 'desc')
                 ->find();
         }
 
         $voucherCityName = $voucherCityCode ? Db::name('area')->where('code', $voucherCityCode)->value('name') : null;
-        $goodsCityCode = $goods ? ($goods['region_city_code'] ?? null) : null;
-        $goodsCityName = $goods ? ($goods['region_city_name'] ?? null) : null;
-        if (!$goodsCityName && $goodsCityCode) {
-            $goodsCityName = Db::name('area')->where('code', $goodsCityCode)->value('name');
-        }
-        $cityValid = $voucherCityCode ? ($goodsCityCode === $voucherCityCode) : true;
 
+        // 状态映射表
         $statusTextMap = [
             'normal' => '在售',
             'hidden' => '已下架',
@@ -196,9 +214,31 @@ class Verify extends Api
             'violation' => '违规下架'
         ];
 
-        $statusValid = $goods ? (($goods['status'] ?? '') === 'normal') : false;
-        $goodsStatus = $goods['status'] ?? null;
-        $goodsStatusText = $goodsStatus ? ($statusTextMap[$goodsStatus] ?? $goodsStatus) : '未找到商品';
+        // 如果找到了在售商品
+        if ($goods) {
+            $goodsCityCode = $goods['region_city_code'] ?? null;
+            $goodsCityName = $goods['region_city_name'] ?? null;
+            if (!$goodsCityName && $goodsCityCode) {
+                $goodsCityName = Db::name('area')->where('code', $goodsCityCode)->value('name');
+            }
+            // 城市匹配校验（仅当券有城市要求时）
+            $cityValid = $voucherCityCode ? ($goodsCityCode === $voucherCityCode) : true;
+            // $goods 已经过滤了 status='normal'，所以状态一定有效
+            $statusValid = true;
+            $goodsStatus = 'normal';
+            $goodsStatusText = '在售';
+        } else {
+            // 没有找到在售商品，使用诊断商品信息（如果有）
+            $goodsCityCode = $diagnosisGoods ? ($diagnosisGoods['region_city_code'] ?? null) : null;
+            $goodsCityName = $diagnosisGoods ? ($diagnosisGoods['region_city_name'] ?? null) : null;
+            if (!$goodsCityName && $goodsCityCode) {
+                $goodsCityName = Db::name('area')->where('code', $goodsCityCode)->value('name');
+            }
+            $cityValid = false;
+            $statusValid = false;
+            $goodsStatus = $diagnosisGoods ? ($diagnosisGoods['status'] ?? null) : null;
+            $goodsStatusText = $goodsStatus ? ($statusTextMap[$goodsStatus] ?? $goodsStatus) : '未找到商品';
+        }
 
         // Step 2: 查找该商品的对应规格 SKU
         $sku = null;
@@ -218,17 +258,19 @@ class Verify extends Api
         $priceValid = $sku ? ($skuPrice <= $priceThreshold) : false;
 
         // 整理返回的商家商品信息
-        if ($goods) {
+        // 优先使用在售商品，其次使用诊断商品（用于前端展示问题所在）
+        $displayGoods = $goods ?: $diagnosisGoods;
+        if ($displayGoods) {
             $result['shop_goods_info'] = [
-                'goods_id' => $goods['id'],
-                'goods_title' => $goods['title'],
+                'goods_id' => $displayGoods['id'],
+                'goods_title' => $displayGoods['title'],
                 'sku_id' => $sku['id'] ?? null,
                 'sku_price' => $skuPrice,
                 'sku_difference' => $skuDifference,
                 'price_threshold' => $priceThreshold,
                 'price_valid' => $priceValid,
-                'goods_status' => $goodsStatus,
-                'goods_status_text' => $goodsStatusText,
+                'goods_status' => $goods ? 'normal' : ($displayGoods['status'] ?? null),
+                'goods_status_text' => $goods ? '在售' : $goodsStatusText,
                 'city_code' => $goodsCityCode,
                 'city_name' => $goodsCityName,
                 'voucher_city_code' => $voucherCityCode,
@@ -242,11 +284,25 @@ class Verify extends Api
         if (!$goods) {
             $categoryName = Db::name('wanlshop_category')->where('id', $categoryId)->value('name');
             $cityLabel = $voucherCityName ? "【{$voucherCityName}】" : '';
-            $result['error_message'] = sprintf(
-                '未找到%s分类%s的商家商品，无法核销此券',
-                $categoryName ? "【{$categoryName}】" : '指定',
-                $cityLabel ? "{$cityLabel}地区" : ''
-            );
+
+            // 根据诊断商品给出更精确的错误提示
+            if ($diagnosisGoods) {
+                // 有商品但不在售
+                $diagStatus = $diagnosisGoods['status'] ?? 'unknown';
+                $diagStatusText = $statusTextMap[$diagStatus] ?? $diagStatus;
+                $result['error_message'] = sprintf(
+                    '商品状态异常：您的店铺有【%s】商品，但当前状态为【%s】，请先上架后再核销',
+                    $diagnosisGoods['title'],
+                    $diagStatusText
+                );
+            } else {
+                // 完全没有该分类商品
+                $result['error_message'] = sprintf(
+                    '未找到%s分类%s的在售商品，请先上架对应商品后再核销',
+                    $categoryName ? "【{$categoryName}】" : '指定',
+                    $cityLabel ? "{$cityLabel}地区" : ''
+                );
+            }
             return $result;
         }
 
@@ -259,13 +315,7 @@ class Verify extends Api
             return $result;
         }
 
-        if (!$statusValid) {
-            $result['error_message'] = sprintf(
-                '商品状态异常：当前为【%s】，请先上架后再核销',
-                $goodsStatusText
-            );
-            return $result;
-        }
+        // 注：$goods 已通过 status='normal' 过滤，此处无需再检查 $statusValid
 
         if (!$sku) {
             $result['error_message'] = sprintf(
