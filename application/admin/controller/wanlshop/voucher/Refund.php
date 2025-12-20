@@ -309,6 +309,9 @@ class Refund extends Backend
             // 4. 【新增】取消店铺邀请返利待审核记录
             $this->cancelShopInvitePending($row->voucher_id);
 
+            // 5. 【新增】软删除对应的返利记录
+            $this->cancelVoucherRebate($row->voucher_id);
+
             \think\Db::commit();
             $this->success(__('操作成功'));
         } catch (\think\exception\HttpResponseException $e) {
@@ -332,6 +335,22 @@ class Refund extends Backend
             ->where('state', 0)
             ->update([
                 'state' => 2, // 已取消（退款）
+                'updatetime' => time()
+            ]);
+    }
+
+    /**
+     * 退款成功后标记返利记录为已退款
+     *
+     * @param int $voucherId 券ID
+     */
+    protected function cancelVoucherRebate($voucherId)
+    {
+        \think\Db::name('wanlshop_voucher_rebate')
+            ->where('voucher_id', $voucherId)
+            ->where('payment_status', 'unpaid')
+            ->update([
+                'payment_status' => 'refunded',
                 'updatetime' => time()
             ]);
     }

@@ -66,6 +66,7 @@ class VoucherRebate extends Model
     const PAYMENT_STATUS_PENDING = 'pending';   // 打款中
     const PAYMENT_STATUS_PAID = 'paid';         // 已打款
     const PAYMENT_STATUS_FAILED = 'failed';     // 打款失败
+    const PAYMENT_STATUS_REFUNDED = 'refunded'; // 已退款
 
     /**
      * 返现状态枚举
@@ -78,6 +79,7 @@ class VoucherRebate extends Model
             self::PAYMENT_STATUS_PENDING => '打款中',
             self::PAYMENT_STATUS_PAID => '已打款',
             self::PAYMENT_STATUS_FAILED => '打款失败',
+            self::PAYMENT_STATUS_REFUNDED => '已退款',
         ];
     }
 
