@@ -1316,6 +1316,15 @@ class Order extends Api
                 $voucherOrder->save();
             }
 
+            // 标记返利记录为已退款
+            Db::name('wanlshop_voucher_rebate')
+                ->where('voucher_id', $refund->voucher_id)
+                ->where('payment_status', 'unpaid')
+                ->update([
+                    'payment_status' => 'refunded',
+                    'updatetime' => time()
+                ]);
+
             Db::commit();
 
             \think\Log::info('退款成功处理完成: ' . $outRefundNo);
