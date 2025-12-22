@@ -577,7 +577,9 @@ class MerchantGoods extends Api
                         $skuUpdate = [];
                         if (isset($sku['price'])) {
                             $skuUpdate['price'] = $sku['price'];
-                            $skuUpdate['market_price'] = $sku['price'];
+                        }
+                        if (isset($sku['market_price'])) {
+                            $skuUpdate['market_price'] = $sku['market_price'];
                         }
                         if (isset($sku['stock'])) {
                             $skuUpdate['stock'] = (int)$sku['stock'];

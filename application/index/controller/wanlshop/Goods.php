@@ -263,7 +263,7 @@ class Goods extends Wanlshop
 					        'goods_id' 		=> $this->model->id,
 							'thumbnail' 	=> isset($params['thumbnail']) ? $params['thumbnail'][$key] : false, // 1.0.8升级
 					        'difference' 	=> $value,
-					        'market_price' 	=> $params['price'][$key],
+					        'market_price' 	=> $params['market_price'][$key],
 					        'price' 		=> $params['price'][$key],
 					        'stock' 		=> $params['stocks'][$key],
 					        'weigh' 		=> $params['weigh'][$key]!=''?$params['weigh'][$key] : 0,
@@ -384,7 +384,7 @@ class Goods extends Wanlshop
 					        'goods_id' => $ids,
 							'thumbnail' => isset($params['thumbnail']) ? $params['thumbnail'][$key] : false, // 1.0.8升级
 					        'difference' => $value,
-					        'market_price' => $params['price'][$key],
+					        'market_price' => $params['market_price'][$key],
 					        'price' => $params['price'][$key],
 					        'stock' => $params['stocks'][$key],
 					        'weigh' => $params['weigh'][$key]!=''?$params['weigh'][$key] : 0,
