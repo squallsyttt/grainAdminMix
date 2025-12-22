@@ -46,6 +46,6 @@ return array (
   'invite_base_ratio' => '1.2',
   'invite_level1_ratio' => '1.5',
   'invite_level2_ratio' => '2',
-  'mp_show_merchant' => '1',
-  'mp_show_news' => '1',
+  'mp_show_merchant' => '0',
+  'mp_show_news' => '0',
 );
