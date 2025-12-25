@@ -9,6 +9,22 @@ define(['jquery', 'bootstrap', 'backend', 'vue', 'echarts', 'echarts-theme'], fu
                     // 当前视图: 'overview' 或 'category'
                     currentView: 'overview',
 
+                    // ============ 市场价概览数据 ============
+                    showMarketPriceOverview: true,    // 是否显示市场价概览区域
+                    marketPriceCollapsed: false,      // 市场价概览是否折叠
+                    marketPriceData: {},              // 市场价概览数据
+                    marketPriceFilter: {              // 市场价筛选条件
+                        city_name: '',
+                        category_id: '',
+                        spec: '',
+                        start_date: '',
+                        end_date: ''
+                    },
+                    marketPriceLoading: false,        // 市场价数据加载状态
+                    marketDetailExpanded: [],         // 展开的市场价明细行索引
+                    marketPriceChart: null,           // 市场价图表实例（柱状图）
+                    marketPriceTrendChart: null,      // 市场价趋势图表实例（折线图）
+
                     // 全品类概览数据
                     overviewData: null,
                     overviewLoading: false,
@@ -70,6 +86,8 @@ define(['jquery', 'bootstrap', 'backend', 'vue', 'echarts', 'echarts-theme'], fu
                     this.startDate = this.formatDate(thirtyDaysAgo);
                     this.overviewEndDate = this.formatDate(today);
                     this.overviewStartDate = this.formatDate(thirtyDaysAgo);
+                    this.marketPriceFilter.start_date = this.formatDate(thirtyDaysAgo);
+                    this.marketPriceFilter.end_date = this.formatDate(today);
 
                     // 初始化图表
                     this.$nextTick(function() {
@@ -91,6 +109,31 @@ define(['jquery', 'bootstrap', 'backend', 'vue', 'echarts', 'echarts-theme'], fu
 
                         // 加载城市列表
                         self.fetchCityList();
+
+                        // 初始化市场价概览图表
+                        var marketChartDom = document.getElementById('market-price-chart');
+                        if (marketChartDom) {
+                            self.marketPriceChart = Echarts.init(marketChartDom, 'walden');
+                        }
+
+                        // 初始化市场价趋势图表
+                        var marketTrendChartDom = document.getElementById('market-price-trend-chart');
+                        if (marketTrendChartDom) {
+                            self.marketPriceTrendChart = Echarts.init(marketTrendChartDom, 'walden');
+                        }
+
+                        // 加载市场价概览数据
+                        self.fetchMarketPriceData();
+
+                        // 监听窗口变化时调整市场价图表
+                        $(window).resize(function() {
+                            if (self.marketPriceChart) {
+                                self.marketPriceChart.resize();
+                            }
+                            if (self.marketPriceTrendChart) {
+                                self.marketPriceTrendChart.resize();
+                            }
+                        });
                     });
                 },
 
@@ -120,6 +163,14 @@ define(['jquery', 'bootstrap', 'backend', 'vue', 'echarts', 'echarts-theme'], fu
                             if (newView === 'category' && self.chart) {
                                 self.chart.resize();
                             }
+                            if (newView === 'marketprice') {
+                                if (self.marketPriceChart) {
+                                    self.marketPriceChart.resize();
+                                }
+                                if (self.marketPriceTrendChart) {
+                                    self.marketPriceTrendChart.resize();
+                                }
+                            }
                         });
                     }
                 },
@@ -132,6 +183,400 @@ define(['jquery', 'bootstrap', 'backend', 'vue', 'echarts', 'echarts-theme'], fu
                         var day = ('0' + date.getDate()).slice(-2);
                         return year + '-' + month + '-' + day;
                     },
+
+                    // ============ 市场价概览相关方法 ============
+
+                    // 获取市场价概览数据
+                    fetchMarketPriceData: function() {
+                        var self = this;
+                        this.marketPriceLoading = true;
+
+                        Fast.api.ajax({
+                            url: 'wanlshop/pricetrend/getMarketPriceOverview',
+                            data: {
+                                city_name: this.marketPriceFilter.city_name,
+                                category_id: this.marketPriceFilter.category_id,
+                                spec: this.marketPriceFilter.spec,
+                                start_date: this.marketPriceFilter.start_date,
+                                end_date: this.marketPriceFilter.end_date
+                            }
+                        }, function(data, ret) {
+                            self.marketPriceLoading = false;
+                            self.marketPriceData = data;
+                            self.$nextTick(function() {
+                                self.renderMarketPriceChart();
+                                self.renderMarketPriceTrendChart();
+                            });
+                            return false;
+                        }, function(data, ret) {
+                            self.marketPriceLoading = false;
+                            Toastr.error(ret.msg);
+                            return false;
+                        });
+                    },
+
+                    // 渲染市场价分布图表
+                    renderMarketPriceChart: function() {
+                        if (!this.marketPriceChart) {
+                            var chartDom = document.getElementById('market-price-chart');
+                            if (chartDom) {
+                                this.marketPriceChart = Echarts.init(chartDom, 'walden');
+                            } else {
+                                return;
+                            }
+                        }
+
+                        var chartData = this.marketPriceData.chart_data;
+                        if (!chartData || !chartData.cities || chartData.cities.length === 0) {
+                            this.marketPriceChart.clear();
+                            return;
+                        }
+
+                        var option = {
+                            backgroundColor: 'transparent',
+                            title: {
+                                text: '各城市市场价分布',
+                                left: 'center',
+                                textStyle: {
+                                    color: '#333',
+                                    fontSize: 16,
+                                    fontWeight: 600
+                                }
+                            },
+                            tooltip: {
+                                trigger: 'axis',
+                                backgroundColor: 'rgba(50, 50, 50, 0.95)',
+                                borderWidth: 0,
+                                textStyle: {
+                                    color: '#fff',
+                                    fontSize: 12
+                                },
+                                formatter: function(params) {
+                                    var city = params[0].axisValue;
+                                    var html = '<div style="font-weight: 600; margin-bottom: 8px;">' + city + '</div>';
+                                    params.forEach(function(item) {
+                                        if (item.value !== null && item.value !== undefined) {
+                                            html += '<div style="display: flex; justify-content: space-between; margin: 3px 0;">';
+                                            html += '<span style="color: ' + item.color + ';">' + item.seriesName + '</span>';
+                                            html += '<span style="font-weight: 600; margin-left: 15px;">￥' + item.value + '</span>';
+                                            html += '</div>';
+                                        }
+                                    });
+                                    return html;
+                                }
+                            },
+                            legend: {
+                                data: ['均价', '最低价', '最高价'],
+                                bottom: 10,
+                                textStyle: {
+                                    color: '#666'
+                                }
+                            },
+                            grid: {
+                                left: '3%',
+                                right: '4%',
+                                bottom: '15%',
+                                top: '15%',
+                                containLabel: true
+                            },
+                            xAxis: {
+                                type: 'category',
+                                data: chartData.cities,
+                                axisLine: {
+                                    lineStyle: {
+                                        color: '#ddd'
+                                    }
+                                },
+                                axisLabel: {
+                                    color: '#666',
+                                    rotate: chartData.cities.length > 5 ? 30 : 0
+                                }
+                            },
+                            yAxis: {
+                                type: 'value',
+                                name: '价格 (元)',
+                                nameTextStyle: {
+                                    color: '#666'
+                                },
+                                axisLine: {
+                                    show: false
+                                },
+                                axisTick: {
+                                    show: false
+                                },
+                                axisLabel: {
+                                    color: '#666',
+                                    formatter: '￥{value}'
+                                },
+                                splitLine: {
+                                    lineStyle: {
+                                        color: '#f0f0f0'
+                                    }
+                                }
+                            },
+                            series: [
+                                {
+                                    name: '均价',
+                                    type: 'bar',
+                                    data: chartData.avg_prices,
+                                    barMaxWidth: 40,
+                                    itemStyle: {
+                                        color: new Echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                            { offset: 0, color: '#5faee3' },
+                                            { offset: 1, color: '#3c8dbc' }
+                                        ]),
+                                        borderRadius: [4, 4, 0, 0]
+                                    },
+                                    emphasis: {
+                                        itemStyle: {
+                                            color: new Echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                                { offset: 0, color: '#3c8dbc' },
+                                                { offset: 1, color: '#367fa9' }
+                                            ])
+                                        }
+                                    }
+                                },
+                                {
+                                    name: '最低价',
+                                    type: 'line',
+                                    data: chartData.min_prices,
+                                    symbol: 'circle',
+                                    symbolSize: 6,
+                                    lineStyle: {
+                                        color: '#00a65a',
+                                        width: 2
+                                    },
+                                    itemStyle: {
+                                        color: '#00a65a',
+                                        borderColor: '#fff',
+                                        borderWidth: 2
+                                    }
+                                },
+                                {
+                                    name: '最高价',
+                                    type: 'line',
+                                    data: chartData.max_prices,
+                                    symbol: 'circle',
+                                    symbolSize: 6,
+                                    lineStyle: {
+                                        color: '#f39c12',
+                                        width: 2
+                                    },
+                                    itemStyle: {
+                                        color: '#f39c12',
+                                        borderColor: '#fff',
+                                        borderWidth: 2
+                                    }
+                                }
+                            ]
+                        };
+
+                        this.marketPriceChart.setOption(option, true);
+                        this.marketPriceChart.resize();
+                    },
+
+                    // 切换市场价明细行展开/折叠
+                    toggleMarketDetailExpand: function(index) {
+                        var pos = this.marketDetailExpanded.indexOf(index);
+                        if (pos > -1) {
+                            this.marketDetailExpanded.splice(pos, 1);
+                        } else {
+                            this.marketDetailExpanded.push(index);
+                        }
+                    },
+
+                    // 渲染市场价历史趋势图表（折线图）
+                    renderMarketPriceTrendChart: function() {
+                        // 初始化图表（如果尚未初始化）
+                        if (!this.marketPriceTrendChart) {
+                            var chartDom = document.getElementById('market-price-trend-chart');
+                            if (chartDom) {
+                                this.marketPriceTrendChart = Echarts.init(chartDom, 'walden');
+                            } else {
+                                return;
+                            }
+                        }
+
+                        var trendData = this.marketPriceData.trend_chart_data;
+                        if (!trendData || !trendData.dates || trendData.dates.length === 0 || !trendData.series || trendData.series.length === 0) {
+                            this.marketPriceTrendChart.clear();
+                            return;
+                        }
+
+                        var self = this;
+                        var dates = trendData.dates;
+
+                        // 构建系列数据
+                        var series = [];
+                        var legendData = [];
+
+                        trendData.series.forEach(function(item, index) {
+                            var color = self.getTrendColor(index);
+                            legendData.push(item.name);
+                            series.push({
+                                name: item.name,
+                                type: 'line',
+                                smooth: false,
+                                step: 'end',
+                                symbol: 'circle',
+                                symbolSize: 4,
+                                lineStyle: {
+                                    color: color,
+                                    width: 2
+                                },
+                                itemStyle: {
+                                    color: color,
+                                    borderColor: '#fff',
+                                    borderWidth: 1
+                                },
+                                data: item.data,
+                                connectNulls: true
+                            });
+                        });
+
+                        var option = {
+                            backgroundColor: 'transparent',
+                            title: {
+                                text: '市场价历史趋势',
+                                left: 'center',
+                                textStyle: {
+                                    color: '#333',
+                                    fontSize: 16,
+                                    fontWeight: 600
+                                }
+                            },
+                            tooltip: {
+                                trigger: 'axis',
+                                backgroundColor: 'rgba(50, 50, 50, 0.95)',
+                                borderWidth: 0,
+                                textStyle: {
+                                    color: '#fff',
+                                    fontSize: 12
+                                },
+                                formatter: function(params) {
+                                    var date = params[0].axisValue;
+                                    var html = '<div style="font-weight: 600; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 5px;">' + date + '</div>';
+                                    params.forEach(function(item) {
+                                        if (item.value !== null && item.value !== undefined) {
+                                            html += '<div style="display: flex; justify-content: space-between; margin: 3px 0;">';
+                                            html += '<span style="color: ' + item.color + ';">' + item.seriesName + '</span>';
+                                            html += '<span style="font-weight: 600; margin-left: 15px;">￥' + item.value + '</span>';
+                                            html += '</div>';
+                                        }
+                                    });
+                                    return html;
+                                }
+                            },
+                            legend: {
+                                data: legendData,
+                                bottom: 10,
+                                textStyle: {
+                                    color: '#666'
+                                },
+                                type: 'scroll',
+                                pageIconSize: 12
+                            },
+                            grid: {
+                                left: '3%',
+                                right: '4%',
+                                bottom: '15%',
+                                top: '15%',
+                                containLabel: true
+                            },
+                            toolbox: {
+                                show: true,
+                                right: 20,
+                                feature: {
+                                    dataZoom: {
+                                        yAxisIndex: 'none',
+                                        title: {
+                                            zoom: '区域缩放',
+                                            back: '还原'
+                                        }
+                                    },
+                                    restore: {
+                                        title: '还原'
+                                    },
+                                    saveAsImage: {
+                                        title: '保存图片'
+                                    }
+                                }
+                            },
+                            dataZoom: [
+                                {
+                                    type: 'inside',
+                                    start: 0,
+                                    end: 100
+                                },
+                                {
+                                    start: 0,
+                                    end: 100,
+                                    handleSize: '80%',
+                                    handleStyle: {
+                                        color: '#fff',
+                                        shadowBlur: 3,
+                                        shadowColor: 'rgba(0, 0, 0, 0.2)',
+                                        shadowOffsetX: 2,
+                                        shadowOffsetY: 2
+                                    }
+                                }
+                            ],
+                            xAxis: {
+                                type: 'category',
+                                boundaryGap: false,
+                                data: dates,
+                                axisLine: {
+                                    lineStyle: {
+                                        color: '#ddd'
+                                    }
+                                },
+                                axisLabel: {
+                                    color: '#666',
+                                    formatter: function(value) {
+                                        return value.substring(5); // 只显示 MM-DD
+                                    }
+                                }
+                            },
+                            yAxis: {
+                                type: 'value',
+                                name: '市场价 (元)',
+                                nameTextStyle: {
+                                    color: '#666'
+                                },
+                                axisLine: {
+                                    show: false
+                                },
+                                axisTick: {
+                                    show: false
+                                },
+                                axisLabel: {
+                                    color: '#666',
+                                    formatter: '￥{value}'
+                                },
+                                splitLine: {
+                                    lineStyle: {
+                                        color: '#f0f0f0'
+                                    }
+                                }
+                            },
+                            series: series
+                        };
+
+                        this.marketPriceTrendChart.setOption(option, true);
+                        this.marketPriceTrendChart.resize();
+                    },
+
+                    // 获取趋势图城市颜色
+                    getTrendColor: function(index) {
+                        var colors = [
+                            '#3c8dbc', '#f39c12', '#00a65a', '#e74c3c', '#9b59b6',
+                            '#1abc9c', '#e67e22', '#2ecc71', '#3498db', '#95a5a6',
+                            '#d35400', '#27ae60', '#8e44ad', '#16a085', '#c0392b'
+                        ];
+                        return colors[index % colors.length];
+                    },
+
+                    // ============ 原有方法 ============
 
                     // 切换视图
                     switchView: function(view) {

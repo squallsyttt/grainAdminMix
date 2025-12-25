@@ -1328,6 +1328,9 @@
         <div class="tab-item" :class="{ active: currentView === 'category' }" @click="switchView('category')">
             <i class="fa fa-th-list"></i> 分类详情
         </div>
+        <div class="tab-item" :class="{ active: currentView === 'marketprice' }" @click="switchView('marketprice')">
+            <i class="fa fa-line-chart"></i> 市场价概览
+        </div>
     </div>
 
     <!-- ============ 全品类概览视图 ============ -->
@@ -1834,6 +1837,215 @@
                     </tr>
                 </tbody>
             </table>
+        </div>
+    </div>
+
+    <!-- ============ 市场价概览视图 ============ -->
+    <div v-show="currentView === 'marketprice'">
+        <!-- 筛选区域 -->
+        <div class="filter-section">
+            <div class="filter-row">
+                <div class="filter-item">
+                    <label>开始日期</label>
+                    <input type="date" v-model="marketPriceFilter.start_date">
+                </div>
+                <div class="filter-item">
+                    <label>结束日期</label>
+                    <input type="date" v-model="marketPriceFilter.end_date">
+                </div>
+                <div class="filter-item">
+                    <label>城市筛选</label>
+                    <select v-model="marketPriceFilter.city_name" @change="fetchMarketPriceData">
+                        <option value="">全部城市</option>
+                        <option v-for="city in marketPriceData.filter_options ? marketPriceData.filter_options.cities : []" :key="city.name" :value="city.name">{{ city.name }}</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <label>分类筛选</label>
+                    <select v-model="marketPriceFilter.category_id" @change="fetchMarketPriceData">
+                        <option value="">全部分类</option>
+                        <option v-for="cat in marketPriceData.filter_options ? marketPriceData.filter_options.categories : []"
+                                :key="cat.id"
+                                :value="cat.id"
+                                :disabled="cat.disabled"
+                                :style="{ color: cat.disabled ? '#999' : 'inherit' }">{{ cat.name }}</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <label>规格筛选</label>
+                    <select v-model="marketPriceFilter.spec" @change="fetchMarketPriceData">
+                        <option value="">全部规格</option>
+                        <option v-for="spec in marketPriceData.filter_options ? marketPriceData.filter_options.specs : []" :key="spec.name" :value="spec.name">{{ spec.name }}</option>
+                    </select>
+                </div>
+                <div class="filter-item" style="flex: 0 0 auto;">
+                    <label>&nbsp;</label>
+                    <button class="btn-search" @click="fetchMarketPriceData" :disabled="marketPriceLoading">
+                        <i class="fa fa-refresh" :class="{ 'fa-spin': marketPriceLoading }"></i> 刷新数据
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 统计卡片 -->
+        <div class="overview-cards">
+            <div class="overview-card platform">
+                <i class="fa fa-line-chart card-icon"></i>
+                <div class="card-label">全品类市场价均价</div>
+                <div class="card-value">￥{{ marketPriceData.total_stats ? marketPriceData.total_stats.avg_market_price : '--' }}</div>
+                <div class="card-detail">
+                    <div class="detail-row">
+                        <span class="detail-label">最低价</span>
+                        <span class="detail-value">￥{{ marketPriceData.total_stats ? marketPriceData.total_stats.min_market_price : '--' }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">最高价</span>
+                        <span class="detail-value">￥{{ marketPriceData.total_stats ? marketPriceData.total_stats.max_market_price : '--' }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="overview-card merchant">
+                <i class="fa fa-cubes card-icon"></i>
+                <div class="card-label">SKU总数</div>
+                <div class="card-value">{{ marketPriceData.total_stats ? marketPriceData.total_stats.sku_count : '--' }}</div>
+                <div class="card-detail">
+                    <div class="detail-row">
+                        <span class="detail-label">商品数</span>
+                        <span class="detail-value">{{ marketPriceData.total_stats ? marketPriceData.total_stats.goods_count : '--' }} 个</span>
+                    </div>
+                </div>
+            </div>
+            <div class="overview-card diff">
+                <i class="fa fa-users card-icon"></i>
+                <div class="card-label">商家数</div>
+                <div class="card-value positive">{{ marketPriceData.total_stats ? marketPriceData.total_stats.shop_count : '--' }}</div>
+                <div class="card-detail">
+                    <div class="detail-row">
+                        <span class="detail-label">分类数</span>
+                        <span class="detail-value">{{ marketPriceData.total_stats ? marketPriceData.total_stats.category_count : '--' }} 个</span>
+                    </div>
+                </div>
+            </div>
+            <div class="overview-card info">
+                <i class="fa fa-map-marker card-icon"></i>
+                <div class="card-label">覆盖城市</div>
+                <div class="card-value">{{ marketPriceData.total_stats ? marketPriceData.total_stats.city_count : '--' }}</div>
+                <div class="card-detail">
+                    <div class="detail-row">
+                        <span class="detail-label">全国覆盖</span>
+                        <span class="detail-value">{{ marketPriceData.total_stats ? marketPriceData.total_stats.city_count : '--' }} 个城市</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 市场价历史趋势图表 -->
+        <div class="chart-section">
+            <div class="chart-header">
+                <div class="chart-title">
+                    <i class="fa fa-line-chart" style="color: #3c8dbc;"></i>
+                    市场价历史趋势
+                    <span style="font-size: 12px; color: #999; margin-left: 10px;">
+                        {{ marketPriceData.date_range ? marketPriceData.date_range.start + ' ~ ' + marketPriceData.date_range.end : '' }}
+                    </span>
+                </div>
+                <div class="chart-legend">
+                    <span class="legend-item" v-for="(series, idx) in (marketPriceData.trend_chart_data ? marketPriceData.trend_chart_data.series : [])" :key="series.name" style="margin-right: 15px;">
+                        <span class="legend-dot" :style="{ background: getTrendColor(idx) }"></span>
+                        {{ series.name }}
+                    </span>
+                </div>
+            </div>
+            <div class="chart-container" style="position: relative;">
+                <div id="market-price-trend-chart" style="width: 100%; height: 400px;"></div>
+                <div class="loading-mask" v-if="marketPriceLoading">
+                    <div class="loading-spinner"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 市场价分布图表（柱状图） -->
+        <div class="chart-section">
+            <div class="chart-header">
+                <div class="chart-title">
+                    <i class="fa fa-bar-chart" style="color: #f39c12;"></i>
+                    各城市当前市场价分布
+                </div>
+            </div>
+            <div class="chart-container" style="position: relative;">
+                <div id="market-price-chart" style="width: 100%; height: 350px;"></div>
+            </div>
+        </div>
+
+        <!-- 市场价明细表格 -->
+        <div class="detail-section">
+            <div class="section-title">
+                <i class="fa fa-list-alt" style="color: #f39c12;"></i>
+                市场价明细
+            </div>
+            <div v-if="marketPriceData.detail_list && marketPriceData.detail_list.length > 0">
+                <table class="detail-table">
+                    <thead>
+                        <tr>
+                            <th>城市</th>
+                            <th>分类</th>
+                            <th>规格</th>
+                            <th>均价</th>
+                            <th>最低价</th>
+                            <th>最高价</th>
+                            <th>SKU数</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template v-for="(item, index) in marketPriceData.detail_list">
+                            <tr :key="'mp-row-' + index">
+                                <td>
+                                    <span style="display: inline-flex; align-items: center; gap: 5px;">
+                                        <i class="fa fa-map-marker" style="color: #e74c3c;"></i>
+                                        {{ item.city_name }}
+                                    </span>
+                                </td>
+                                <td><span class="sku-spec-tag">{{ item.category_name }}</span></td>
+                                <td><span class="sku-spec-tag">{{ item.spec }}</span></td>
+                                <td><span class="price platform">￥{{ item.avg_market_price }}</span></td>
+                                <td><span class="price" style="color: #00a65a;">￥{{ item.min_market_price }}</span></td>
+                                <td><span class="price" style="color: #dd4b39;">￥{{ item.max_market_price }}</span></td>
+                                <td>{{ item.sku_count }}</td>
+                                <td>
+                                    <button class="btn-detail" @click="toggleMarketDetailExpand(index)">
+                                        <i class="fa" :class="marketDetailExpanded.includes(index) ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                                        {{ marketDetailExpanded.includes(index) ? '收起' : '展开' }}
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr v-show="marketDetailExpanded.includes(index)" :key="'mp-expand-' + index" style="background: #f9f9f9;">
+                                <td colspan="8" style="padding: 0;">
+                                    <div style="padding: 15px 20px;">
+                                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px;">
+                                            <div v-for="sku in item.sku_list" :key="sku.sku_id"
+                                                style="display: flex; align-items: center; justify-content: space-between; padding: 12px 15px; background: #fff; border-radius: 6px; border: 1px solid #e8e8e8;">
+                                                <div style="flex: 1; min-width: 0;">
+                                                    <div style="font-size: 11px; color: #999; margin-bottom: 4px;">{{ sku.shop_name }}</div>
+                                                    <div style="font-size: 13px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ sku.goods_title }}</div>
+                                                </div>
+                                                <div style="text-align: right; margin-left: 15px;">
+                                                    <div style="font-size: 16px; font-weight: 600; color: #3c8dbc;">￥{{ sku.market_price }}</div>
+                                                    <div style="font-size: 12px; color: #999;">售价 ￥{{ sku.price }}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+            <div class="empty-state" v-else>
+                <i class="fa fa-inbox"></i>
+                <p>暂无市场价数据</p>
+            </div>
         </div>
     </div>
 </div>

@@ -14,7 +14,7 @@ use think\Db;
  */
 class Pricetrend extends Backend
 {
-    protected $noNeedRight = ['getCategoryList', 'getSpecList', 'getTrendData', 'getOverviewData', 'getCityList'];
+    protected $noNeedRight = ['getCategoryList', 'getSpecList', 'getTrendData', 'getOverviewData', 'getCityList', 'getMarketPriceOverview'];
 
     /**
      * 主页面
@@ -852,5 +852,449 @@ class Pricetrend extends Backend
         ])->order('g.shop_id ASC, sku.price ASC')->select();
 
         $this->success('', null, $list);
+    }
+
+    /**
+     * 获取市场价概览数据
+     *
+     * 统计所有店铺所有SKU的市场价（market_price）明细和均值
+     * 支持按城市、分类、规格筛选
+     * 支持历史市场价趋势查询
+     */
+    public function getMarketPriceOverview()
+    {
+        $cityName = $this->request->param('city_name', '');
+        $categoryId = $this->request->param('category_id', 0, 'intval');
+        $spec = $this->request->param('spec', '');
+        $startDate = $this->request->param('start_date', '');
+        $endDate = $this->request->param('end_date', '');
+
+        // 默认显示最近30天
+        if (!$startDate) {
+            $startDate = date('Y-m-d', strtotime('-30 days'));
+        }
+        if (!$endDate) {
+            $endDate = date('Y-m-d');
+        }
+
+        // 转换为时间戳
+        $startTime = strtotime($startDate . ' 00:00:00');
+        $endTime = strtotime($endDate . ' 23:59:59');
+
+        // 生成日期序列
+        $dates = [];
+        $current = strtotime($startDate);
+        $end = strtotime($endDate);
+        while ($current <= $end) {
+            $dates[] = date('Y-m-d', $current);
+            $current += 86400;
+        }
+
+        $prefix = Config::get('database.prefix');
+
+        // ========== 1. 总体统计 ==========
+        $totalStatsQuery = Db::name('wanlshop_goods_sku')
+            ->alias('sku')
+            ->join("{$prefix}wanlshop_goods g", "sku.goods_id = g.id", 'INNER')
+            ->where('g.deletetime', null)
+            ->where('g.status', 'normal')
+            ->where('sku.deletetime', null)
+            ->where('sku.state', '0')
+            ->where('sku.market_price', '>', 0);
+
+        if ($cityName !== '') {
+            $totalStatsQuery->where('g.region_city_name', $cityName);
+        }
+        if ($categoryId > 0) {
+            $totalStatsQuery->where('g.category_id', $categoryId);
+        }
+        if ($spec !== '') {
+            $totalStatsQuery->where('sku.difference', $spec);
+        }
+
+        $totalStats = $totalStatsQuery
+            ->field([
+                'AVG(sku.market_price) as avg_market_price',
+                'MIN(sku.market_price) as min_market_price',
+                'MAX(sku.market_price) as max_market_price',
+                'COUNT(sku.id) as sku_count',
+                'COUNT(DISTINCT g.shop_id) as shop_count',
+                'COUNT(DISTINCT g.region_city_name) as city_count',
+                'COUNT(DISTINCT g.category_id) as category_count',
+                'COUNT(DISTINCT g.id) as goods_count'
+            ])
+            ->find();
+
+        // ========== 2. 按城市统计 ==========
+        $cityStatsQuery = Db::name('wanlshop_goods_sku')
+            ->alias('sku')
+            ->join("{$prefix}wanlshop_goods g", "sku.goods_id = g.id", 'INNER')
+            ->where('g.deletetime', null)
+            ->where('g.status', 'normal')
+            ->where('sku.deletetime', null)
+            ->where('sku.state', '0')
+            ->where('sku.market_price', '>', 0)
+            ->where('g.region_city_name', 'neq', '')
+            ->where('g.region_city_name', 'exp', 'IS NOT NULL');
+
+        if ($categoryId > 0) {
+            $cityStatsQuery->where('g.category_id', $categoryId);
+        }
+        if ($spec !== '') {
+            $cityStatsQuery->where('sku.difference', $spec);
+        }
+
+        $cityStats = $cityStatsQuery
+            ->group('g.region_city_name')
+            ->field([
+                'g.region_city_name as city_name',
+                'AVG(sku.market_price) as avg_market_price',
+                'MIN(sku.market_price) as min_market_price',
+                'MAX(sku.market_price) as max_market_price',
+                'COUNT(sku.id) as sku_count',
+                'COUNT(DISTINCT g.shop_id) as shop_count',
+                'COUNT(DISTINCT g.id) as goods_count'
+            ])
+            ->order('avg_market_price DESC')
+            ->select();
+
+        // 格式化城市统计数据
+        foreach ($cityStats as &$city) {
+            $city['avg_market_price'] = round(floatval($city['avg_market_price']), 2);
+            $city['min_market_price'] = round(floatval($city['min_market_price']), 2);
+            $city['max_market_price'] = round(floatval($city['max_market_price']), 2);
+        }
+        unset($city);
+
+        // ========== 3. 按城市+分类+规格明细 ==========
+        $detailQuery = Db::name('wanlshop_goods_sku')
+            ->alias('sku')
+            ->join("{$prefix}wanlshop_goods g", "sku.goods_id = g.id", 'INNER')
+            ->join("{$prefix}wanlshop_category c", "c.id = g.category_id", 'LEFT')
+            ->where('g.deletetime', null)
+            ->where('g.status', 'normal')
+            ->where('sku.deletetime', null)
+            ->where('sku.state', '0')
+            ->where('sku.market_price', '>', 0);
+
+        if ($cityName !== '') {
+            $detailQuery->where('g.region_city_name', $cityName);
+        }
+        if ($categoryId > 0) {
+            $detailQuery->where('g.category_id', $categoryId);
+        }
+        if ($spec !== '') {
+            $detailQuery->where('sku.difference', $spec);
+        }
+
+        $detailList = $detailQuery
+            ->group('g.region_city_name, g.category_id, sku.difference')
+            ->field([
+                'g.region_city_name as city_name',
+                'g.category_id',
+                'c.name as category_name',
+                'sku.difference as spec',
+                'AVG(sku.market_price) as avg_market_price',
+                'MIN(sku.market_price) as min_market_price',
+                'MAX(sku.market_price) as max_market_price',
+                'COUNT(sku.id) as sku_count',
+                'COUNT(DISTINCT g.shop_id) as shop_count'
+            ])
+            ->order('g.region_city_name ASC, c.weigh DESC, sku.difference ASC')
+            ->select();
+
+        // 获取每个明细项的SKU列表
+        foreach ($detailList as &$detail) {
+            $detail['avg_market_price'] = round(floatval($detail['avg_market_price']), 2);
+            $detail['min_market_price'] = round(floatval($detail['min_market_price']), 2);
+            $detail['max_market_price'] = round(floatval($detail['max_market_price']), 2);
+
+            // 获取该组合下的所有SKU明细
+            $skuListQuery = Db::name('wanlshop_goods_sku')
+                ->alias('sku')
+                ->join("{$prefix}wanlshop_goods g", "sku.goods_id = g.id", 'INNER')
+                ->join("{$prefix}wanlshop_shop s", "s.id = g.shop_id", 'LEFT')
+                ->where('g.region_city_name', $detail['city_name'])
+                ->where('g.category_id', $detail['category_id'])
+                ->where('sku.difference', $detail['spec'])
+                ->where('g.deletetime', null)
+                ->where('g.status', 'normal')
+                ->where('sku.deletetime', null)
+                ->where('sku.state', '0')
+                ->where('sku.market_price', '>', 0);
+
+            $detail['sku_list'] = $skuListQuery
+                ->field([
+                    'sku.id as sku_id',
+                    'g.id as goods_id',
+                    'g.title as goods_title',
+                    'g.shop_id',
+                    'CASE WHEN g.shop_id = 1 THEN "平台概念店" ELSE IFNULL(s.shopname, "未知店铺") END as shop_name',
+                    'sku.market_price',
+                    'sku.price',
+                    'sku.stock'
+                ])
+                ->order('sku.market_price ASC')
+                ->select();
+        }
+        unset($detail);
+
+        // ========== 4. 筛选器选项 ==========
+        // 获取有市场价数据的城市列表
+        $cities = Db::name('wanlshop_goods')
+            ->alias('g')
+            ->join("{$prefix}wanlshop_goods_sku sku", "sku.goods_id = g.id AND sku.deletetime IS NULL AND sku.state = '0' AND sku.market_price > 0", 'INNER')
+            ->where('g.deletetime', null)
+            ->where('g.status', 'normal')
+            ->where('g.region_city_name', 'neq', '')
+            ->where('g.region_city_name', 'exp', 'IS NOT NULL')
+            ->group('g.region_city_name')
+            ->field('g.region_city_name as name')
+            ->order('g.region_city_name ASC')
+            ->select();
+
+        // 获取有市场价数据的分类列表（带层级）
+        $categoryIds = Db::name('wanlshop_category')
+            ->alias('c')
+            ->join("{$prefix}wanlshop_goods g", "g.category_id = c.id AND g.deletetime IS NULL AND g.status = 'normal'", 'INNER')
+            ->join("{$prefix}wanlshop_goods_sku sku", "sku.goods_id = g.id AND sku.deletetime IS NULL AND sku.state = '0' AND sku.market_price > 0", 'INNER')
+            ->where('c.type', 'goods')
+            ->where('c.status', 'normal')
+            ->group('c.id')
+            ->column('c.id');
+
+        // 获取这些分类及其父级的完整信息
+        $allCategories = Db::name('wanlshop_category')
+            ->where('type', 'goods')
+            ->where('status', 'normal')
+            ->field('id, pid, name, weigh')
+            ->order('weigh DESC, id ASC')
+            ->select();
+
+        // 构建层级树形结构
+        $categories = $this->buildCategoryTree($allCategories, $categoryIds);
+
+        // 获取有市场价数据的规格列表（根据当前筛选条件）
+        $specsQuery = Db::name('wanlshop_goods_sku')
+            ->alias('sku')
+            ->join("{$prefix}wanlshop_goods g", "sku.goods_id = g.id", 'INNER')
+            ->where('g.deletetime', null)
+            ->where('g.status', 'normal')
+            ->where('sku.deletetime', null)
+            ->where('sku.state', '0')
+            ->where('sku.market_price', '>', 0);
+
+        if ($cityName !== '') {
+            $specsQuery->where('g.region_city_name', $cityName);
+        }
+        if ($categoryId > 0) {
+            $specsQuery->where('g.category_id', $categoryId);
+        }
+
+        $specs = $specsQuery
+            ->group('sku.difference')
+            ->field('sku.difference as name')
+            ->order('sku.difference ASC')
+            ->select();
+
+        // ========== 5. 图表数据（柱状图用） ==========
+        $chartData = [
+            'cities' => array_column($cityStats, 'city_name'),
+            'avg_prices' => array_column($cityStats, 'avg_market_price'),
+            'min_prices' => array_column($cityStats, 'min_market_price'),
+            'max_prices' => array_column($cityStats, 'max_market_price'),
+            'sku_counts' => array_column($cityStats, 'sku_count')
+        ];
+
+        // ========== 6. 历史市场价趋势数据（折线图用） ==========
+        // 查询所有 SKU 记录（包括历史记录），按城市和日期聚合
+        $trendQuery = Db::name('wanlshop_goods_sku')
+            ->alias('sku')
+            ->join("{$prefix}wanlshop_goods g", "sku.goods_id = g.id", 'INNER')
+            ->where('g.deletetime', null)
+            ->where('g.status', 'normal')
+            ->where('sku.deletetime', null)
+            ->where('sku.market_price', '>', 0)
+            ->where('g.region_city_name', 'neq', '')
+            ->where('g.region_city_name', 'exp', 'IS NOT NULL');
+
+        if ($cityName !== '') {
+            $trendQuery->where('g.region_city_name', $cityName);
+        }
+        if ($categoryId > 0) {
+            $trendQuery->where('g.category_id', $categoryId);
+        }
+        if ($spec !== '') {
+            $trendQuery->where('sku.difference', $spec);
+        }
+
+        // 获取原始数据（包含历史和当前记录）
+        $rawTrendData = $trendQuery
+            ->field([
+                'sku.id',
+                'g.region_city_name as city_name',
+                'sku.market_price',
+                'sku.state',
+                'sku.createtime'
+            ])
+            ->order('g.region_city_name ASC, sku.createtime ASC')
+            ->select();
+
+        // 按城市组织数据
+        $cityTrendData = [];
+        foreach ($rawTrendData as $row) {
+            $city = $row['city_name'];
+            if (!isset($cityTrendData[$city])) {
+                $cityTrendData[$city] = [];
+            }
+            $cityTrendData[$city][] = [
+                'time' => intval($row['createtime']),
+                'price' => floatval($row['market_price'])
+            ];
+        }
+
+        // 生成每个城市的时间序列
+        $trendChartData = [
+            'dates' => $dates,
+            'series' => []
+        ];
+
+        foreach ($cityTrendData as $city => $records) {
+            $priceTimeline = $this->generateMarketPriceLine($records, $dates, $startTime, $endTime);
+            $trendChartData['series'][] = [
+                'name' => $city,
+                'data' => $priceTimeline
+            ];
+        }
+
+        $this->success('', null, [
+            'date_range' => ['start' => $startDate, 'end' => $endDate],
+            'total_stats' => [
+                'avg_market_price' => $totalStats['avg_market_price'] ? round(floatval($totalStats['avg_market_price']), 2) : 0,
+                'min_market_price' => $totalStats['min_market_price'] ? round(floatval($totalStats['min_market_price']), 2) : 0,
+                'max_market_price' => $totalStats['max_market_price'] ? round(floatval($totalStats['max_market_price']), 2) : 0,
+                'sku_count' => intval($totalStats['sku_count']),
+                'shop_count' => intval($totalStats['shop_count']),
+                'city_count' => intval($totalStats['city_count']),
+                'category_count' => intval($totalStats['category_count']),
+                'goods_count' => intval($totalStats['goods_count'])
+            ],
+            'city_stats' => $cityStats,
+            'detail_list' => $detailList,
+            'filter_options' => [
+                'cities' => $cities,
+                'categories' => $categories,
+                'specs' => $specs
+            ],
+            'chart_data' => $chartData,
+            'trend_chart_data' => $trendChartData
+        ]);
+    }
+
+    /**
+     * 生成市场价时间序列（填充空白日期，计算每日均价）
+     */
+    protected function generateMarketPriceLine($records, $dates, $startTime, $endTime)
+    {
+        if (empty($records)) {
+            return array_fill(0, count($dates), null);
+        }
+
+        // 按时间排序
+        usort($records, function($a, $b) {
+            return $a['time'] - $b['time'];
+        });
+
+        $priceTimeline = [];
+
+        // 先统计每个日期所有记录的价格，计算当天均价
+        $dailyPrices = [];
+        foreach ($records as $record) {
+            $date = date('Y-m-d', $record['time']);
+            if (!isset($dailyPrices[$date])) {
+                $dailyPrices[$date] = [];
+            }
+            $dailyPrices[$date][] = $record['price'];
+        }
+
+        // 计算每天的均价
+        $dailyAvgPrices = [];
+        foreach ($dailyPrices as $date => $prices) {
+            $dailyAvgPrices[$date] = round(array_sum($prices) / count($prices), 2);
+        }
+
+        // 获取开始日期之前最近的价格作为初始值
+        $lastPrice = null;
+        foreach ($records as $record) {
+            if ($record['time'] < $startTime) {
+                $lastPrice = $record['price'];
+            }
+        }
+
+        // 填充日期序列
+        foreach ($dates as $date) {
+            if (isset($dailyAvgPrices[$date])) {
+                $lastPrice = $dailyAvgPrices[$date];
+            }
+            $priceTimeline[] = $lastPrice;
+        }
+
+        return $priceTimeline;
+    }
+
+    /**
+     * 构建分类层级树
+     * @param array $allCategories 所有分类
+     * @param array $validIds 有数据的分类ID
+     * @return array 带层级的分类列表
+     */
+    protected function buildCategoryTree($allCategories, $validIds)
+    {
+        // 构建索引
+        $categoryMap = [];
+        foreach ($allCategories as $cat) {
+            $categoryMap[$cat['id']] = $cat;
+        }
+
+        // 找出需要显示的分类（有数据的分类及其父级）
+        $showIds = [];
+        foreach ($validIds as $id) {
+            $showIds[$id] = true;
+            // 向上追溯父级
+            $current = $id;
+            while (isset($categoryMap[$current]) && $categoryMap[$current]['pid'] > 0) {
+                $parentId = $categoryMap[$current]['pid'];
+                $showIds[$parentId] = true;
+                $current = $parentId;
+            }
+        }
+
+        // 按层级排序输出（先父后子）
+        $result = [];
+        $this->addCategoryChildren($result, $allCategories, 0, 0, $showIds, $validIds);
+
+        return $result;
+    }
+
+    /**
+     * 递归添加子分类
+     */
+    protected function addCategoryChildren(&$result, $allCategories, $parentId, $level, $showIds, $validIds)
+    {
+        foreach ($allCategories as $cat) {
+            if ($cat['pid'] == $parentId && isset($showIds[$cat['id']])) {
+                // 生成层级前缀
+                $prefix = $level > 0 ? str_repeat('　', $level) . '└ ' : '';
+                $result[] = [
+                    'id' => $cat['id'],
+                    'name' => $prefix . $cat['name'],
+                    'level' => $level,
+                    'has_data' => in_array($cat['id'], $validIds),  // 是否有实际数据
+                    'disabled' => !in_array($cat['id'], $validIds)  // 没数据的禁用
+                ];
+                // 递归添加子分类
+                $this->addCategoryChildren($result, $allCategories, $cat['id'], $level + 1, $showIds, $validIds);
+            }
+        }
     }
 }
