@@ -491,7 +491,6 @@
                     <th style="width: 120px;">邀请码</th>
                     <th style="width: 100px;">邀请用户</th>
                     <th style="width: 100px;">邀请店铺</th>
-                    <th style="width: 80px;">身份</th>
                     <th style="width: 150px;">注册时间</th>
                     <th style="width: 100px;">操作</th>
                 </tr>
@@ -529,10 +528,6 @@
                                 {{ inviter.invited_shop_count }}
                             </span>
                         </td>
-                        <td>
-                            <span v-if="inviter.is_salesman" class="tag salesman">业务员</span>
-                            <span v-else class="tag normal">普通用户</span>
-                        </td>
                         <td>{{ inviter.createtime }}</td>
                         <td>
                             <button
@@ -547,7 +542,7 @@
                     </tr>
                     <!-- 展开行（手风琴） -->
                     <tr v-if="expandedId === inviter.id" :key="'expand-' + inviter.id" class="expand-row">
-                        <td colspan="8">
+                        <td colspan="7">
                             <div class="expand-content">
                                 <div class="detail-tabs">
                                     <button
