@@ -101,8 +101,9 @@ class Bdpromoter extends Backend
     /**
      * BD推广员详情
      */
-    public function detail($id = null)
+    public function detail($ids = null)
     {
+        $id = $ids ?: $this->request->get('ids');
         if (!$id) {
             $this->error(__('参数错误'));
         }
