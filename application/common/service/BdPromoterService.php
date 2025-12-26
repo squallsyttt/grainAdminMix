@@ -638,21 +638,28 @@ class BdPromoterService
     {
         $offset = ($page - 1) * $limit;
 
-        $query = Db::name('bd_commission_log')
+        // 构建基础条件闭包，避免 count() 后 Query 状态被重置
+        $buildWhere = function ($query) use ($bdUserId, $startTime, $endTime) {
+            $query->where('c.bd_user_id', $bdUserId);
+            if ($startTime) {
+                $query->where('c.createtime', '>=', $startTime);
+            }
+            if ($endTime) {
+                $query->where('c.createtime', '<=', $endTime);
+            }
+        };
+
+        // 计数查询
+        $total = Db::name('bd_commission_log')
+            ->alias('c')
+            ->where($buildWhere)
+            ->count();
+
+        // 列表查询
+        $list = Db::name('bd_commission_log')
             ->alias('c')
             ->join('wanlshop_shop s', 's.id = c.shop_id', 'LEFT')
-            ->where('c.bd_user_id', $bdUserId);
-
-        if ($startTime) {
-            $query->where('c.createtime', '>=', $startTime);
-        }
-        if ($endTime) {
-            $query->where('c.createtime', '<=', $endTime);
-        }
-
-        $total = $query->count();
-
-        $list = $query
+            ->where($buildWhere)
             ->field('c.*, s.shopname as shop_name')
             ->order('c.createtime', 'desc')
             ->limit($offset, $limit)
