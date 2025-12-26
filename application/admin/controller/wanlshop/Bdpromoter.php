@@ -33,27 +33,30 @@ class Bdpromoter extends Backend
         if ($this->request->isAjax()) {
             list($where, $sort, $order, $offset, $limit) = $this->buildparams();
 
-            // 构建查询
-            $query = Db::name('user')
-                ->alias('u')
-                ->where('u.bd_code', 'not null')
-                ->where('u.bd_code', '<>', '');
-
             // 搜索条件
             $search = $this->request->get('search', '');
-            if ($search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('u.nickname', 'like', "%{$search}%")
-                      ->whereOr('u.bd_code', 'like', "%{$search}%")
-                      ->whereOr('u.mobile', 'like', "%{$search}%");
-                });
-            }
 
-            $total = $query->count();
+            // 构建基础条件闭包
+            $buildBaseWhere = function ($query) use ($search) {
+                $query->where('bd_code', 'not null')
+                      ->where('bd_code', '<>', '');
+                if ($search) {
+                    $query->where(function ($q) use ($search) {
+                        $q->where('nickname', 'like', "%{$search}%")
+                          ->whereOr('bd_code', 'like', "%{$search}%")
+                          ->whereOr('mobile', 'like', "%{$search}%");
+                    });
+                }
+            };
 
-            $list = $query
-                ->field('u.id, u.nickname, u.avatar, u.mobile, u.bd_code, u.bd_apply_time')
-                ->order($sort ?: 'u.bd_apply_time', $order ?: 'desc')
+            // 计数查询
+            $total = Db::name('user')->where($buildBaseWhere)->count();
+
+            // 列表查询
+            $list = Db::name('user')
+                ->where($buildBaseWhere)
+                ->field('id, nickname, avatar, mobile, bd_code, bd_apply_time')
+                ->order($sort ?: 'bd_apply_time', $order ?: 'desc')
                 ->limit($offset, $limit)
                 ->select();
 
