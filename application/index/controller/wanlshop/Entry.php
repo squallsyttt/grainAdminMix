@@ -3,6 +3,7 @@
 namespace app\index\controller\wanlshop;
 
 use app\common\controller\Frontend;
+use app\common\service\BdPromoterService;
 use fast\Http;
 use think\Db;
 /**
@@ -113,6 +114,18 @@ class Entry extends Frontend
                 $inviterId = $inviter['id'];
             }
 
+            // 【新增】验证并处理BD推广码
+            $bderId = null;
+            $bdCode = strtoupper(trim($data['bd_code'] ?? ''));
+            if (!empty($bdCode)) {
+                $bdService = new BdPromoterService();
+                $bdUser = $bdService->validateBdCode($bdCode, $this->auth->id);
+                if (!$bdUser) {
+                    $this->error('BD推广码无效或不能使用自己的推广码');
+                }
+                $bderId = $bdUser['id'];
+            }
+
             // 更新提交信息（包含邀请码暂存）
             $data['user_id'] = $this->auth->id;
             $data['verify'] = $verify;
@@ -139,11 +152,27 @@ class Entry extends Frontend
 				    $shop->inviter_id = $inviterId;
 				    $shop->invite_bind_time = time();
 				}
+				// 【新增】绑定BD推广员
+				if ($bderId) {
+				    $shop->bder_id = $bderId;
+				    $shop->bder_bind_time = time();
+				}
 				$shop->save();
 
 				// 【店铺邀请升级】自动审核通过时触发邀请人升级
 				if ($inviterId) {
 				    $this->processShopInviterUpgrade($inviterId, $shop->id);
+				}
+
+				// 【新增】BD推广员店铺绑定处理
+				if ($bderId) {
+				    try {
+				        $bdService = new BdPromoterService();
+				        $bdService->onShopBind($bderId, $shop->id, $this->auth->id);
+				    } catch (\Exception $e) {
+				        // 记录日志但不影响注册流程
+				        \think\Log::error('BD店铺绑定处理失败: ' . $e->getMessage());
+				    }
 				}
 			}
 			$this->success();

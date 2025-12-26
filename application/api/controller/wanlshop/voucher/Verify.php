@@ -7,6 +7,7 @@ use app\admin\model\wanlshop\VoucherVerification;
 use app\admin\model\wanlshop\VoucherSettlement;
 use app\admin\model\wanlshop\Shop;
 use app\common\service\VoucherRebateService;
+use app\common\service\BdPromoterService;
 use think\Db;
 use think\Exception;
 
@@ -516,6 +517,9 @@ class Verify extends Api
             // 轨道4：被邀请人首次核销触发邀请人返利待审核（新增）
             $this->processInviterRebatePending($voucher->user_id, $verification->id, $voucher->id, $voucher->face_value);
 
+            // 轨道5：BD推广员佣金计算
+            $this->processBdCommission($shop->id, $verification->id, $voucher->id, $voucher->order_id, $shopSupplyPrice);
+
             Db::commit();
 
             return [
@@ -757,5 +761,27 @@ class Verify extends Api
         }
 
         return $shop;
+    }
+
+    /**
+     * 轨道5：BD推广员佣金计算
+     *
+     * 核销时检查店铺是否有BD绑定，计算并记录BD佣金
+     *
+     * @param int $shopId 店铺ID
+     * @param int $verificationId 核销记录ID
+     * @param int $voucherId 券ID
+     * @param int $orderId 订单ID
+     * @param float $supplyPrice 供货价
+     */
+    protected function processBdCommission($shopId, $verificationId, $voucherId, $orderId, $supplyPrice)
+    {
+        try {
+            $bdService = new BdPromoterService();
+            $bdService->calculateCommission($shopId, $verificationId, $voucherId, $orderId, $supplyPrice);
+        } catch (Exception $e) {
+            // 记录日志但不影响核销流程
+            \think\Log::error('BD佣金计算失败: ' . $e->getMessage());
+        }
     }
 }

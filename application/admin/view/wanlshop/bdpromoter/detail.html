@@ -1,0 +1,193 @@
+<style>
+.bd-detail-card { background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.bd-detail-card h4 { margin: 0 0 15px 0; padding-bottom: 10px; border-bottom: 1px solid #eee; font-size: 16px; }
+.bd-info-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+.bd-info-item { text-align: center; }
+.bd-info-item .value { font-size: 24px; font-weight: bold; color: #333; }
+.bd-info-item .label { font-size: 12px; color: #999; margin-top: 5px; }
+.bd-user-info { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+.bd-user-info img { width: 60px; height: 60px; border-radius: 50%; }
+.bd-user-info .name { font-size: 18px; font-weight: bold; }
+.bd-user-info .code { font-size: 14px; color: #666; font-family: monospace; }
+.bd-rate-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; }
+.bd-rate-badge.active { background: #52c41a; color: #fff; }
+.bd-rate-badge.inactive { background: #d9d9d9; color: #666; }
+</style>
+
+<div class="panel panel-default panel-intro">
+    <div class="panel-heading">
+        <div class="panel-lead"><em>BD推广员详情</em></div>
+    </div>
+    <div class="panel-body">
+        <!-- 用户信息 -->
+        <div class="bd-detail-card">
+            <div class="bd-user-info">
+                <img src="{$user.avatar|default='/assets/img/avatar.png'}" alt="头像">
+                <div>
+                    <div class="name">{$user.nickname|default='未知用户'}</div>
+                    <div class="code">推广码: {$user.bd_code}</div>
+                    <div style="margin-top: 5px;">
+                        手机: {$user.mobile|default='-'} |
+                        申请时间: {$user.bd_apply_time|date='Y-m-d H:i:s',###}
+                    </div>
+                </div>
+                <div style="margin-left: auto;">
+                    {if $info.current_rate > 0}
+                    <span class="bd-rate-badge active">当前比例: {$info.current_rate * 1000}‰</span>
+                    {else}
+                    <span class="bd-rate-badge inactive">未激活</span>
+                    {/if}
+                </div>
+            </div>
+
+            <div class="bd-info-grid">
+                <div class="bd-info-item">
+                    <div class="value">{$info.current_period_index}</div>
+                    <div class="label">当前周期</div>
+                </div>
+                <div class="bd-info-item">
+                    <div class="value">{$info.total_shop_count}</div>
+                    <div class="label">累计邀请店铺</div>
+                </div>
+                <div class="bd-info-item">
+                    <div class="value">¥{$info.total_commission|number_format=2}</div>
+                    <div class="label">累计佣金</div>
+                </div>
+                <div class="bd-info-item">
+                    <div class="value">¥{$info.pending_commission|number_format=2}</div>
+                    <div class="label">待结算佣金</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 周期统计 -->
+        <div class="bd-detail-card">
+            <h4><i class="fa fa-calendar"></i> 周期统计</h4>
+            <table class="table table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th>周期</th>
+                        <th>开始时间</th>
+                        <th>结束时间</th>
+                        <th>邀请店铺数</th>
+                        <th>佣金比例</th>
+                        <th>累计佣金</th>
+                        <th>状态</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {volist name="periods" id="period"}
+                    <tr>
+                        <td>第{$period.period_index}周期</td>
+                        <td>{$period.period_start|date='Y-m-d H:i',###}</td>
+                        <td>{$period.period_end|date='Y-m-d H:i',###}</td>
+                        <td>{$period.shop_count}</td>
+                        <td>
+                            {if $period.current_rate > 0}
+                            {$period.current_rate * 1000}‰
+                            {else}
+                            -
+                            {/if}
+                        </td>
+                        <td>¥{$period.total_commission|number_format=2}</td>
+                        <td>
+                            {if $period.status == 'active'}
+                            <span class="label label-success">进行中</span>
+                            {else}
+                            <span class="label label-default">已结束</span>
+                            {/if}
+                        </td>
+                    </tr>
+                    {/volist}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 邀请店铺 -->
+        <div class="bd-detail-card">
+            <h4><i class="fa fa-store"></i> 邀请店铺 ({$info.total_shop_count}家)</h4>
+            {if $shops}
+            <table class="table table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th>店铺名称</th>
+                        <th>城市</th>
+                        <th>绑定周期</th>
+                        <th>绑定时间</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {volist name="shops" id="shop"}
+                    <tr>
+                        <td>
+                            <img src="{$shop.avatar|default='/assets/img/avatar.png'}" style="width:30px;height:30px;border-radius:50%;margin-right:8px;">
+                            {$shop.shopname|default='未知店铺'}
+                        </td>
+                        <td>{$shop.city|default='-'}</td>
+                        <td>第{$shop.period_index}周期</td>
+                        <td>{$shop.bind_time|date='Y-m-d H:i:s',###}</td>
+                    </tr>
+                    {/volist}
+                </tbody>
+            </table>
+            {else}
+            <p class="text-muted">暂无邀请店铺</p>
+            {/if}
+        </div>
+
+        <!-- 佣金明细 -->
+        <div class="bd-detail-card">
+            <h4><i class="fa fa-money"></i> 佣金明细 (最近50条)</h4>
+            {if $commissions}
+            <table class="table table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th>时间</th>
+                        <th>店铺</th>
+                        <th>类型</th>
+                        <th>核销金额</th>
+                        <th>佣金比例</th>
+                        <th>佣金金额</th>
+                        <th>状态</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {volist name="commissions" id="log"}
+                    <tr>
+                        <td>{$log.createtime|date='Y-m-d H:i:s',###}</td>
+                        <td>{$log.shop_name|default='-'}</td>
+                        <td>
+                            {if $log.type == 'earn'}
+                            <span class="label label-success">收入</span>
+                            {else}
+                            <span class="label label-danger">扣减</span>
+                            {/if}
+                        </td>
+                        <td>¥{$log.order_amount|number_format=2}</td>
+                        <td>{$log.commission_rate * 1000}‰</td>
+                        <td>
+                            {if $log.type == 'earn'}
+                            <span class="text-success">+¥{$log.commission_amount|number_format=2}</span>
+                            {else}
+                            <span class="text-danger">-¥{$log.commission_amount|number_format=2}</span>
+                            {/if}
+                        </td>
+                        <td>
+                            {if $log.settle_status == 'pending'}
+                            <span class="label label-warning">待结算</span>
+                            {elseif $log.settle_status == 'settled'}
+                            <span class="label label-success">已结算</span>
+                            {else}
+                            <span class="label label-default">已取消</span>
+                            {/if}
+                        </td>
+                    </tr>
+                    {/volist}
+                </tbody>
+            </table>
+            {else}
+            <p class="text-muted">暂无佣金记录</p>
+            {/if}
+        </div>
+    </div>
+</div>

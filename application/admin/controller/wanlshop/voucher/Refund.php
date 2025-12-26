@@ -4,6 +4,7 @@ namespace app\admin\controller\wanlshop\voucher;
 
 use app\common\controller\Backend;
 use app\common\library\WechatPayment;
+use app\common\service\BdPromoterService;
 
 /**
  * 退款管理
@@ -312,6 +313,9 @@ class Refund extends Backend
             // 5. 【新增】软删除对应的返利记录
             $this->cancelVoucherRebate($row->voucher_id);
 
+            // 6. 【新增】BD推广员佣金扣减
+            $this->cancelBdCommission($row->voucher_id, $row->id);
+
             \think\Db::commit();
             $this->success(__('操作成功'));
         } catch (\think\exception\HttpResponseException $e) {
@@ -353,5 +357,32 @@ class Refund extends Backend
                 'payment_status' => 'refunded',
                 'updatetime' => time()
             ]);
+    }
+
+    /**
+     * 退款成功后扣减BD推广员佣金
+     *
+     * @param int $voucherId 券ID
+     * @param int $refundId 退款记录ID
+     */
+    protected function cancelBdCommission($voucherId, $refundId)
+    {
+        // 查找对应的核销记录
+        $verification = \think\Db::name('wanlshop_voucher_verification')
+            ->where('voucher_id', $voucherId)
+            ->field('id')
+            ->find();
+
+        if (!$verification) {
+            return; // 没有核销记录，跳过
+        }
+
+        try {
+            $bdService = new BdPromoterService();
+            $bdService->deductCommission($verification['id'], $refundId);
+        } catch (\Exception $e) {
+            // 记录日志但不影响退款流程
+            \think\Log::error('BD佣金扣减失败: ' . $e->getMessage());
+        }
     }
 }
