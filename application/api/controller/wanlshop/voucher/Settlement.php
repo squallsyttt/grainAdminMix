@@ -144,7 +144,7 @@ class Settlement extends Api
         }
 
         // 验证 rebate_type 参数
-        $rebateTypes = ['normal', 'custody', 'shop_invite', 'user_invite', 'all'];
+        $rebateTypes = ['normal', 'custody', 'shop_invite', 'user_invite', 'bd_promoter', 'all'];
         if (!in_array($rebateType, $rebateTypes, true)) {
             $rebateType = 'all';
         }
@@ -261,12 +261,14 @@ class Settlement extends Api
             }
 
             // 根据 out_bill_no 前缀判断业务类型
-            // RBT: 普通核销返利打款，CUS: 代管理返利打款
+            // RBT: 普通核销返利打款，CUS: 代管理返利打款，BDP: BD推广佣金打款
             $orderType = 'voucher_transfer';
             if (strpos($outBillNo, 'RBT') === 0) {
                 $orderType = 'rebate_transfer';
             } elseif (strpos($outBillNo, 'CUS') === 0) {
                 $orderType = 'custody_transfer';
+            } elseif (strpos($outBillNo, 'BDP') === 0) {
+                $orderType = 'bd_promoter_transfer';
             }
 
             // 记录回调日志（若存在则复用）
@@ -421,5 +423,46 @@ class Settlement extends Api
 
         $transferLog->save();
         $rebate->save();
+
+        // BD推广佣金：同步更新 bd_commission_log 的结算状态
+        if ($rebate->rebate_type === 'bd_promoter' && !empty($rebate->remark)) {
+            $this->updateBdCommissionLogStatus($rebate, $isSuccess, $needUserConfirm);
+        }
+    }
+
+    /**
+     * 更新BD佣金明细的结算状态
+     *
+     * @param VoucherRebate $rebate 返利记录
+     * @param bool $isSuccess 是否成功
+     * @param bool $needUserConfirm 是否需要用户确认
+     */
+    protected function updateBdCommissionLogStatus($rebate, $isSuccess, $needUserConfirm)
+    {
+        // remark 格式：bd_commission_log_id:xxx
+        $parts = explode(':', $rebate->remark);
+        if (count($parts) !== 2 || $parts[0] !== 'bd_commission_log_id') {
+            return;
+        }
+
+        $commissionLogId = (int)$parts[1];
+        if ($commissionLogId <= 0) {
+            return;
+        }
+
+        if ($isSuccess) {
+            // 打款成功，标记为已结算
+            Db::name('bd_commission_log')
+                ->where('id', $commissionLogId)
+                ->update(['settle_status' => 'settled']);
+        } elseif ($needUserConfirm) {
+            // 待用户确认，保持 pending 状态
+            // 无需更新
+        } else {
+            // 打款失败，恢复为 pending 状态（允许重试）
+            Db::name('bd_commission_log')
+                ->where('id', $commissionLogId)
+                ->update(['settle_status' => 'pending']);
+        }
     }
 }

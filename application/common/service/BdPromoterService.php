@@ -828,4 +828,188 @@ class BdPromoterService
 
         return $bdUser;
     }
+
+    /**
+     * 为BD佣金创建返利记录（用于打款）
+     *
+     * @param int $commissionLogId BD佣金明细ID
+     * @return array ['success' => bool, 'message' => string, 'rebate_id' => int|null]
+     * @throws Exception
+     */
+    public function createRebateRecord(int $commissionLogId): array
+    {
+        if ($commissionLogId <= 0) {
+            return ['success' => false, 'message' => '参数无效', 'rebate_id' => null];
+        }
+
+        Db::startTrans();
+        try {
+            // 查找佣金记录
+            $commissionLog = Db::name('bd_commission_log')
+                ->where('id', $commissionLogId)
+                ->where('type', 'earn')
+                ->lock(true)
+                ->find();
+
+            if (!$commissionLog) {
+                throw new Exception('佣金记录不存在');
+            }
+
+            // 检查状态：只能对 pending 状态的记录打款
+            if ($commissionLog['settle_status'] !== 'pending') {
+                $statusMap = [
+                    'settled' => '已结算',
+                    'cancelled' => '已取消',
+                    'settling' => '结算中'
+                ];
+                $statusText = $statusMap[$commissionLog['settle_status']] ?? $commissionLog['settle_status'];
+                throw new Exception("该记录状态为【{$statusText}】，无法打款");
+            }
+
+            // 检查是否满足打款条件（7天无理由期已过 或 核销后24小时已过）
+            $now = time();
+            $paymentTime = (int)$commissionLog['createtime']; // 使用佣金记录创建时间作为基准
+
+            // 获取核销时间
+            $verifyTime = 0;
+            if ($commissionLog['verification_id']) {
+                $verification = Db::name('wanlshop_voucher_verification')
+                    ->where('id', $commissionLog['verification_id'])
+                    ->field('createtime')
+                    ->find();
+                $verifyTime = $verification ? (int)$verification['createtime'] : 0;
+            }
+
+            // 获取订单支付时间
+            if ($commissionLog['order_id']) {
+                $order = Db::name('wanlshop_voucher_order')
+                    ->where('id', $commissionLog['order_id'])
+                    ->field('paymenttime')
+                    ->find();
+                $paymentTime = $order ? (int)$order['paymenttime'] : $paymentTime;
+            }
+
+            // 检查退款状态
+            $hasRefund = false;
+            $refundPending = false;
+            if ($commissionLog['voucher_id']) {
+                $refundRecord = Db::name('wanlshop_voucher_refund')
+                    ->where('voucher_id', $commissionLog['voucher_id'])
+                    ->field('id, state')
+                    ->find();
+                $hasRefund = $refundRecord && $refundRecord['state'] == 3;
+                $refundPending = $refundRecord && in_array($refundRecord['state'], [0, 1]);
+            }
+
+            if ($hasRefund) {
+                throw new Exception('该订单已退款，无法打款');
+            }
+            if ($refundPending) {
+                throw new Exception('该订单退款处理中，无法打款');
+            }
+
+            // 条件判断：7天无理由期已过 或 核销后24小时已过
+            $sevenDaysDeadline = $paymentTime + 7 * 86400;
+            $twentyFourHoursDeadline = $verifyTime + 24 * 3600;
+            $sevenDaysPassed = $now >= $sevenDaysDeadline;
+            $twentyFourHoursPassed = $verifyTime > 0 && $now >= $twentyFourHoursDeadline;
+
+            if (!$sevenDaysPassed && !$twentyFourHoursPassed) {
+                if ($verifyTime > 0) {
+                    $remainHours = ceil(($twentyFourHoursDeadline - $now) / 3600);
+                    throw new Exception("未满足打款条件，24小时确认期还剩 {$remainHours} 小时");
+                } else {
+                    $remainDays = ceil(($sevenDaysDeadline - $now) / 86400);
+                    throw new Exception("未满足打款条件，7天无理由期还剩 {$remainDays} 天");
+                }
+            }
+
+            // 检查是否已存在返利记录
+            $existingRebate = Db::name('wanlshop_voucher_rebate')
+                ->where('rebate_type', 'bd_promoter')
+                ->where('remark', 'bd_commission_log_id:' . $commissionLogId)
+                ->find();
+
+            if ($existingRebate) {
+                // 如果已存在且打款失败，可以重试
+                if ($existingRebate['payment_status'] === 'failed') {
+                    Db::commit();
+                    return ['success' => true, 'message' => '使用已有记录重试', 'rebate_id' => (int)$existingRebate['id']];
+                }
+                throw new Exception('该佣金已创建打款记录，请勿重复操作');
+            }
+
+            // 创建返利记录
+            $rebateData = [
+                'user_id' => $commissionLog['bd_user_id'],
+                'voucher_id' => $commissionLog['voucher_id'],
+                'order_id' => $commissionLog['order_id'],
+                'shop_id' => $commissionLog['shop_id'],
+                'verification_id' => $commissionLog['verification_id'],
+                'rule_id' => 0,
+                'rebate_type' => 'bd_promoter',
+                'face_value' => $commissionLog['order_amount'],
+                'actual_bonus_ratio' => bcmul((string)$commissionLog['commission_rate'], '100', 2), // 转为百分比
+                'rebate_amount' => $commissionLog['commission_amount'],
+                'refund_amount' => 0,
+                'stage' => 'goods', // BD佣金无阶段概念，使用货物损耗期
+                'payment_time' => $paymentTime,
+                'verify_time' => $verifyTime ?: $now,
+                'payment_status' => 'unpaid',
+                'status' => 'normal',
+                'remark' => 'bd_commission_log_id:' . $commissionLogId,
+                'createtime' => $now,
+                'updatetime' => $now,
+            ];
+
+            $rebateId = Db::name('wanlshop_voucher_rebate')->insertGetId($rebateData);
+
+            // 更新佣金记录状态为结算中
+            Db::name('bd_commission_log')
+                ->where('id', $commissionLogId)
+                ->update(['settle_status' => 'settling']);
+
+            Db::commit();
+
+            return ['success' => true, 'message' => '创建成功', 'rebate_id' => $rebateId];
+
+        } catch (Exception $e) {
+            Db::rollback();
+            return ['success' => false, 'message' => $e->getMessage(), 'rebate_id' => null];
+        }
+    }
+
+    /**
+     * 批量为满足条件的BD佣金创建返利记录
+     *
+     * @param int $bdUserId BD推广员用户ID
+     * @return array ['success' => int, 'failed' => int, 'errors' => array]
+     */
+    public function batchCreateRebateRecords(int $bdUserId): array
+    {
+        $result = ['success' => 0, 'failed' => 0, 'errors' => []];
+
+        // 获取所有待结算且可打款的佣金记录
+        $logs = $this->getCommissionLogs($bdUserId, 1, 100);
+
+        foreach ($logs['list'] as $log) {
+            // 只处理可结算的记录
+            if ($log['settle_status'] !== 'pending' || !$log['settle_safe']) {
+                continue;
+            }
+
+            $createResult = $this->createRebateRecord((int)$log['id']);
+            if ($createResult['success']) {
+                $result['success']++;
+            } else {
+                $result['failed']++;
+                $result['errors'][] = [
+                    'id' => $log['id'],
+                    'message' => $createResult['message']
+                ];
+            }
+        }
+
+        return $result;
+    }
 }

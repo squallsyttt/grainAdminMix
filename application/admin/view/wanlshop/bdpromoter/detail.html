@@ -137,7 +137,12 @@
 
         <!-- 佣金明细 -->
         <div class="bd-detail-card">
-            <h4><i class="fa fa-money"></i> 佣金明细 (最近50条)</h4>
+            <h4>
+                <i class="fa fa-money"></i> 佣金明细 (最近50条)
+                <button type="button" class="btn btn-success btn-sm pull-right" id="btn-batch-transfer" data-bd-user-id="{$user.id}">
+                    <i class="fa fa-send"></i> 批量打款
+                </button>
+            </h4>
             <p class="text-muted" style="font-size: 12px; margin-bottom: 10px;">
                 <i class="fa fa-info-circle"></i>
                 结算条件：核销后24小时内无退款（7天无理由期内）或 7天无理由期已过
@@ -157,6 +162,7 @@
                         <th>24h期截止</th>
                         <th>7天期截止</th>
                         <th>结算状态</th>
+                        <th style="width: 80px;">操作</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -205,6 +211,21 @@
                             <br><small class="text-warning">退款处理中</small>
                             {/if}
                         </td>
+                        <td>
+                            {if $log.type == 'earn' && $log.settle_status == 'pending' && $log.settle_safe && !$log.has_refund && !$log.refund_pending}
+                            <button type="button" class="btn btn-xs btn-success btn-transfer" data-id="{$log.id}" data-amount="{$log.commission_amount}">
+                                <i class="fa fa-send"></i> 打款
+                            </button>
+                            {elseif $log.settle_status == 'settling'}
+                            <span class="text-warning"><i class="fa fa-clock-o"></i> 结算中</span>
+                            {elseif $log.settle_status == 'settled'}
+                            <span class="text-success"><i class="fa fa-check"></i> 已结算</span>
+                            {elseif $log.settle_status == 'cancelled'}
+                            <span class="text-muted">-</span>
+                            {else}
+                            <span class="text-muted">-</span>
+                            {/if}
+                        </td>
                     </tr>
                     {/volist}
                 </tbody>
@@ -216,3 +237,88 @@
         </div>
     </div>
 </div>
+
+<script>
+require(['jquery', 'backend', 'layer'], function($, Backend, Layer) {
+    // 单笔打款
+    $(document).on('click', '.btn-transfer', function() {
+        var $btn = $(this);
+        var id = $btn.data('id');
+        var amount = $btn.data('amount');
+
+        Layer.confirm('确认向该BD推广员打款 ¥' + parseFloat(amount).toFixed(2) + ' 元？', {
+            title: '打款确认',
+            btn: ['确认打款', '取消']
+        }, function(index) {
+            Layer.close(index);
+            $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> 处理中...');
+
+            $.ajax({
+                url: 'wanlshop/bdpromoter/transfer',
+                type: 'POST',
+                data: { commission_log_id: id },
+                dataType: 'json',
+                success: function(res) {
+                    if (res.code === 1) {
+                        Layer.msg(res.msg, { icon: 1 });
+                        // 刷新页面
+                        setTimeout(function() {
+                            location.reload();
+                        }, 1500);
+                    } else {
+                        Layer.msg(res.msg || '打款失败', { icon: 2 });
+                        $btn.prop('disabled', false).html('<i class="fa fa-send"></i> 打款');
+                    }
+                },
+                error: function() {
+                    Layer.msg('网络错误，请重试', { icon: 2 });
+                    $btn.prop('disabled', false).html('<i class="fa fa-send"></i> 打款');
+                }
+            });
+        });
+    });
+
+    // 批量打款
+    $('#btn-batch-transfer').on('click', function() {
+        var $btn = $(this);
+        var bdUserId = $btn.data('bd-user-id');
+
+        // 检查是否有可打款的记录
+        var canTransferCount = $('.btn-transfer').length;
+        if (canTransferCount === 0) {
+            Layer.msg('暂无可打款的佣金记录', { icon: 0 });
+            return;
+        }
+
+        Layer.confirm('确认批量打款 ' + canTransferCount + ' 笔可结算佣金？', {
+            title: '批量打款确认',
+            btn: ['确认打款', '取消']
+        }, function(index) {
+            Layer.close(index);
+            $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> 处理中...');
+
+            $.ajax({
+                url: 'wanlshop/bdpromoter/batchTransfer',
+                type: 'POST',
+                data: { bd_user_id: bdUserId },
+                dataType: 'json',
+                success: function(res) {
+                    if (res.code === 1) {
+                        Layer.msg(res.msg, { icon: 1 });
+                        setTimeout(function() {
+                            location.reload();
+                        }, 2000);
+                    } else {
+                        Layer.msg(res.msg || '批量打款失败', { icon: 2 });
+                        $btn.prop('disabled', false).html('<i class="fa fa-send"></i> 批量打款');
+                    }
+                },
+                error: function() {
+                    Layer.msg('网络错误，请重试', { icon: 2 });
+                    $btn.prop('disabled', false).html('<i class="fa fa-send"></i> 批量打款');
+                }
+            });
+        });
+    });
+});
+</script>

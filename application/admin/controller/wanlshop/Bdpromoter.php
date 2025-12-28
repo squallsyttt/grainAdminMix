@@ -9,6 +9,7 @@ namespace app\admin\controller\wanlshop;
 
 use app\common\controller\Backend;
 use app\common\service\BdPromoterService;
+use app\admin\service\RebateTransferService;
 use think\Db;
 
 class Bdpromoter extends Backend
@@ -16,7 +17,7 @@ class Bdpromoter extends Backend
     /**
      * 无需鉴权的方法
      */
-    protected $noNeedRight = ['detail', 'stats'];
+    protected $noNeedRight = ['detail', 'stats', 'transfer'];
 
     public function _initialize()
     {
@@ -235,5 +236,108 @@ class Bdpromoter extends Backend
         }
 
         return $this->view->fetch();
+    }
+
+    /**
+     * BD佣金打款
+     *
+     * @param int $commission_log_id 佣金明细ID
+     */
+    public function transfer()
+    {
+        if (!$this->request->isPost()) {
+            $this->error(__('请求方式错误'));
+        }
+
+        $commissionLogId = $this->request->post('commission_log_id/d');
+        if ($commissionLogId <= 0) {
+            $this->error(__('参数错误'));
+        }
+
+        $bdService = new BdPromoterService();
+
+        // 1. 创建返利记录
+        $createResult = $bdService->createRebateRecord($commissionLogId);
+        if (!$createResult['success']) {
+            $this->error($createResult['message']);
+        }
+
+        $rebateId = $createResult['rebate_id'];
+
+        // 2. 执行打款
+        $transferService = new RebateTransferService();
+        $transferResult = $transferService->transferBdCommission($rebateId);
+
+        if (!$transferResult['success']) {
+            $this->error($transferResult['message']);
+        }
+
+        // 返回打款结果
+        $data = $transferResult['data'];
+        $message = '打款请求已发送';
+        if ($data['need_user_confirm']) {
+            $message = '打款已发起，等待用户确认收款';
+        } elseif ($data['transfer_state'] === 'SUCCESS') {
+            $message = '打款成功';
+        }
+
+        $this->success($message, $data);
+    }
+
+    /**
+     * 批量BD佣金打款
+     *
+     * @param int $bd_user_id BD推广员用户ID
+     */
+    public function batchTransfer()
+    {
+        if (!$this->request->isPost()) {
+            $this->error(__('请求方式错误'));
+        }
+
+        $bdUserId = $this->request->post('bd_user_id/d');
+        if ($bdUserId <= 0) {
+            $this->error(__('参数错误'));
+        }
+
+        $bdService = new BdPromoterService();
+        $transferService = new RebateTransferService();
+
+        // 创建所有可打款的返利记录
+        $createResult = $bdService->batchCreateRebateRecords($bdUserId);
+
+        $successCount = 0;
+        $failedCount = 0;
+        $errors = [];
+
+        // 获取所有待打款的返利记录
+        $rebates = Db::name('wanlshop_voucher_rebate')
+            ->where('rebate_type', 'bd_promoter')
+            ->where('user_id', $bdUserId)
+            ->where('payment_status', 'unpaid')
+            ->select();
+
+        foreach ($rebates as $rebate) {
+            $transferResult = $transferService->transferBdCommission((int)$rebate['id']);
+            if ($transferResult['success']) {
+                $successCount++;
+            } else {
+                $failedCount++;
+                $errors[] = [
+                    'rebate_id' => $rebate['id'],
+                    'message' => $transferResult['message']
+                ];
+            }
+        }
+
+        if ($successCount > 0) {
+            $this->success("批量打款完成：成功 {$successCount} 笔，失败 {$failedCount} 笔", [
+                'success_count' => $successCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+        } else {
+            $this->error('批量打款失败：' . ($errors[0]['message'] ?? '无可打款记录'));
+        }
     }
 }
