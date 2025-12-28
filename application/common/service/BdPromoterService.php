@@ -870,6 +870,11 @@ class BdPromoterService
             // 检查是否满足打款条件（7天无理由期已过 或 核销后24小时已过）
             $now = time();
             $paymentTime = (int)$commissionLog['createtime']; // 使用佣金记录创建时间作为基准
+            $goodsTitle = '';
+            $shopName = '';
+            $freeDays = 7;
+            $welfareDays = 0;
+            $goodsDays = 0;
 
             // 获取核销时间
             $verifyTime = 0;
@@ -881,13 +886,61 @@ class BdPromoterService
                 $verifyTime = $verification ? (int)$verification['createtime'] : 0;
             }
 
-            // 获取订单支付时间
+            // 获取订单和券信息
             if ($commissionLog['order_id']) {
                 $order = Db::name('wanlshop_voucher_order')
                     ->where('id', $commissionLog['order_id'])
-                    ->field('paymenttime')
+                    ->field('paymenttime, goods_title')
                     ->find();
-                $paymentTime = $order ? (int)$order['paymenttime'] : $paymentTime;
+                if ($order) {
+                    $paymentTime = (int)$order['paymenttime'];
+                    $goodsTitle = $order['goods_title'] ?? '';
+                }
+            }
+
+            // 获取券的规则信息
+            if ($commissionLog['voucher_id']) {
+                $voucher = Db::name('wanlshop_voucher')
+                    ->where('id', $commissionLog['voucher_id'])
+                    ->field('rule_id')
+                    ->find();
+                if ($voucher && $voucher['rule_id']) {
+                    $rule = Db::name('wanlshop_voucher_rule')
+                        ->where('id', $voucher['rule_id'])
+                        ->field('free_days, welfare_days, goods_days')
+                        ->find();
+                    if ($rule) {
+                        $freeDays = (int)$rule['free_days'];
+                        $welfareDays = (int)$rule['welfare_days'];
+                        $goodsDays = (int)$rule['goods_days'];
+                    }
+                }
+            }
+
+            // 获取店铺名称
+            if ($commissionLog['shop_id']) {
+                $shop = Db::name('wanlshop_shop')
+                    ->where('id', $commissionLog['shop_id'])
+                    ->field('shopname')
+                    ->find();
+                $shopName = $shop ? $shop['shopname'] : '';
+            }
+
+            // 计算距付款天数和阶段
+            $daysFromPayment = $verifyTime > 0 ? (int)floor(($verifyTime - $paymentTime) / 86400) : 0;
+            if ($daysFromPayment < 0) {
+                $daysFromPayment = 0;
+            }
+
+            // 阶段判定
+            if ($daysFromPayment <= $freeDays) {
+                $stage = 'free';
+            } elseif ($daysFromPayment <= $freeDays + $welfareDays) {
+                $stage = 'welfare';
+            } elseif ($daysFromPayment <= $freeDays + $welfareDays + $goodsDays) {
+                $stage = 'goods';
+            } else {
+                $stage = 'expired';
             }
 
             // 检查退款状态
@@ -947,7 +1000,7 @@ class BdPromoterService
                 'voucher_no' => 'BD' . date('YmdHis') . mt_rand(1000, 9999),
                 'order_id' => $commissionLog['order_id'] ?: 0,
                 'shop_id' => $commissionLog['shop_id'] ?: 0,
-                'shop_name' => '',
+                'shop_name' => $shopName,
                 'verification_id' => $commissionLog['verification_id'] ?: 0,
                 'rule_id' => 0,
                 'rebate_type' => 'bd_promoter',
@@ -959,9 +1012,12 @@ class BdPromoterService
                 'actual_bonus_ratio' => bcmul((string)$commissionLog['commission_rate'], '100', 2),
                 'rebate_amount' => $commissionLog['commission_amount'],
                 'refund_amount' => 0,
-                'stage' => 'goods',
-                'days_from_payment' => 0,
-                'goods_title' => '',
+                'stage' => $stage,
+                'days_from_payment' => $daysFromPayment,
+                'goods_title' => $goodsTitle,
+                'free_days' => $freeDays,
+                'welfare_days' => $welfareDays,
+                'goods_days' => $goodsDays,
                 'payment_time' => $paymentTime,
                 'verify_time' => $verifyTime ?: $now,
                 'payment_status' => 'unpaid',

@@ -541,7 +541,7 @@ class RebateTransferService
         } catch (Exception $e) {
             Db::rollback();
 
-            Log::error('BD推广佣金打款异常: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            Log::error('BD推广佣金打款异常: ' . $e->getMessage() . ' | trace: ' . $e->getTraceAsString());
 
             // 更新状态为失败
             if ($rebate && $rebate->id) {
