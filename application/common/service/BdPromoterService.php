@@ -564,6 +564,21 @@ class BdPromoterService
             ->where('settle_status', 'pending')
             ->sum('commission_amount') ?: 0;
 
+        // 计算周期剩余天数
+        $periodDaysRemaining = null;
+        $periodStart = null;
+        $periodEnd = null;
+        if ($period) {
+            $periodStart = (int)$period['period_start'];
+            $periodEnd = (int)$period['period_end'];
+            $now = time();
+            if ($periodEnd > $now) {
+                $periodDaysRemaining = (int)ceil(($periodEnd - $now) / 86400);
+            } else {
+                $periodDaysRemaining = 0;
+            }
+        }
+
         return [
             'is_bd_promoter' => true,
             'bd_code' => $user['bd_code'],
@@ -574,7 +589,10 @@ class BdPromoterService
             'current_period_shop_count' => $period ? (int)$period['shop_count'] : 0,
             'total_shop_count' => (int)$totalShopCount,
             'total_commission' => round((float)$totalCommission, 2),
-            'pending_commission' => round((float)$pendingCommission - (float)$deductAmount, 2)
+            'pending_commission' => round((float)$pendingCommission - (float)$deductAmount, 2),
+            'period_start' => $periodStart,
+            'period_end' => $periodEnd,
+            'period_days_remaining' => $periodDaysRemaining
         ];
     }
 
