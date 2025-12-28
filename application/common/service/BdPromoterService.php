@@ -666,9 +666,10 @@ class BdPromoterService
     {
         $offset = ($page - 1) * $limit;
 
-        // 构建基础条件闭包，避免 count() 后 Query 状态被重置
+        // 构建基础条件闭包 - 只查询 earn 类型
         $buildWhere = function ($query) use ($bdUserId, $startTime, $endTime) {
-            $query->where('c.bd_user_id', $bdUserId);
+            $query->where('c.bd_user_id', $bdUserId)
+                  ->where('c.type', 'earn');  // 只查询收入记录
             if ($startTime) {
                 $query->where('c.createtime', '>=', $startTime);
             }
@@ -677,7 +678,7 @@ class BdPromoterService
             }
         };
 
-        // 计数查询
+        // 计数查询（只统计 earn 记录）
         $total = Db::name('bd_commission_log')
             ->alias('c')
             ->where($buildWhere)
@@ -700,8 +701,19 @@ class BdPromoterService
         // 处理每条记录，添加状态标注
         foreach ($list as &$row) {
             $voucherId = $row['voucher_id'];
+            $verificationId = $row['verification_id'];
             $paymentTime = (int)$row['payment_time'];
             $verifyTime = (int)$row['verify_time'];
+
+            // 查找对应的 deduct 记录（退款扣减）
+            $deductRecord = null;
+            if ($verificationId) {
+                $deductRecord = Db::name('bd_commission_log')
+                    ->where('verification_id', $verificationId)
+                    ->where('type', 'deduct')
+                    ->field('id, commission_amount, createtime, remark')
+                    ->find();
+            }
 
             // 检查是否有退款记录（state=3 表示退款成功）
             $refundRecord = Db::name('wanlshop_voucher_refund')
@@ -721,16 +733,13 @@ class BdPromoterService
             $twentyFourHoursPassed = $now >= $twentyFourHoursDeadline;
 
             // 综合状态判断
-            // 结算条件：
-            // 1. 7天已过（超过7天完全不能退款了）
-            // 2. 或者：7天内但核销24h已过且无退款（24h退款只在7天内有效）
             $settleSafe = false;
             if ($hasRefund || $refundPending) {
-                $settleSafe = false; // 有退款或退款中，不可结算
+                $settleSafe = false;
             } elseif ($sevenDaysPassed) {
-                $settleSafe = true; // 7天已过，不可能再退款
+                $settleSafe = true;
             } elseif ($twentyFourHoursPassed) {
-                $settleSafe = true; // 7天内但24h已过且无退款
+                $settleSafe = true;
             }
 
             // 添加状态字段
@@ -746,8 +755,20 @@ class BdPromoterService
             $row['refund_pending'] = $refundPending;
             $row['settle_safe'] = $settleSafe;
 
+            // 添加 deduct 子记录信息
+            $row['deduct_info'] = null;
+            if ($deductRecord) {
+                $row['deduct_info'] = [
+                    'id' => $deductRecord['id'],
+                    'amount' => $deductRecord['commission_amount'],
+                    'time' => $deductRecord['createtime'],
+                    'time_text' => date('Y-m-d H:i:s', $deductRecord['createtime']),
+                    'remark' => $deductRecord['remark'] ?: '退款扣减'
+                ];
+            }
+
             // 生成综合状态文本
-            if ($row['settle_status'] === 'cancelled') {
+            if ($row['settle_status'] === 'cancelled' || $deductRecord) {
                 $row['status_text'] = '已取消';
                 $row['status_class'] = 'danger';
             } elseif ($row['settle_status'] === 'settled') {

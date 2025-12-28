@@ -14,6 +14,7 @@ use app\admin\model\wanlshop\Goods;
 use app\common\model\PaymentCallbackLog;
 use app\common\service\PriceCalculator;
 use app\admin\service\CustodyRefundService;
+use app\common\service\BdPromoterService;
 use think\Db;
 use think\Exception;
 
@@ -1325,6 +1326,18 @@ class Order extends Api
                     'updatetime' => time()
                 ]);
 
+            // 【新增】取消店铺邀请返利待审核记录
+            Db::name('shop_invite_pending')
+                ->where('voucher_id', $refund->voucher_id)
+                ->where('state', 0)
+                ->update([
+                    'state' => 2, // 已取消（退款）
+                    'updatetime' => time()
+                ]);
+
+            // 【新增】BD推广员佣金扣减
+            $this->cancelBdCommission($refund->voucher_id, $refund->id);
+
             Db::commit();
 
             \think\Log::info('退款成功处理完成: ' . $outRefundNo);
@@ -1347,6 +1360,34 @@ class Order extends Api
 
         // 退款异常需要人工处理，记录日志但不自动更改状态
         // 可以在后台管理界面查看异常情况并手动处理
+    }
+
+    /**
+     * 退款成功后扣减BD推广员佣金
+     *
+     * @param int $voucherId 券ID
+     * @param int $refundId 退款记录ID
+     */
+    private function cancelBdCommission($voucherId, $refundId)
+    {
+        // 查找对应的核销记录
+        $verification = Db::name('wanlshop_voucher_verification')
+            ->where('voucher_id', $voucherId)
+            ->field('id')
+            ->find();
+
+        if (!$verification) {
+            return; // 没有核销记录，跳过（未核销的券退款不涉及BD佣金）
+        }
+
+        try {
+            $bdService = new BdPromoterService();
+            $bdService->deductCommission($verification['id'], $refundId);
+            \think\Log::info('BD佣金扣减成功: voucher_id=' . $voucherId);
+        } catch (\Exception $e) {
+            // 记录日志但不影响退款流程
+            \think\Log::error('BD佣金扣减失败: voucher_id=' . $voucherId . ', error=' . $e->getMessage());
+        }
     }
 
     /**
