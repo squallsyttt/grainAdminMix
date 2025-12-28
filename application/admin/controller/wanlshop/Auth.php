@@ -3,6 +3,7 @@
 namespace app\admin\controller\wanlshop;
 
 use app\common\controller\Backend;
+use app\common\service\BdPromoterService;
 use think\Db;
 use think\Exception;
 
@@ -101,6 +102,18 @@ class Auth extends Backend
 					    }
 					}
 
+					// 【新增】同步BD推广员信息到店铺表
+					$bderId = null;
+					if (!empty($row['bd_code'])) {
+					    $bdService = new BdPromoterService();
+					    $bdUser = $bdService->validateBdCode($row['bd_code'], $row['user_id']);
+					    if ($bdUser) {
+					        $shop->bder_id = $bdUser['id'];
+					        $shop->bder_bind_time = time();
+					        $bderId = $bdUser['id'];
+					    }
+					}
+
 					// 新增店铺配置
 					if($shop->save()){
 						$config = model('app\index\model\wanlshop\ShopConfig');
@@ -110,6 +123,17 @@ class Auth extends Backend
 						// 【店铺邀请升级】审核通过时触发邀请人升级
 						if ($shop->inviter_id) {
 						    $this->processShopInviterUpgrade($shop->inviter_id, $shop->id);
+						}
+
+						// 【新增】BD推广员店铺绑定处理
+						if ($bderId) {
+						    try {
+						        $bdService = new BdPromoterService();
+						        $bdService->onShopBind($bderId, $shop->id, $row['user_id']);
+						    } catch (\Exception $e) {
+						        // 记录日志但不影响审核流程
+						        \think\Log::error('BD店铺绑定处理失败: ' . $e->getMessage());
+						    }
 						}
 					}
 				}
