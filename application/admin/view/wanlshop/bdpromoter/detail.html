@@ -139,9 +139,6 @@
         <div class="bd-detail-card">
             <h4>
                 <i class="fa fa-money"></i> 佣金明细 (最近50条)
-                <button type="button" class="btn btn-success btn-sm pull-right" id="btn-batch-transfer" data-bd-user-id="{$user.id}">
-                    <i class="fa fa-send"></i> 批量打款
-                </button>
             </h4>
             <p class="text-muted" style="font-size: 12px; margin-bottom: 10px;">
                 <i class="fa fa-info-circle"></i>
@@ -278,47 +275,5 @@ require(['jquery', 'backend', 'layer'], function($, Backend, Layer) {
         });
     });
 
-    // 批量打款
-    $('#btn-batch-transfer').on('click', function() {
-        var $btn = $(this);
-        var bdUserId = $btn.data('bd-user-id');
-
-        // 检查是否有可打款的记录
-        var canTransferCount = $('.btn-transfer').length;
-        if (canTransferCount === 0) {
-            Layer.msg('暂无可打款的佣金记录', { icon: 0 });
-            return;
-        }
-
-        Layer.confirm('确认批量打款 ' + canTransferCount + ' 笔可结算佣金？', {
-            title: '批量打款确认',
-            btn: ['确认打款', '取消']
-        }, function(index) {
-            Layer.close(index);
-            $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> 处理中...');
-
-            $.ajax({
-                url: 'wanlshop/bdpromoter/batchTransfer',
-                type: 'POST',
-                data: { bd_user_id: bdUserId },
-                dataType: 'json',
-                success: function(res) {
-                    if (res.code === 1) {
-                        Layer.msg(res.msg, { icon: 1 });
-                        setTimeout(function() {
-                            location.reload();
-                        }, 2000);
-                    } else {
-                        Layer.msg(res.msg || '批量打款失败', { icon: 2 });
-                        $btn.prop('disabled', false).html('<i class="fa fa-send"></i> 批量打款');
-                    }
-                },
-                error: function() {
-                    Layer.msg('网络错误，请重试', { icon: 2 });
-                    $btn.prop('disabled', false).html('<i class="fa fa-send"></i> 批量打款');
-                }
-            });
-        });
-    });
 });
 </script>
