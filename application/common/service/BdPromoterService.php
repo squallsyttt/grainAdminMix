@@ -272,10 +272,10 @@ class BdPromoterService
      * @param int $verificationId 核销记录ID
      * @param int $voucherId 券ID
      * @param int $orderId 订单ID
-     * @param float $supplyPrice 供货价
+     * @param float $payPrice 支付金额（券面价）
      * @throws Exception
      */
-    public function calculateCommission(int $shopId, int $verificationId, int $voucherId, int $orderId, float $supplyPrice): void
+    public function calculateCommission(int $shopId, int $verificationId, int $voucherId, int $orderId, float $payPrice): void
     {
         // 检查店铺是否有BD绑定
         $shop = Db::name('wanlshop_shop')
@@ -300,8 +300,8 @@ class BdPromoterService
             return; // 佣金比例为0，跳过
         }
 
-        // 计算佣金金额
-        $commissionAmount = round($supplyPrice * $commissionRate, 2);
+        // 计算佣金金额（基于支付金额）
+        $commissionAmount = round($payPrice * $commissionRate, 2);
         if ($commissionAmount <= 0) {
             return;
         }
@@ -317,7 +317,7 @@ class BdPromoterService
             'verification_id' => $verificationId,
             'refund_id' => null,
             'type' => 'earn',
-            'order_amount' => $supplyPrice,
+            'order_amount' => $payPrice,
             'commission_rate' => $commissionRate,
             'commission_amount' => $commissionAmount,
             'period_id' => $period['id'],

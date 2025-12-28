@@ -517,8 +517,8 @@ class Verify extends Api
             // 轨道4：被邀请人首次核销触发邀请人返利待审核（新增）
             $this->processInviterRebatePending($voucher->user_id, $verification->id, $voucher->id, $voucher->face_value);
 
-            // 轨道5：BD推广员佣金计算
-            $this->processBdCommission($shop->id, $verification->id, $voucher->id, $voucher->order_id, $shopSupplyPrice);
+            // 轨道5：BD推广员佣金计算（基于支付金额计算佣金）
+            $this->processBdCommission($shop->id, $verification->id, $voucher->id, $voucher->order_id, $voucher->face_value);
 
             Db::commit();
 
@@ -772,13 +772,13 @@ class Verify extends Api
      * @param int $verificationId 核销记录ID
      * @param int $voucherId 券ID
      * @param int $orderId 订单ID
-     * @param float $supplyPrice 供货价
+     * @param float $payPrice 支付金额（券面价）
      */
-    protected function processBdCommission($shopId, $verificationId, $voucherId, $orderId, $supplyPrice)
+    protected function processBdCommission($shopId, $verificationId, $voucherId, $orderId, $payPrice)
     {
         try {
             $bdService = new BdPromoterService();
-            $bdService->calculateCommission($shopId, $verificationId, $voucherId, $orderId, $supplyPrice);
+            $bdService->calculateCommission($shopId, $verificationId, $voucherId, $orderId, $payPrice);
         } catch (Exception $e) {
             // 记录日志但不影响核销流程
             \think\Log::error('BD佣金计算失败: ' . $e->getMessage());
