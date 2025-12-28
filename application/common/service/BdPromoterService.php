@@ -890,11 +890,18 @@ class BdPromoterService
             if ($commissionLog['order_id']) {
                 $order = Db::name('wanlshop_voucher_order')
                     ->where('id', $commissionLog['order_id'])
-                    ->field('paymenttime, goods_title')
+                    ->field('paymenttime, goods_id')
                     ->find();
                 if ($order) {
                     $paymentTime = (int)$order['paymenttime'];
-                    $goodsTitle = $order['goods_title'] ?? '';
+                    // 从商品表获取标题
+                    if ($order['goods_id']) {
+                        $goods = Db::name('wanlshop_goods')
+                            ->where('id', $order['goods_id'])
+                            ->field('title')
+                            ->find();
+                        $goodsTitle = $goods ? $goods['title'] : '';
+                    }
                 }
             }
 
