@@ -209,16 +209,16 @@
                             {/if}
                         </td>
                         <td>
-                            {if $log.type == 'earn' && $log.settle_status == 'pending' && $log.settle_safe && !$log.has_refund && !$log.refund_pending}
+                            {if $log.settle_status == 'settled'}
+                            <span class="text-success"><i class="fa fa-check"></i> 已结算</span>
+                            {elseif $log.settle_status == 'settling'}
+                            <span class="text-warning"><i class="fa fa-clock-o"></i> 结算中</span>
+                            {elseif $log.settle_status == 'cancelled'}
+                            <span class="text-muted">-</span>
+                            {elseif $log.type == 'earn'}
                             <button type="button" class="btn btn-xs btn-success btn-transfer" data-id="{$log.id}" data-amount="{$log.commission_amount}">
                                 <i class="fa fa-send"></i> 打款
                             </button>
-                            {elseif $log.settle_status == 'settling'}
-                            <span class="text-warning"><i class="fa fa-clock-o"></i> 结算中</span>
-                            {elseif $log.settle_status == 'settled'}
-                            <span class="text-success"><i class="fa fa-check"></i> 已结算</span>
-                            {elseif $log.settle_status == 'cancelled'}
-                            <span class="text-muted">-</span>
                             {else}
                             <span class="text-muted">-</span>
                             {/if}

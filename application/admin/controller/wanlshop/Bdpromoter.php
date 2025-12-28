@@ -256,8 +256,8 @@ class Bdpromoter extends Backend
 
         $bdService = new BdPromoterService();
 
-        // 1. 创建返利记录
-        $createResult = $bdService->createRebateRecord($commissionLogId);
+        // 1. 创建返利记录（后台管理员可跳过时间限制检查）
+        $createResult = $bdService->createRebateRecord($commissionLogId, true);
         if (!$createResult['success']) {
             $this->error($createResult['message']);
         }

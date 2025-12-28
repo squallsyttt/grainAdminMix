@@ -833,10 +833,11 @@ class BdPromoterService
      * 为BD佣金创建返利记录（用于打款）
      *
      * @param int $commissionLogId BD佣金明细ID
+     * @param bool $skipTimeCheck 是否跳过时间限制检查（后台管理员使用）
      * @return array ['success' => bool, 'message' => string, 'rebate_id' => int|null]
      * @throws Exception
      */
-    public function createRebateRecord(int $commissionLogId): array
+    public function createRebateRecord(int $commissionLogId, bool $skipTimeCheck = false): array
     {
         if ($commissionLogId <= 0) {
             return ['success' => false, 'message' => '参数无效', 'rebate_id' => null];
@@ -908,13 +909,13 @@ class BdPromoterService
                 throw new Exception('该订单退款处理中，无法打款');
             }
 
-            // 条件判断：7天无理由期已过 或 核销后24小时已过
+            // 条件判断：7天无理由期已过 或 核销后24小时已过（后台管理员可跳过此检查）
             $sevenDaysDeadline = $paymentTime + 7 * 86400;
             $twentyFourHoursDeadline = $verifyTime + 24 * 3600;
             $sevenDaysPassed = $now >= $sevenDaysDeadline;
             $twentyFourHoursPassed = $verifyTime > 0 && $now >= $twentyFourHoursDeadline;
 
-            if (!$sevenDaysPassed && !$twentyFourHoursPassed) {
+            if (!$skipTimeCheck && !$sevenDaysPassed && !$twentyFourHoursPassed) {
                 if ($verifyTime > 0) {
                     $remainHours = ceil(($twentyFourHoursDeadline - $now) / 3600);
                     throw new Exception("未满足打款条件，24小时确认期还剩 {$remainHours} 小时");
