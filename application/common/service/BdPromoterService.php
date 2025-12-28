@@ -683,15 +683,93 @@ class BdPromoterService
             ->where($buildWhere)
             ->count();
 
-        // 列表查询
+        // 列表查询（关联更多表获取时间信息）
         $list = Db::name('bd_commission_log')
             ->alias('c')
             ->join('wanlshop_shop s', 's.id = c.shop_id', 'LEFT')
+            ->join('wanlshop_voucher_verification v', 'v.id = c.verification_id', 'LEFT')
+            ->join('wanlshop_voucher_order o', 'o.id = c.order_id', 'LEFT')
             ->where($buildWhere)
-            ->field('c.*, s.shopname as shop_name')
+            ->field('c.*, s.shopname as shop_name, v.createtime as verify_time, o.paymenttime as payment_time')
             ->order('c.createtime', 'desc')
             ->limit($offset, $limit)
             ->select();
+
+        $now = time();
+
+        // 处理每条记录，添加状态标注
+        foreach ($list as &$row) {
+            $voucherId = $row['voucher_id'];
+            $paymentTime = (int)$row['payment_time'];
+            $verifyTime = (int)$row['verify_time'];
+
+            // 检查是否有退款记录（state=3 表示退款成功）
+            $refundRecord = Db::name('wanlshop_voucher_refund')
+                ->where('voucher_id', $voucherId)
+                ->field('id, state, createtime')
+                ->find();
+
+            $hasRefund = $refundRecord && $refundRecord['state'] == 3;
+            $refundPending = $refundRecord && in_array($refundRecord['state'], [0, 1]); // 申请中或同意退款
+
+            // 条件1：7天无理由期（从支付时间算起）
+            $sevenDaysDeadline = $paymentTime + 7 * 86400;
+            $sevenDaysPassed = $now >= $sevenDaysDeadline;
+
+            // 条件2：核销后24小时（仅在7天内有效）
+            $twentyFourHoursDeadline = $verifyTime + 24 * 3600;
+            $twentyFourHoursPassed = $now >= $twentyFourHoursDeadline;
+
+            // 综合状态判断
+            // 结算条件：
+            // 1. 7天已过（超过7天完全不能退款了）
+            // 2. 或者：7天内但核销24h已过且无退款（24h退款只在7天内有效）
+            $settleSafe = false;
+            if ($hasRefund || $refundPending) {
+                $settleSafe = false; // 有退款或退款中，不可结算
+            } elseif ($sevenDaysPassed) {
+                $settleSafe = true; // 7天已过，不可能再退款
+            } elseif ($twentyFourHoursPassed) {
+                $settleSafe = true; // 7天内但24h已过且无退款
+            }
+
+            // 添加状态字段
+            $row['payment_time_text'] = $paymentTime ? date('Y-m-d H:i:s', $paymentTime) : '-';
+            $row['verify_time_text'] = $verifyTime ? date('Y-m-d H:i:s', $verifyTime) : '-';
+            $row['seven_days_deadline'] = $sevenDaysDeadline;
+            $row['seven_days_deadline_text'] = $paymentTime ? date('Y-m-d H:i:s', $sevenDaysDeadline) : '-';
+            $row['seven_days_passed'] = $sevenDaysPassed;
+            $row['twenty_four_hours_deadline'] = $twentyFourHoursDeadline;
+            $row['twenty_four_hours_deadline_text'] = $verifyTime ? date('Y-m-d H:i:s', $twentyFourHoursDeadline) : '-';
+            $row['twenty_four_hours_passed'] = $twentyFourHoursPassed;
+            $row['has_refund'] = $hasRefund;
+            $row['refund_pending'] = $refundPending;
+            $row['settle_safe'] = $settleSafe;
+
+            // 生成综合状态文本
+            if ($row['settle_status'] === 'cancelled') {
+                $row['status_text'] = '已取消';
+                $row['status_class'] = 'danger';
+            } elseif ($row['settle_status'] === 'settled') {
+                $row['status_text'] = '已结算';
+                $row['status_class'] = 'success';
+            } elseif ($hasRefund) {
+                $row['status_text'] = '已退款';
+                $row['status_class'] = 'danger';
+            } elseif ($refundPending) {
+                $row['status_text'] = '退款处理中';
+                $row['status_class'] = 'warning';
+            } elseif ($settleSafe) {
+                $row['status_text'] = '可结算';
+                $row['status_class'] = 'success';
+            } else {
+                // 计算剩余等待时间（在7天内，等24h过）
+                $remainHours = ceil(($twentyFourHoursDeadline - $now) / 3600);
+                $row['status_text'] = "待结算(24h期剩{$remainHours}h)";
+                $row['status_class'] = 'info';
+            }
+        }
+        unset($row);
 
         return [
             'list' => $list,

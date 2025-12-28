@@ -138,23 +138,30 @@
         <!-- 佣金明细 -->
         <div class="bd-detail-card">
             <h4><i class="fa fa-money"></i> 佣金明细 (最近50条)</h4>
+            <p class="text-muted" style="font-size: 12px; margin-bottom: 10px;">
+                <i class="fa fa-info-circle"></i>
+                结算条件：核销后24小时内无退款（7天无理由期内）或 7天无理由期已过
+            </p>
             {if $commissions}
-            <table class="table table-striped table-bordered">
+            <div class="table-responsive">
+            <table class="table table-striped table-bordered" style="font-size: 13px;">
                 <thead>
                     <tr>
-                        <th>时间</th>
                         <th>店铺</th>
                         <th>类型</th>
                         <th>核销金额</th>
                         <th>佣金比例</th>
                         <th>佣金金额</th>
-                        <th>状态</th>
+                        <th>支付时间</th>
+                        <th>核销时间</th>
+                        <th>24h期截止</th>
+                        <th>7天期截止</th>
+                        <th>结算状态</th>
                     </tr>
                 </thead>
                 <tbody>
                     {volist name="commissions" id="log"}
                     <tr>
-                        <td>{$log.createtime|date='Y-m-d H:i:s',###}</td>
                         <td>{$log.shop_name|default='-'}</td>
                         <td>
                             {if $log.type == 'earn'}
@@ -172,19 +179,37 @@
                             <span class="text-danger">-¥{$log.commission_amount|number_format=2}</span>
                             {/if}
                         </td>
-                        <td>
-                            {if $log.settle_status == 'pending'}
-                            <span class="label label-warning">待结算</span>
-                            {elseif $log.settle_status == 'settled'}
-                            <span class="label label-success">已结算</span>
+                        <td style="white-space: nowrap;">{$log.payment_time_text|default='-'}</td>
+                        <td style="white-space: nowrap;">{$log.verify_time_text|default='-'}</td>
+                        <td style="white-space: nowrap;">
+                            {$log.twenty_four_hours_deadline_text|default='-'}
+                            {if $log.twenty_four_hours_passed}
+                            <span class="label label-success" style="margin-left: 3px;">✓</span>
                             {else}
-                            <span class="label label-default">已取消</span>
+                            <span class="label label-warning" style="margin-left: 3px;">等待中</span>
+                            {/if}
+                        </td>
+                        <td style="white-space: nowrap;">
+                            {$log.seven_days_deadline_text|default='-'}
+                            {if $log.seven_days_passed}
+                            <span class="label label-success" style="margin-left: 3px;">✓</span>
+                            {else}
+                            <span class="label label-default" style="margin-left: 3px;">-</span>
+                            {/if}
+                        </td>
+                        <td>
+                            <span class="label label-{$log.status_class|default='default'}">{$log.status_text|default='未知'}</span>
+                            {if $log.has_refund}
+                            <br><small class="text-danger">已退款</small>
+                            {elseif $log.refund_pending}
+                            <br><small class="text-warning">退款处理中</small>
                             {/if}
                         </td>
                     </tr>
                     {/volist}
                 </tbody>
             </table>
+            </div>
             {else}
             <p class="text-muted">暂无佣金记录</p>
             {/if}
