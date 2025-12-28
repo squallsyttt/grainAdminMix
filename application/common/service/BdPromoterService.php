@@ -579,13 +579,23 @@ class BdPromoterService
             }
         }
 
+        // 生成佣金比例显示文本
+        $currentRate = $period ? (float)$period['current_rate'] : 0;
+        $currentRateText = '';
+        if ($currentRate > 0) {
+            // 转换为千分比显示，如 0.001 -> "1‰"
+            $ratePermille = $currentRate * 1000;
+            $currentRateText = intval($ratePermille) . '‰';
+        }
+
         return [
             'is_bd_promoter' => true,
             'bd_code' => $user['bd_code'],
             'apply_time' => (int)$user['bd_apply_time'],
             'current_period_index' => $period ? (int)$period['period_index'] : 0,
-            'current_rate' => $period ? (float)$period['current_rate'] : 0,
-            'is_active' => $period && (float)$period['current_rate'] > 0,
+            'current_rate' => $currentRate,
+            'current_rate_text' => $currentRateText,
+            'is_active' => $currentRate > 0,
             'current_period_shop_count' => $period ? (int)$period['shop_count'] : 0,
             'total_shop_count' => (int)$totalShopCount,
             'total_commission' => round((float)$totalCommission, 2),
