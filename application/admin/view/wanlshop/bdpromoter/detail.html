@@ -236,18 +236,18 @@
 </div>
 
 <script>
-require(['jquery', 'backend', 'layer'], function($, Backend, Layer) {
+require(['jquery', 'backend'], function($, Backend) {
     // 单笔打款
     $(document).on('click', '.btn-transfer', function() {
         var $btn = $(this);
         var id = $btn.data('id');
         var amount = $btn.data('amount');
 
-        Layer.confirm('确认向该BD推广员打款 ¥' + parseFloat(amount).toFixed(2) + ' 元？', {
+        layer.confirm('确认向该BD推广员打款 ¥' + parseFloat(amount).toFixed(2) + ' 元？', {
             title: '打款确认',
             btn: ['确认打款', '取消']
         }, function(index) {
-            Layer.close(index);
+            layer.close(index);
             $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> 处理中...');
 
             $.ajax({
@@ -257,23 +257,21 @@ require(['jquery', 'backend', 'layer'], function($, Backend, Layer) {
                 dataType: 'json',
                 success: function(res) {
                     if (res.code === 1) {
-                        Layer.msg(res.msg, { icon: 1 });
-                        // 刷新页面
+                        layer.msg(res.msg, { icon: 1 });
                         setTimeout(function() {
                             location.reload();
                         }, 1500);
                     } else {
-                        Layer.msg(res.msg || '打款失败', { icon: 2 });
+                        layer.msg(res.msg || '打款失败', { icon: 2 });
                         $btn.prop('disabled', false).html('<i class="fa fa-send"></i> 打款');
                     }
                 },
                 error: function() {
-                    Layer.msg('网络错误，请重试', { icon: 2 });
+                    layer.msg('网络错误，请重试', { icon: 2 });
                     $btn.prop('disabled', false).html('<i class="fa fa-send"></i> 打款');
                 }
             });
         });
     });
-
 });
 </script>
