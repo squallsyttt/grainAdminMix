@@ -552,12 +552,8 @@ class BdPromoterService
             ->where('settle_status', '<>', 'cancelled')
             ->sum('commission_amount') ?: 0;
 
-        // 统计待结算佣金（扣除扣减的）
-        $deductAmount = Db::name('bd_commission_log')
-            ->where('bd_user_id', $userId)
-            ->where('type', 'deduct')
-            ->sum('commission_amount') ?: 0;
-
+        // 统计待结算佣金（只统计 pending 状态的 earn 记录）
+        // 注意：被退款的 earn 记录已被标记为 cancelled，不会计入此处
         $pendingCommission = Db::name('bd_commission_log')
             ->where('bd_user_id', $userId)
             ->where('type', 'earn')
@@ -599,7 +595,7 @@ class BdPromoterService
             'current_period_shop_count' => $period ? (int)$period['shop_count'] : 0,
             'total_shop_count' => (int)$totalShopCount,
             'total_commission' => round((float)$totalCommission, 2),
-            'pending_commission' => round((float)$pendingCommission - (float)$deductAmount, 2),
+            'pending_commission' => round((float)$pendingCommission, 2),
             'period_start' => $periodStart,
             'period_end' => $periodEnd,
             'period_days_remaining' => $periodDaysRemaining
