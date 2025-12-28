@@ -236,7 +236,14 @@
 </div>
 
 <script>
-$(function() {
+(function checkReady() {
+    if (typeof jQuery === 'undefined' || typeof layer === 'undefined') {
+        setTimeout(checkReady, 50);
+        return;
+    }
+
+    var $ = jQuery;
+
     // 单笔打款
     $(document).on('click', '.btn-transfer', function() {
         var $btn = $(this);
@@ -273,5 +280,5 @@ $(function() {
             });
         });
     });
-});
+})();
 </script>
