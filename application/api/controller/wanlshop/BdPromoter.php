@@ -193,7 +193,7 @@ class BdPromoter extends Api
      *   }
      * })
      */
-    public function commissionLogs()
+    public function commission_logs()
     {
         $page = $this->request->get('page/d', 1);
         $limit = $this->request->get('limit/d', 10);
@@ -230,7 +230,7 @@ class BdPromoter extends Api
      *   }
      * })
      */
-    public function validateCode()
+    public function validate_code()
     {
         $bdCode = $this->request->get('bd_code', '');
 
