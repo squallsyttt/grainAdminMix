@@ -61,12 +61,11 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
                                     name: 'detail',
                                     text: __('详情'),
                                     title: __('BD详情'),
-                                    classname: 'btn btn-xs btn-info btn-dialog',
+                                    classname: 'btn btn-xs btn-info btn-addtabs',
                                     icon: 'fa fa-eye',
                                     url: function(row) {
                                         return 'wanlshop/bdpromoter/detail?ids=' + row.id;
-                                    },
-                                    extend: 'data-area=\'["95%","90%"]\''
+                                    }
                                 }
                             ]
                         }
