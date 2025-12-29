@@ -44,11 +44,14 @@ class CustodyRefundService
             return ['success' => false, 'message' => '仅支持代管理返利类型', 'refund' => null];
         }
 
-        // 代管理退款金额 = 券的实际支付金额（face_value）全额退款
-        $refundAmount = (float)$voucher->face_value;
+        // 代管理退款金额 = 返利记录中已计算好的退款金额（按阶段衰减）
+        // 免费期/福利损耗期：全额退款
+        // 货物损耗期：按货物剩余比例退款
+        // 已过期：不退款（refund_amount = 0）
+        $refundAmount = (float)$rebate->refund_amount;
         if ($refundAmount <= 0) {
-            Log::info("代管理退款[rebate_id={$rebate->id}]: 券面值为0，无需退款");
-            return ['success' => true, 'message' => '券面值为0，无需退款', 'refund' => null];
+            Log::info("代管理退款[rebate_id={$rebate->id}]: 退款金额为0（可能已过期或货物损耗完毕），无需退款");
+            return ['success' => true, 'message' => '退款金额为0，无需退款', 'refund' => null];
         }
 
         // 检查是否已存在退款记录（使用 getData 安全访问，避免字段不存在报错）

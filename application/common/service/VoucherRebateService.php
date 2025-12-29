@@ -103,12 +103,23 @@ class VoucherRebateService
         $rebateAmount = round($faceValue * ($actualBonusRatio / 100), 2);
 
         // 8. 计算等量退款（代管理专用）
-        // 代管理退款 = 券面值（实际支付金额）全额退款
+        // 免费期/福利损耗期：全额退款
+        // 货物损耗期：按货物剩余比例退款
+        // 已过期：不退款
         $refundAmount = 0;
         $unitPrice = 0;
         if ($calculateRefund) {
-            // 退款金额 = 券面值（用户实际支付金额）
-            $refundAmount = $faceValue;
+            if ($stage === 'free' || $stage === 'welfare') {
+                // 免费期和福利损耗期：全额退款
+                $refundAmount = $faceValue;
+            } elseif ($stage === 'goods') {
+                // 货物损耗期：按货物剩余比例退款
+                $goodsRatio = $originalWeight > 0 ? ($actualGoodsWeight / $originalWeight) : 0;
+                $refundAmount = round($faceValue * $goodsRatio, 2);
+            } else {
+                // 已过期：不退款
+                $refundAmount = 0;
+            }
             // 单价仅作记录用途
             if ($originalWeight > 0) {
                 $unitPrice = round($faceValue / $originalWeight, 2);
