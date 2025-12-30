@@ -34,25 +34,3 @@
     </div>
 </div>
 
-<script>
-require(['jquery'], function($) {
-    var statsLoaded = false;
-    var settlementLoaded = false;
-
-    $('a[data-toggle="tab"]').on('shown.bs.tab', function(e) {
-        var target = $(e.target).attr('href');
-
-        if (target === '#tab-stats' && !statsLoaded) {
-            $('#stats-content').load('wanlshop/bdpromoter/stats?_=' + Date.now(), function() {
-                statsLoaded = true;
-            });
-        }
-
-        if (target === '#tab-settlement' && !settlementLoaded) {
-            $('#settlement-content').load('wanlshop/bdpromoter/settlement?_=' + Date.now(), function() {
-                settlementLoaded = true;
-            });
-        }
-    });
-});
-</script>

@@ -76,14 +76,26 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
             // 为表格绑定事件
             Table.api.bindevent(table);
 
-            // 统计报表按钮
-            $(document).on('click', '.btn-stats', function() {
-                Fast.api.open('wanlshop/bdpromoter/stats', 'BD统计报表', {area: ['90%', '85%']});
-            });
+            // Tab 切换懒加载
+            var statsLoaded = false;
+            var settlementLoaded = false;
 
-            // 结算统计按钮
-            $(document).on('click', '.btn-settlement', function() {
-                Fast.api.addtabs('wanlshop/bdpromoter/settlement', '结算统计');
+            $('a[data-toggle="tab"]').on('shown.bs.tab', function(e) {
+                var target = $(e.target).attr('href');
+
+                if (target === '#tab-stats' && !statsLoaded) {
+                    $('#stats-content').html('<div class="text-center" style="padding: 40px;"><i class="fa fa-spinner fa-spin"></i> 加载中...</div>');
+                    $('#stats-content').load('wanlshop/bdpromoter/stats?_=' + Date.now(), function() {
+                        statsLoaded = true;
+                    });
+                }
+
+                if (target === '#tab-settlement' && !settlementLoaded) {
+                    $('#settlement-content').html('<div class="text-center" style="padding: 40px;"><i class="fa fa-spinner fa-spin"></i> 加载中...</div>');
+                    $('#settlement-content').load('wanlshop/bdpromoter/settlement?_=' + Date.now(), function() {
+                        settlementLoaded = true;
+                    });
+                }
             });
         },
         detail: function () {
