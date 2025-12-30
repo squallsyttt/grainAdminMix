@@ -189,12 +189,11 @@ class Bdpromoter extends Backend
                     ->where('createtime', '<=', $endTime)
                     ->count(),
 
-                // 总佣金
+                // 总佣金（所有收入记录，与流水明细统计口径一致）
                 'total_commission' => Db::name('bd_commission_log')
                     ->where('createtime', '>=', $startTime)
                     ->where('createtime', '<=', $endTime)
                     ->where('type', 'earn')
-                    ->where('settle_status', '<>', 'cancelled')
                     ->sum('commission_amount') ?: 0,
 
                 // 扣减佣金
@@ -216,14 +215,13 @@ class Bdpromoter extends Backend
             // 净佣金
             $stats['net_commission'] = round($stats['total_commission'] - $stats['deduct_commission'], 2);
 
-            // BD排行榜（按佣金排序）
+            // BD排行榜（按佣金排序，与流水明细统计口径一致）
             $topBdList = Db::name('bd_commission_log')
                 ->alias('c')
                 ->join('user u', 'u.id = c.bd_user_id', 'LEFT')
                 ->where('c.createtime', '>=', $startTime)
                 ->where('c.createtime', '<=', $endTime)
                 ->where('c.type', 'earn')
-                ->where('c.settle_status', '<>', 'cancelled')
                 ->field('c.bd_user_id, u.nickname, u.bd_code, SUM(c.commission_amount) as total_commission')
                 ->group('c.bd_user_id')
                 ->order('total_commission', 'desc')
