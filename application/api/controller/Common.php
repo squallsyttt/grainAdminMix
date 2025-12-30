@@ -67,8 +67,9 @@ class Common extends Api
 
             // 获取 TabBar 配置
             $tabbarConfig = [
-                'merchant' => (bool)config('site.mp_show_merchant'),
-                'news'     => (bool)config('site.mp_show_news'),
+                'merchant'    => (bool)config('site.mp_show_merchant'),
+                'news'        => (bool)config('site.mp_show_news'),
+                'bdPromoter'  => (bool)config('site.mp_show_bd_promoter'),
             ];
 
             $content = [
