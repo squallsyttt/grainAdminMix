@@ -147,13 +147,6 @@ class Bdpromoter extends Backend
      */
     public function stats()
     {
-        // 检查是否是页面片段请求（Tab 内嵌加载时带有 _ 参数）
-        if ($this->request->get('_')) {
-            // 禁用布局，只返回页面片段
-            $this->view->engine->layout(false);
-            return $this->view->fetch();
-        }
-
         if ($this->request->isAjax()) {
             $type = $this->request->get('type', 'today');
 
@@ -353,8 +346,6 @@ class Bdpromoter extends Backend
      */
     public function settlement()
     {
-        // 禁用布局，只返回页面片段（用于 Tab 内嵌加载）
-        $this->view->engine->layout(false);
         return $this->view->fetch();
     }
 
@@ -370,7 +361,7 @@ class Bdpromoter extends Backend
             ->order('bd_apply_time', 'desc')
             ->select();
 
-        $this->success('ok', $list);
+        $this->success('ok', null, $list);
     }
 
     /**
@@ -380,7 +371,7 @@ class Bdpromoter extends Backend
     {
         $bdUserId = $this->request->get('bd_user_id/d', 0);
         if (!$bdUserId) {
-            $this->success('ok', []);
+            $this->success('ok', null, []);
             return;
         }
 
@@ -391,7 +382,7 @@ class Bdpromoter extends Backend
             ->field('b.shop_id as id, s.shopname as name')
             ->select();
 
-        $this->success('ok', $list);
+        $this->success('ok', null, $list);
     }
 
     /**
@@ -466,7 +457,7 @@ class Bdpromoter extends Backend
         $summary['settled_amount'] = round($summary['settled_amount'], 2);
         $summary['pending_amount'] = round($summary['pending_amount'], 2);
 
-        $this->success('ok', [
+        $this->success('ok', null, [
             'list' => $list,
             'summary' => $summary,
             'filter' => [
@@ -557,7 +548,7 @@ class Bdpromoter extends Backend
             $yearSummary['pending_amount'] += $m['pending_amount'];
         }
 
-        $this->success('ok', [
+        $this->success('ok', null, [
             'year' => $year,
             'monthly' => $monthlyData,
             'summary' => $yearSummary,

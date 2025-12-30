@@ -3,32 +3,22 @@
         <div class="panel-lead"><em>BD推广员管理</em>管理所有BD推广员，查看推广数据和佣金明细</div>
         <ul class="nav nav-tabs">
             <li class="active"><a href="#tab-list" data-toggle="tab">全部</a></li>
-            <li><a href="#tab-stats" data-toggle="tab"><i class="fa fa-bar-chart"></i> 统计报表</a></li>
-            <li><a href="#tab-settlement" data-toggle="tab"><i class="fa fa-calculator"></i> 结算统计</a></li>
         </ul>
     </div>
     <div class="panel-body">
         <div class="tab-content">
-            <!-- 列表Tab -->
-            <div class="tab-pane fade active in" id="tab-list">
+            <div class="tab-pane active" id="tab-list">
                 <div class="widget-body no-padding">
                     <div id="toolbar" class="toolbar">
+                        <a href="javascript:;" class="btn btn-success btn-settlement" title="统计与结算">
+                            <i class="fa fa-bar-chart"></i> 统计与结算
+                        </a>
                     </div>
                     <table id="table" class="table table-striped table-bordered table-hover table-nowrap"
                            data-operate-detail="{:url('wanlshop.bdpromoter/detail')}"
                            width="100%">
                     </table>
                 </div>
-            </div>
-
-            <!-- 统计报表Tab -->
-            <div class="tab-pane fade" id="tab-stats">
-                <div id="stats-content"></div>
-            </div>
-
-            <!-- 结算统计Tab -->
-            <div class="tab-pane fade" id="tab-settlement">
-                <div id="settlement-content"></div>
             </div>
         </div>
     </div>
