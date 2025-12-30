@@ -563,7 +563,7 @@
 </div>
 
 <script>
-require(['jquery', 'backend'], function($, Backend) {
+(function($) {
     var currentYear = new Date().getFullYear();
     var filterParams = {};
 
@@ -815,5 +815,5 @@ require(['jquery', 'backend'], function($, Backend) {
     // 初始化
     loadBdList();
     loadSettlementData();
-});
+})(jQuery);
 </script>

@@ -147,6 +147,13 @@ class Bdpromoter extends Backend
      */
     public function stats()
     {
+        // 检查是否是页面片段请求（Tab 内嵌加载时带有 _ 参数）
+        if ($this->request->get('_')) {
+            // 禁用布局，只返回页面片段
+            $this->view->engine->layout(false);
+            return $this->view->fetch();
+        }
+
         if ($this->request->isAjax()) {
             $type = $this->request->get('type', 'today');
 
@@ -346,6 +353,8 @@ class Bdpromoter extends Backend
      */
     public function settlement()
     {
+        // 禁用布局，只返回页面片段（用于 Tab 内嵌加载）
+        $this->view->engine->layout(false);
         return $this->view->fetch();
     }
 

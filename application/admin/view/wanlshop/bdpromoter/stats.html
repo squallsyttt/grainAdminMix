@@ -84,7 +84,7 @@
 </div>
 
 <script>
-require(['jquery'], function($) {
+(function($) {
     var loadStats = function(type) {
         $.ajax({
             url: 'wanlshop/bdpromoter/stats',
@@ -129,5 +129,5 @@ require(['jquery'], function($) {
         var type = $(this).data('type');
         loadStats(type);
     });
-});
+})(jQuery);
 </script>
