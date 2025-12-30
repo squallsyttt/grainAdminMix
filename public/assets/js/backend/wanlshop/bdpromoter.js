@@ -229,10 +229,17 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'fast'], function ($,
                                         ? '<span class="text-success" style="font-weight: bold;">+' + amount + '</span>'
                                         : '<span class="text-danger" style="font-weight: bold;">-' + amount + '</span>';
 
+                                    // 返利比例样式
+                                    var rateHtml = item.rate_text && item.rate_text !== '-'
+                                        ? '<span class="label label-info">' + item.rate_text + '</span>'
+                                        : '<span class="text-muted">-</span>';
+
                                     html += '<tr>';
                                     html += '<td>' + item.createtime_text + '</td>';
                                     html += '<td>' + (item.bd_nickname || '-') + '<br><code style="font-size: 10px;">' + (item.bd_code || '-') + '</code></td>';
+                                    html += '<td>' + (item.shopname || '-') + '</td>';
                                     html += '<td>' + item.period_index_text + '</td>';
+                                    html += '<td>' + rateHtml + '</td>';
                                     html += '<td>' + voucherHtml + '</td>';
                                     html += '<td>' + typeLabel + '</td>';
                                     html += '<td style="font-family: monospace; color: #666;">' + item.formula + '</td>';
@@ -240,7 +247,7 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'fast'], function ($,
                                     html += '</tr>';
                                 });
                             } else {
-                                html = '<tr><td colspan="7" class="text-center text-muted">暂无数据</td></tr>';
+                                html = '<tr><td colspan="9" class="text-center text-muted">暂无数据</td></tr>';
                             }
                             $('#settlement-list').html(html);
                         }
