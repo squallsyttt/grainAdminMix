@@ -17,7 +17,7 @@ class Bdpromoter extends Backend
     /**
      * 无需鉴权的方法
      */
-    protected $noNeedRight = ['detail', 'stats', 'transfer'];
+    protected $noNeedRight = ['detail', 'stats', 'transfer', 'settlement', 'settlementData', 'monthlyStats', 'bdList', 'shopListByBd', 'markSettled'];
 
     public function _initialize()
     {
@@ -339,5 +339,267 @@ class Bdpromoter extends Backend
         } else {
             $this->error('批量打款失败：' . ($errors[0]['message'] ?? '无可打款记录'));
         }
+    }
+
+    /**
+     * 结算统计页面
+     */
+    public function settlement()
+    {
+        return $this->view->fetch();
+    }
+
+    /**
+     * 获取BD推广员列表（下拉选择用）
+     */
+    public function bdList()
+    {
+        $list = Db::name('user')
+            ->where('bd_code', 'not null')
+            ->where('bd_code', '<>', '')
+            ->field('id, nickname, mobile, bd_code')
+            ->order('bd_apply_time', 'desc')
+            ->select();
+
+        $this->success('ok', $list);
+    }
+
+    /**
+     * 根据BD获取其邀请的店铺列表
+     */
+    public function shopListByBd()
+    {
+        $bdUserId = $this->request->get('bd_user_id/d', 0);
+        if (!$bdUserId) {
+            $this->success('ok', []);
+            return;
+        }
+
+        $list = Db::name('bd_shop_bindlog')
+            ->alias('b')
+            ->join('wanlshop_shop s', 's.id = b.shop_id', 'LEFT')
+            ->where('b.bd_user_id', $bdUserId)
+            ->field('b.shop_id as id, s.shopname as name')
+            ->select();
+
+        $this->success('ok', $list);
+    }
+
+    /**
+     * 结算统计数据
+     */
+    public function settlementData()
+    {
+        $bdUserId = $this->request->get('bd_user_id/d', 0);
+        $shopId = $this->request->get('shop_id/d', 0);
+        $startDate = $this->request->get('start_date', '');
+        $endDate = $this->request->get('end_date', '');
+
+        // 构建查询条件
+        $where = [];
+        if ($bdUserId > 0) {
+            $where['c.bd_user_id'] = $bdUserId;
+        }
+        if ($shopId > 0) {
+            $where['c.shop_id'] = $shopId;
+        }
+
+        // 时间范围
+        $startTime = $startDate ? strtotime($startDate . ' 00:00:00') : strtotime(date('Y-m-01'));
+        $endTime = $endDate ? strtotime($endDate . ' 23:59:59') : time();
+
+        // 获取流水明细
+        $list = Db::name('bd_commission_log')
+            ->alias('c')
+            ->join('user u', 'u.id = c.bd_user_id', 'LEFT')
+            ->join('wanlshop_shop s', 's.id = c.shop_id', 'LEFT')
+            ->where($where)
+            ->where('c.createtime', '>=', $startTime)
+            ->where('c.createtime', '<=', $endTime)
+            ->field('c.*, u.nickname as bd_nickname, u.bd_code, s.shopname')
+            ->order('c.createtime', 'desc')
+            ->select();
+
+        // 统计汇总
+        $summary = [
+            'earn_count' => 0,
+            'earn_amount' => 0,
+            'deduct_count' => 0,
+            'deduct_amount' => 0,
+            'net_amount' => 0,
+            'settled_amount' => 0,
+            'pending_amount' => 0,
+        ];
+
+        foreach ($list as &$row) {
+            $row['createtime_text'] = date('Y-m-d H:i:s', $row['createtime']);
+            $row['type_text'] = $row['type'] === 'earn' ? '收入' : '扣减';
+            $row['settle_status_text'] = $this->getSettleStatusText($row['settle_status']);
+
+            if ($row['type'] === 'earn') {
+                $summary['earn_count']++;
+                $summary['earn_amount'] += (float)$row['commission_amount'];
+                if ($row['settle_status'] === 'settled') {
+                    $summary['settled_amount'] += (float)$row['commission_amount'];
+                } elseif ($row['settle_status'] !== 'cancelled') {
+                    $summary['pending_amount'] += (float)$row['commission_amount'];
+                }
+            } else {
+                $summary['deduct_count']++;
+                $summary['deduct_amount'] += (float)$row['commission_amount'];
+            }
+        }
+        unset($row);
+
+        $summary['net_amount'] = round($summary['earn_amount'] - $summary['deduct_amount'], 2);
+        $summary['earn_amount'] = round($summary['earn_amount'], 2);
+        $summary['deduct_amount'] = round($summary['deduct_amount'], 2);
+        $summary['settled_amount'] = round($summary['settled_amount'], 2);
+        $summary['pending_amount'] = round($summary['pending_amount'], 2);
+
+        $this->success('ok', [
+            'list' => $list,
+            'summary' => $summary,
+            'filter' => [
+                'bd_user_id' => $bdUserId,
+                'shop_id' => $shopId,
+                'start_date' => date('Y-m-d', $startTime),
+                'end_date' => date('Y-m-d', $endTime),
+            ]
+        ]);
+    }
+
+    /**
+     * 月度收益统计
+     */
+    public function monthlyStats()
+    {
+        $bdUserId = $this->request->get('bd_user_id/d', 0);
+        $shopId = $this->request->get('shop_id/d', 0);
+        $year = $this->request->get('year/d', date('Y'));
+
+        // 构建查询条件
+        $where = [];
+        if ($bdUserId > 0) {
+            $where['bd_user_id'] = $bdUserId;
+        }
+        if ($shopId > 0) {
+            $where['shop_id'] = $shopId;
+        }
+
+        // 获取该年所有月份的统计
+        $monthlyData = [];
+        for ($month = 1; $month <= 12; $month++) {
+            $startTime = strtotime("$year-$month-01 00:00:00");
+            $endTime = strtotime(date('Y-m-t 23:59:59', $startTime));
+
+            // 如果是未来月份，跳过
+            if ($startTime > time()) {
+                continue;
+            }
+
+            $earnAmount = Db::name('bd_commission_log')
+                ->where($where)
+                ->where('createtime', '>=', $startTime)
+                ->where('createtime', '<=', $endTime)
+                ->where('type', 'earn')
+                ->where('settle_status', '<>', 'cancelled')
+                ->sum('commission_amount') ?: 0;
+
+            $deductAmount = Db::name('bd_commission_log')
+                ->where($where)
+                ->where('createtime', '>=', $startTime)
+                ->where('createtime', '<=', $endTime)
+                ->where('type', 'deduct')
+                ->sum('commission_amount') ?: 0;
+
+            $settledAmount = Db::name('bd_commission_log')
+                ->where($where)
+                ->where('createtime', '>=', $startTime)
+                ->where('createtime', '<=', $endTime)
+                ->where('type', 'earn')
+                ->where('settle_status', 'settled')
+                ->sum('commission_amount') ?: 0;
+
+            $monthlyData[] = [
+                'month' => $month,
+                'month_text' => $month . '月',
+                'earn_amount' => round($earnAmount, 2),
+                'deduct_amount' => round($deductAmount, 2),
+                'net_amount' => round($earnAmount - $deductAmount, 2),
+                'settled_amount' => round($settledAmount, 2),
+                'pending_amount' => round($earnAmount - $deductAmount - $settledAmount, 2),
+            ];
+        }
+
+        // 年度汇总
+        $yearSummary = [
+            'earn_amount' => 0,
+            'deduct_amount' => 0,
+            'net_amount' => 0,
+            'settled_amount' => 0,
+            'pending_amount' => 0,
+        ];
+        foreach ($monthlyData as $m) {
+            $yearSummary['earn_amount'] += $m['earn_amount'];
+            $yearSummary['deduct_amount'] += $m['deduct_amount'];
+            $yearSummary['net_amount'] += $m['net_amount'];
+            $yearSummary['settled_amount'] += $m['settled_amount'];
+            $yearSummary['pending_amount'] += $m['pending_amount'];
+        }
+
+        $this->success('ok', [
+            'year' => $year,
+            'monthly' => $monthlyData,
+            'summary' => $yearSummary,
+        ]);
+    }
+
+    /**
+     * 标记为已线下结算
+     */
+    public function markSettled()
+    {
+        if (!$this->request->isPost()) {
+            $this->error(__('请求方式错误'));
+        }
+
+        $ids = $this->request->post('ids');
+        $remark = $this->request->post('remark', '线下结算');
+
+        if (empty($ids)) {
+            $this->error(__('请选择要结算的记录'));
+        }
+
+        $idArr = is_array($ids) ? $ids : explode(',', $ids);
+
+        $updateCount = Db::name('bd_commission_log')
+            ->whereIn('id', $idArr)
+            ->where('settle_status', 'pending')
+            ->where('type', 'earn')
+            ->update([
+                'settle_status' => 'settled',
+                'remark' => Db::raw("CONCAT(IFNULL(remark,''), ' [线下结算: " . date('Y-m-d H:i:s') . " - " . addslashes($remark) . "]')")
+            ]);
+
+        if ($updateCount > 0) {
+            $this->success("已标记 {$updateCount} 条记录为已结算");
+        } else {
+            $this->error('没有可结算的记录（可能已结算或已取消）');
+        }
+    }
+
+    /**
+     * 获取结算状态文本
+     */
+    private function getSettleStatusText($status)
+    {
+        $map = [
+            'pending' => '待结算',
+            'settling' => '结算中',
+            'settled' => '已结算',
+            'cancelled' => '已取消',
+        ];
+        return $map[$status] ?? $status;
     }
 }

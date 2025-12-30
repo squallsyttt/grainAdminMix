@@ -1,0 +1,819 @@
+<style>
+/* shadcn-inspired modern design */
+:root {
+    --border: #e2e8f0;
+    --input: #e2e8f0;
+    --ring: #3b82f6;
+    --background: #ffffff;
+    --foreground: #0f172a;
+    --muted: #f1f5f9;
+    --muted-foreground: #64748b;
+    --accent: #f1f5f9;
+    --accent-foreground: #0f172a;
+    --primary: #0f172a;
+    --primary-foreground: #f8fafc;
+    --secondary: #f1f5f9;
+    --card: #ffffff;
+    --card-foreground: #0f172a;
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+}
+
+.settlement-page {
+    padding: 24px;
+    background: #f8fafc;
+    min-height: calc(100vh - 60px);
+}
+
+/* Filter Card */
+.filter-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+}
+
+.filter-card__title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--foreground);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.filter-card__title i {
+    color: var(--muted-foreground);
+}
+
+.filter-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    align-items: end;
+}
+
+.filter-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.filter-item__label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted-foreground);
+}
+
+.filter-item select,
+.filter-item input {
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid var(--input);
+    border-radius: 8px;
+    font-size: 14px;
+    background: var(--background);
+    transition: all 0.2s;
+    outline: none;
+}
+
+.filter-item select:focus,
+.filter-item input:focus {
+    border-color: var(--ring);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.filter-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-modern {
+    height: 40px;
+    padding: 0 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: none;
+}
+
+.btn-modern--primary {
+    background: var(--primary);
+    color: var(--primary-foreground);
+}
+
+.btn-modern--primary:hover {
+    background: #1e293b;
+}
+
+.btn-modern--secondary {
+    background: var(--secondary);
+    color: var(--foreground);
+    border: 1px solid var(--border);
+}
+
+.btn-modern--secondary:hover {
+    background: #e2e8f0;
+}
+
+.btn-modern--success {
+    background: var(--success);
+    color: white;
+}
+
+.btn-modern--success:hover {
+    background: #16a34a;
+}
+
+/* Stats Cards */
+.stats-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.2s;
+}
+
+.stat-card:hover {
+    box-shadow: 0 4px 12px rgb(0 0 0 / 0.1);
+}
+
+.stat-card__label {
+    font-size: 13px;
+    color: var(--muted-foreground);
+    margin-bottom: 8px;
+}
+
+.stat-card__value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--foreground);
+    font-feature-settings: 'tnum';
+}
+
+.stat-card__value--success { color: var(--success); }
+.stat-card__value--warning { color: var(--warning); }
+.stat-card__value--danger { color: var(--danger); }
+
+/* Tabs */
+.tabs-container {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.tabs-header {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    background: var(--muted);
+}
+
+.tab-btn {
+    padding: 14px 24px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--muted-foreground);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s;
+}
+
+.tab-btn:hover {
+    color: var(--foreground);
+}
+
+.tab-btn.active {
+    color: var(--foreground);
+    background: var(--card);
+}
+
+.tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--primary);
+}
+
+.tab-content {
+    padding: 24px;
+}
+
+.tab-pane {
+    display: none;
+}
+
+.tab-pane.active {
+    display: block;
+}
+
+/* Table */
+.modern-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.modern-table th {
+    text-align: left;
+    padding: 12px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted-foreground);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: var(--muted);
+    border-bottom: 1px solid var(--border);
+}
+
+.modern-table td {
+    padding: 14px 16px;
+    font-size: 14px;
+    color: var(--foreground);
+    border-bottom: 1px solid var(--border);
+}
+
+.modern-table tbody tr:hover {
+    background: var(--accent);
+}
+
+.modern-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Badge */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: 9999px;
+}
+
+.badge--success {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.badge--warning {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.badge--danger {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.badge--secondary {
+    background: var(--muted);
+    color: var(--muted-foreground);
+}
+
+/* Money */
+.money {
+    font-feature-settings: 'tnum';
+    font-weight: 500;
+}
+
+.money--success { color: var(--success); }
+.money--danger { color: var(--danger); }
+
+/* Checkbox */
+.modern-checkbox {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--muted-foreground);
+}
+
+.empty-state i {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.empty-state__text {
+    font-size: 14px;
+}
+
+/* Monthly Chart Bars */
+.month-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.month-bar:last-child {
+    border-bottom: none;
+}
+
+.month-bar__label {
+    width: 48px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--foreground);
+}
+
+.month-bar__track {
+    flex: 1;
+    height: 24px;
+    background: var(--muted);
+    border-radius: 6px;
+    overflow: hidden;
+    display: flex;
+}
+
+.month-bar__fill {
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.month-bar__fill--earn {
+    background: var(--success);
+}
+
+.month-bar__fill--settled {
+    background: #3b82f6;
+}
+
+.month-bar__values {
+    width: 200px;
+    display: flex;
+    gap: 16px;
+    font-size: 13px;
+}
+
+.month-bar__value {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.month-bar__value-label {
+    font-size: 11px;
+    color: var(--muted-foreground);
+}
+
+/* Loading */
+.loading-spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--muted);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+    .filter-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .stats-row {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .filter-grid {
+        grid-template-columns: 1fr;
+    }
+    .stats-row {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+</style>
+
+<div class="settlement-page">
+    <!-- Filter Card -->
+    <div class="filter-card">
+        <div class="filter-card__title">
+            <i class="fa fa-filter"></i> 筛选条件
+        </div>
+        <div class="filter-grid">
+            <div class="filter-item">
+                <label class="filter-item__label">推广员</label>
+                <select id="filter-bd" class="form-control">
+                    <option value="">全部推广员</option>
+                </select>
+            </div>
+            <div class="filter-item">
+                <label class="filter-item__label">邀请店铺</label>
+                <select id="filter-shop" class="form-control" disabled>
+                    <option value="">请先选择推广员</option>
+                </select>
+            </div>
+            <div class="filter-item">
+                <label class="filter-item__label">开始日期</label>
+                <input type="date" id="filter-start" class="form-control">
+            </div>
+            <div class="filter-item">
+                <label class="filter-item__label">结束日期</label>
+                <input type="date" id="filter-end" class="form-control">
+            </div>
+        </div>
+        <div style="margin-top: 16px; display: flex; justify-content: space-between; align-items: center;">
+            <div class="filter-actions">
+                <button class="btn-modern btn-modern--primary" id="btn-search">
+                    <i class="fa fa-search"></i> 查询
+                </button>
+                <button class="btn-modern btn-modern--secondary" id="btn-reset">
+                    <i class="fa fa-refresh"></i> 重置
+                </button>
+            </div>
+            <button class="btn-modern btn-modern--success" id="btn-settle" style="display: none;">
+                <i class="fa fa-check"></i> 标记已结算
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-card__label">收入笔数</div>
+            <div class="stat-card__value" id="stat-earn-count">-</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card__label">总收入</div>
+            <div class="stat-card__value stat-card__value--success" id="stat-earn-amount">-</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card__label">扣减金额</div>
+            <div class="stat-card__value stat-card__value--danger" id="stat-deduct-amount">-</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card__label">净收入</div>
+            <div class="stat-card__value" id="stat-net-amount">-</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card__label">待结算</div>
+            <div class="stat-card__value stat-card__value--warning" id="stat-pending-amount">-</div>
+        </div>
+    </div>
+
+    <!-- Tabs Container -->
+    <div class="tabs-container">
+        <div class="tabs-header">
+            <button class="tab-btn active" data-tab="detail">流水明细</button>
+            <button class="tab-btn" data-tab="monthly">月度汇总</button>
+        </div>
+
+        <!-- Detail Tab -->
+        <div class="tab-content">
+            <div class="tab-pane active" id="tab-detail">
+                <table class="modern-table" id="detail-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;">
+                                <input type="checkbox" class="modern-checkbox" id="check-all">
+                            </th>
+                            <th>时间</th>
+                            <th>推广员</th>
+                            <th>店铺</th>
+                            <th>类型</th>
+                            <th>订单金额</th>
+                            <th>佣金比例</th>
+                            <th>佣金金额</th>
+                            <th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td colspan="9" class="text-center" style="padding: 40px;">加载中...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Monthly Tab -->
+            <div class="tab-pane" id="tab-monthly">
+                <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <button class="btn-modern btn-modern--secondary" id="btn-prev-year">
+                            <i class="fa fa-chevron-left"></i>
+                        </button>
+                        <span style="font-size: 18px; font-weight: 600;" id="current-year">2025</span>
+                        <button class="btn-modern btn-modern--secondary" id="btn-next-year">
+                            <i class="fa fa-chevron-right"></i>
+                        </button>
+                    </div>
+                    <div style="display: flex; gap: 16px; font-size: 13px;">
+                        <span><span style="display: inline-block; width: 12px; height: 12px; background: #22c55e; border-radius: 2px; margin-right: 4px;"></span>净收入</span>
+                        <span><span style="display: inline-block; width: 12px; height: 12px; background: #3b82f6; border-radius: 2px; margin-right: 4px;"></span>已结算</span>
+                    </div>
+                </div>
+                <div id="monthly-chart"></div>
+                <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border);">
+                    <div style="display: flex; justify-content: space-around; text-align: center;">
+                        <div>
+                            <div style="font-size: 13px; color: var(--muted-foreground); margin-bottom: 4px;">年度总收入</div>
+                            <div style="font-size: 24px; font-weight: 700; color: var(--success);" id="year-earn">¥0.00</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 13px; color: var(--muted-foreground); margin-bottom: 4px;">年度扣减</div>
+                            <div style="font-size: 24px; font-weight: 700; color: var(--danger);" id="year-deduct">¥0.00</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 13px; color: var(--muted-foreground); margin-bottom: 4px;">年度净收入</div>
+                            <div style="font-size: 24px; font-weight: 700;" id="year-net">¥0.00</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 13px; color: var(--muted-foreground); margin-bottom: 4px;">年度已结算</div>
+                            <div style="font-size: 24px; font-weight: 700; color: #3b82f6;" id="year-settled">¥0.00</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+require(['jquery', 'backend'], function($, Backend) {
+    var currentYear = new Date().getFullYear();
+    var filterParams = {};
+
+    // 初始化日期
+    var today = new Date();
+    var firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    $('#filter-start').val(formatDate(firstDay));
+    $('#filter-end').val(formatDate(today));
+
+    // 加载BD列表
+    function loadBdList() {
+        $.get('wanlshop/bdpromoter/bdList', function(res) {
+            if (res.code === 1 && res.data) {
+                var html = '<option value="">全部推广员</option>';
+                res.data.forEach(function(item) {
+                    html += '<option value="' + item.id + '">' + (item.nickname || item.mobile) + ' (' + item.bd_code + ')</option>';
+                });
+                $('#filter-bd').html(html);
+            }
+        });
+    }
+
+    // 根据BD加载店铺列表
+    function loadShopList(bdUserId) {
+        if (!bdUserId) {
+            $('#filter-shop').html('<option value="">请先选择推广员</option>').prop('disabled', true);
+            return;
+        }
+        $.get('wanlshop/bdpromoter/shopListByBd', { bd_user_id: bdUserId }, function(res) {
+            if (res.code === 1) {
+                var html = '<option value="">全部店铺</option>';
+                if (res.data && res.data.length > 0) {
+                    res.data.forEach(function(item) {
+                        html += '<option value="' + item.id + '">' + (item.name || '店铺#' + item.id) + '</option>';
+                    });
+                }
+                $('#filter-shop').html(html).prop('disabled', false);
+            }
+        });
+    }
+
+    // 加载流水数据
+    function loadSettlementData() {
+        filterParams = {
+            bd_user_id: $('#filter-bd').val() || 0,
+            shop_id: $('#filter-shop').val() || 0,
+            start_date: $('#filter-start').val(),
+            end_date: $('#filter-end').val()
+        };
+
+        $('#detail-table tbody').html('<tr><td colspan="9" class="text-center" style="padding: 40px;"><span class="loading-spinner"></span> 加载中...</td></tr>');
+
+        $.get('wanlshop/bdpromoter/settlementData', filterParams, function(res) {
+            if (res.code === 1) {
+                updateStats(res.data.summary);
+                renderDetailTable(res.data.list);
+            }
+        });
+    }
+
+    // 更新统计
+    function updateStats(summary) {
+        $('#stat-earn-count').text(summary.earn_count);
+        $('#stat-earn-amount').text('¥' + summary.earn_amount.toFixed(2));
+        $('#stat-deduct-amount').text('¥' + summary.deduct_amount.toFixed(2));
+        $('#stat-net-amount').text('¥' + summary.net_amount.toFixed(2));
+        $('#stat-pending-amount').text('¥' + summary.pending_amount.toFixed(2));
+    }
+
+    // 渲染明细表格
+    function renderDetailTable(list) {
+        if (!list || list.length === 0) {
+            $('#detail-table tbody').html('<tr><td colspan="9"><div class="empty-state"><i class="fa fa-inbox"></i><div class="empty-state__text">暂无数据</div></div></td></tr>');
+            $('#btn-settle').hide();
+            return;
+        }
+
+        var html = '';
+        var hasPending = false;
+        list.forEach(function(row) {
+            var isPending = row.type === 'earn' && row.settle_status === 'pending';
+            if (isPending) hasPending = true;
+
+            html += '<tr>';
+            html += '<td>' + (isPending ? '<input type="checkbox" class="modern-checkbox row-check" data-id="' + row.id + '">' : '') + '</td>';
+            html += '<td>' + row.createtime_text + '</td>';
+            html += '<td>' + (row.bd_nickname || '-') + '<br><code style="font-size: 11px; color: #64748b;">' + (row.bd_code || '') + '</code></td>';
+            html += '<td>' + (row.shopname || '店铺#' + row.shop_id) + '</td>';
+            html += '<td>' + (row.type === 'earn' ? '<span class="badge badge--success">收入</span>' : '<span class="badge badge--danger">扣减</span>') + '</td>';
+            html += '<td>¥' + parseFloat(row.order_amount).toFixed(2) + '</td>';
+            html += '<td>' + (row.commission_rate * 1000).toFixed(1) + '‰</td>';
+            html += '<td class="money ' + (row.type === 'earn' ? 'money--success' : 'money--danger') + '">' + (row.type === 'earn' ? '+' : '-') + '¥' + parseFloat(row.commission_amount).toFixed(2) + '</td>';
+            html += '<td>' + getStatusBadge(row.settle_status) + '</td>';
+            html += '</tr>';
+        });
+        $('#detail-table tbody').html(html);
+        $('#btn-settle').toggle(hasPending);
+    }
+
+    function getStatusBadge(status) {
+        var map = {
+            'pending': '<span class="badge badge--warning">待结算</span>',
+            'settling': '<span class="badge badge--secondary">结算中</span>',
+            'settled': '<span class="badge badge--success">已结算</span>',
+            'cancelled': '<span class="badge badge--danger">已取消</span>'
+        };
+        return map[status] || status;
+    }
+
+    // 加载月度统计
+    function loadMonthlyStats() {
+        var params = {
+            bd_user_id: $('#filter-bd').val() || 0,
+            shop_id: $('#filter-shop').val() || 0,
+            year: currentYear
+        };
+
+        $('#current-year').text(currentYear + '年');
+
+        $.get('wanlshop/bdpromoter/monthlyStats', params, function(res) {
+            if (res.code === 1) {
+                renderMonthlyChart(res.data.monthly);
+                updateYearSummary(res.data.summary);
+            }
+        });
+    }
+
+    // 渲染月度图表
+    function renderMonthlyChart(monthly) {
+        if (!monthly || monthly.length === 0) {
+            $('#monthly-chart').html('<div class="empty-state"><i class="fa fa-bar-chart"></i><div class="empty-state__text">暂无数据</div></div>');
+            return;
+        }
+
+        var maxAmount = Math.max.apply(null, monthly.map(function(m) { return m.net_amount; })) || 1;
+
+        var html = '';
+        monthly.forEach(function(m) {
+            var earnWidth = (m.net_amount / maxAmount * 100).toFixed(1);
+            var settledWidth = (m.settled_amount / maxAmount * 100).toFixed(1);
+
+            html += '<div class="month-bar">';
+            html += '<div class="month-bar__label">' + m.month_text + '</div>';
+            html += '<div class="month-bar__track">';
+            html += '<div class="month-bar__fill month-bar__fill--earn" style="width: ' + earnWidth + '%;"></div>';
+            html += '</div>';
+            html += '<div class="month-bar__values">';
+            html += '<div class="month-bar__value"><span class="month-bar__value-label">净收入</span><span style="color: var(--success); font-weight: 500;">¥' + m.net_amount.toFixed(2) + '</span></div>';
+            html += '<div class="month-bar__value"><span class="month-bar__value-label">已结算</span><span style="color: #3b82f6; font-weight: 500;">¥' + m.settled_amount.toFixed(2) + '</span></div>';
+            html += '</div>';
+            html += '</div>';
+        });
+        $('#monthly-chart').html(html);
+    }
+
+    // 更新年度汇总
+    function updateYearSummary(summary) {
+        $('#year-earn').text('¥' + summary.earn_amount.toFixed(2));
+        $('#year-deduct').text('¥' + summary.deduct_amount.toFixed(2));
+        $('#year-net').text('¥' + summary.net_amount.toFixed(2));
+        $('#year-settled').text('¥' + summary.settled_amount.toFixed(2));
+    }
+
+    // 格式化日期
+    function formatDate(date) {
+        var y = date.getFullYear();
+        var m = String(date.getMonth() + 1).padStart(2, '0');
+        var d = String(date.getDate()).padStart(2, '0');
+        return y + '-' + m + '-' + d;
+    }
+
+    // 事件绑定
+    $('#filter-bd').on('change', function() {
+        loadShopList($(this).val());
+    });
+
+    $('#btn-search').on('click', function() {
+        loadSettlementData();
+        if ($('.tab-btn.active').data('tab') === 'monthly') {
+            loadMonthlyStats();
+        }
+    });
+
+    $('#btn-reset').on('click', function() {
+        $('#filter-bd').val('');
+        $('#filter-shop').html('<option value="">请先选择推广员</option>').prop('disabled', true);
+        var today = new Date();
+        var firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        $('#filter-start').val(formatDate(firstDay));
+        $('#filter-end').val(formatDate(today));
+        loadSettlementData();
+    });
+
+    // Tab切换
+    $('.tab-btn').on('click', function() {
+        var tab = $(this).data('tab');
+        $('.tab-btn').removeClass('active');
+        $(this).addClass('active');
+        $('.tab-pane').removeClass('active');
+        $('#tab-' + tab).addClass('active');
+
+        if (tab === 'monthly') {
+            loadMonthlyStats();
+        }
+    });
+
+    // 年份切换
+    $('#btn-prev-year').on('click', function() {
+        currentYear--;
+        loadMonthlyStats();
+    });
+
+    $('#btn-next-year').on('click', function() {
+        if (currentYear < new Date().getFullYear()) {
+            currentYear++;
+            loadMonthlyStats();
+        }
+    });
+
+    // 全选
+    $('#check-all').on('change', function() {
+        $('.row-check').prop('checked', $(this).prop('checked'));
+    });
+
+    // 标记结算
+    $('#btn-settle').on('click', function() {
+        var ids = [];
+        $('.row-check:checked').each(function() {
+            ids.push($(this).data('id'));
+        });
+
+        if (ids.length === 0) {
+            Layer.alert('请选择要结算的记录');
+            return;
+        }
+
+        Layer.confirm('确定将选中的 ' + ids.length + ' 条记录标记为已结算吗？', function() {
+            $.post('wanlshop/bdpromoter/markSettled', { ids: ids.join(','), remark: '后台批量结算' }, function(res) {
+                if (res.code === 1) {
+                    Toastr.success(res.msg);
+                    loadSettlementData();
+                } else {
+                    Toastr.error(res.msg);
+                }
+            });
+        });
+    });
+
+    // 初始化
+    loadBdList();
+    loadSettlementData();
+});
+</script>

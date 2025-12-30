@@ -80,11 +80,19 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
             $(document).on('click', '.btn-stats', function() {
                 Fast.api.open('wanlshop/bdpromoter/stats', 'BD统计报表', {area: ['90%', '85%']});
             });
+
+            // 结算统计按钮
+            $(document).on('click', '.btn-settlement', function() {
+                Fast.api.addtabs('wanlshop/bdpromoter/settlement', '结算统计');
+            });
         },
         detail: function () {
             Controller.api.bindevent();
         },
         stats: function () {
+            Controller.api.bindevent();
+        },
+        settlement: function () {
             Controller.api.bindevent();
         },
         api: {
