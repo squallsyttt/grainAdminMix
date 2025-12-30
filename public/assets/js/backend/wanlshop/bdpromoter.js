@@ -205,25 +205,42 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'fast'], function ($,
                             $('#summary-earn-amount').text('¥' + data.summary.earn_amount);
                             $('#summary-deduct-amount').text('¥' + data.summary.deduct_amount);
                             $('#summary-net-amount').text('¥' + data.summary.net_amount);
-                            $('#summary-pending-amount').text('¥' + data.summary.pending_amount);
 
                             // 渲染明细列表
                             var html = '';
                             if (data.list && data.list.length > 0) {
                                 data.list.forEach(function(item) {
+                                    // 类型样式
+                                    var typeClass = item.type === 'earn' ? 'success' : 'danger';
+                                    var typeIcon = item.type === 'earn' ? 'fa-plus-circle' : 'fa-minus-circle';
+                                    var typeLabel = item.type === 'earn'
+                                        ? '<span class="text-success"><i class="fa ' + typeIcon + '"></i> ' + item.type_desc + '</span>'
+                                        : '<span class="text-danger"><i class="fa ' + typeIcon + '"></i> ' + item.type_desc + '</span>';
+
+                                    // 核销券信息
+                                    var voucherHtml = '-';
+                                    if (item.voucher_info) {
+                                        voucherHtml = item.voucher_info + '<br><code style="font-size: 10px; color: #666;">' + item.voucher_no + '</code>';
+                                    }
+
+                                    // 金额（带正负号）
+                                    var amount = parseFloat(item.commission_amount).toFixed(2);
+                                    var amountHtml = item.type === 'earn'
+                                        ? '<span class="text-success" style="font-weight: bold;">+' + amount + '</span>'
+                                        : '<span class="text-danger" style="font-weight: bold;">-' + amount + '</span>';
+
                                     html += '<tr>';
-                                    html += '<td>' + item.id + '</td>';
                                     html += '<td>' + item.createtime_text + '</td>';
-                                    html += '<td>' + (item.bd_nickname || '-') + '</td>';
-                                    html += '<td><code>' + (item.bd_code || '-') + '</code></td>';
-                                    html += '<td>' + (item.shopname || '-') + '</td>';
-                                    html += '<td>' + item.type_text + '</td>';
-                                    html += '<td class="' + (item.type === 'earn' ? 'text-success' : 'text-danger') + '">¥' + parseFloat(item.commission_amount).toFixed(2) + '</td>';
-                                    html += '<td>' + item.settle_status_text + '</td>';
+                                    html += '<td>' + (item.bd_nickname || '-') + '<br><code style="font-size: 10px;">' + (item.bd_code || '-') + '</code></td>';
+                                    html += '<td>' + item.period_index_text + '</td>';
+                                    html += '<td>' + voucherHtml + '</td>';
+                                    html += '<td>' + typeLabel + '</td>';
+                                    html += '<td style="font-family: monospace; color: #666;">' + item.formula + '</td>';
+                                    html += '<td>' + amountHtml + '</td>';
                                     html += '</tr>';
                                 });
                             } else {
-                                html = '<tr><td colspan="8" class="text-center text-muted">暂无数据</td></tr>';
+                                html = '<tr><td colspan="7" class="text-center text-muted">暂无数据</td></tr>';
                             }
                             $('#settlement-list').html(html);
                         }

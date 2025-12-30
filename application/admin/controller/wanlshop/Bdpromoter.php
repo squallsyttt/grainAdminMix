@@ -408,15 +408,17 @@ class Bdpromoter extends Backend
         $startTime = $startDate ? strtotime($startDate . ' 00:00:00') : strtotime(date('Y-m-01'));
         $endTime = $endDate ? strtotime($endDate . ' 23:59:59') : time();
 
-        // 获取流水明细
+        // 获取流水明细，JOIN 周期表和核销券表获取详细信息
         $list = Db::name('bd_commission_log')
             ->alias('c')
             ->join('user u', 'u.id = c.bd_user_id', 'LEFT')
             ->join('wanlshop_shop s', 's.id = c.shop_id', 'LEFT')
+            ->join('bd_promoter_period p', 'p.id = c.period_id', 'LEFT')
+            ->join('wanlshop_voucher v', 'v.id = c.voucher_id', 'LEFT')
             ->where($where)
             ->where('c.createtime', '>=', $startTime)
             ->where('c.createtime', '<=', $endTime)
-            ->field('c.*, u.nickname as bd_nickname, u.bd_code, s.shopname')
+            ->field('c.*, u.nickname as bd_nickname, u.bd_code, s.shopname, p.period_index, p.current_rate as period_rate, v.voucher_no, v.goods_title, v.face_value as voucher_face_value')
             ->order('c.createtime', 'desc')
             ->select();
 
@@ -433,20 +435,53 @@ class Bdpromoter extends Backend
 
         foreach ($list as &$row) {
             $row['createtime_text'] = date('Y-m-d H:i:s', $row['createtime']);
-            $row['type_text'] = $row['type'] === 'earn' ? '收入' : '扣减';
+
+            // 类型描述：收入 / 退款扣减
+            if ($row['type'] === 'earn') {
+                $row['type_text'] = '收入';
+                $row['type_desc'] = '核销返佣';
+            } else {
+                $row['type_text'] = '扣减';
+                $row['type_desc'] = $row['refund_id'] ? '订单退款' : '其他扣减';
+            }
+
+            // 结算状态
             $row['settle_status_text'] = $this->getSettleStatusText($row['settle_status']);
+
+            // 周期信息
+            $row['period_index'] = $row['period_index'] ?: '-';
+            $row['period_index_text'] = $row['period_index'] !== '-' ? '第' . $row['period_index'] . '周期' : '-';
+
+            // 比例：优先使用记录时的比例，其次用周期比例
+            $rate = (float)$row['commission_rate'];
+            $row['rate_text'] = $rate > 0 ? ($rate * 1000) . '‰' : '-';
+
+            // 计算公式
+            $orderAmount = (float)$row['order_amount'];
+            $commissionAmount = (float)$row['commission_amount'];
+            if ($orderAmount > 0 && $rate > 0) {
+                $row['formula'] = '¥' . number_format($orderAmount, 2) . ' × ' . ($rate * 1000) . '‰ = ¥' . number_format($commissionAmount, 2);
+            } else {
+                $row['formula'] = '¥' . number_format($commissionAmount, 2);
+            }
+
+            // 核销券信息
+            $row['voucher_info'] = '';
+            if (!empty($row['voucher_no'])) {
+                $row['voucher_info'] = $row['goods_title'] . ' (¥' . number_format((float)$row['voucher_face_value'], 2) . ')';
+            }
 
             if ($row['type'] === 'earn') {
                 $summary['earn_count']++;
-                $summary['earn_amount'] += (float)$row['commission_amount'];
+                $summary['earn_amount'] += $commissionAmount;
                 if ($row['settle_status'] === 'settled') {
-                    $summary['settled_amount'] += (float)$row['commission_amount'];
+                    $summary['settled_amount'] += $commissionAmount;
                 } elseif ($row['settle_status'] !== 'cancelled') {
-                    $summary['pending_amount'] += (float)$row['commission_amount'];
+                    $summary['pending_amount'] += $commissionAmount;
                 }
             } else {
                 $summary['deduct_count']++;
-                $summary['deduct_amount'] += (float)$row['commission_amount'];
+                $summary['deduct_amount'] += $commissionAmount;
             }
         }
         unset($row);
