@@ -48,5 +48,5 @@ return array (
   'invite_level2_ratio' => '2',
   'mp_show_merchant' => '0',
   'mp_show_news' => '0',
-  'mp_show_bd_promoter' => '1',
+  'mp_show_bd_promoter' => '0',
 );
