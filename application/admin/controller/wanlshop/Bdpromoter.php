@@ -232,7 +232,7 @@ class Bdpromoter extends Backend
 
             $stats['top_bd_list'] = $topBdList;
 
-            $this->success('ok', $stats);
+            $this->success('ok', null, $stats);
         }
 
         return $this->view->fetch();
