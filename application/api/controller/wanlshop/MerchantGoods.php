@@ -257,11 +257,12 @@ class MerchantGoods extends Api
             : '开始同步规范商品';
 
         try {
-            // 获取规范商品（shop_id=1，配送城市匹配）
+            // 获取规范商品（shop_id=1，配送城市匹配，且在售状态）
             // 使用 Db 类直接查询，避免触发模型获取器（如 getCommentListAttr）
             $standardGoods = Db::name('wanlshop_goods')
                 ->where('shop_id', 1)
                 ->where('region_city_name', $deliveryCityName)
+                ->where('status', 'normal')  // 只同步在售商品
                 ->where('deletetime', null)
                 ->select();
 
@@ -270,7 +271,6 @@ class MerchantGoods extends Api
             }
 
             $insertCount = 0;
-            $currentDateTime = date('Y-m-d H:i:s');
 
             Db::startTrans();
             try {
@@ -284,7 +284,7 @@ class MerchantGoods extends Api
                     // 修改必要字段
                     $newGoods['shop_id'] = $bindShopId;
                     $newGoods['status'] = 'hidden'; // 同步到仓库，默认下架
-                    $newGoods['title'] = $newGoods['title'] . ' [' . $currentDateTime . ']';
+                    // 保持原始标题，不追加时间戳（避免重复同步导致标题过长）
                     $newGoods['createtime'] = time();
                     $newGoods['updatetime'] = time();
                     $newGoods['deletetime'] = null;
