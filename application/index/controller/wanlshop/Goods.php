@@ -684,12 +684,12 @@ class Goods extends Wanlshop
                         $newGoods['createtime'] = time();
                         $newGoods['updatetime'] = time();
                         $newGoods['deletetime'] = null;
-                        // 价格打8折迁移
+                        // 强制价格为0.01，迫使商家必须修改价格
                         if (isset($newGoods['price'])) {
-                            $newGoods['price'] = bcmul($newGoods['price'], '0.8', 2);
+                            $newGoods['price'] = '0.01';
                         }
                         if (isset($newGoods['market_price'])) {
-                            $newGoods['market_price'] = bcmul($newGoods['market_price'], '0.8', 2);
+                            $newGoods['market_price'] = '0.01';
                         }
 
                         // 插入新商品
@@ -735,9 +735,9 @@ class Goods extends Wanlshop
                                             'goods_id'     => $newGoodsModel->id,
                                             'thumbnail'    => isset($sku['thumbnail']) ? $sku['thumbnail'] : null,
                                             'difference'   => $sku['difference'],
-                                            // 价格打8折迁移
-                                            'market_price' => bcmul($sku['market_price'], '0.8', 2),
-                                            'price'        => bcmul($sku['price'], '0.8', 2),
+                                            // 强制价格为0.01，迫使商家必须修改价格
+                                            'market_price' => '0.01',
+                                            'price'        => '0.01',
                                             'stock'        => $sku['stock'],
                                             'weigh'        => isset($sku['weigh']) ? $sku['weigh'] : 0,
                                             'sn'           => isset($sku['sn']) ? $sku['sn'] : ('wanl_' . $nowTs),
