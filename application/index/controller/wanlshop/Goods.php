@@ -652,10 +652,11 @@ class Goods extends Wanlshop
             }
 
             try {
-                // 获取规范商品（shop_id=1，且配送城市匹配）
+                // 获取规范商品（shop_id=1，且配送城市匹配，且在售状态）
                 $standardGoods = $this->model
                     ->where('shop_id', 1)
                     ->where('region_city_name', $deliveryCityName)
+                    ->where('status', 'normal')  // 只同步在售商品
                     ->where('deletetime', 'null')
                     ->select();
 
@@ -683,6 +684,13 @@ class Goods extends Wanlshop
                         $newGoods['createtime'] = time();
                         $newGoods['updatetime'] = time();
                         $newGoods['deletetime'] = null;
+                        // 价格打8折迁移
+                        if (isset($newGoods['price'])) {
+                            $newGoods['price'] = bcmul($newGoods['price'], '0.8', 2);
+                        }
+                        if (isset($newGoods['market_price'])) {
+                            $newGoods['market_price'] = bcmul($newGoods['market_price'], '0.8', 2);
+                        }
 
                         // 插入新商品
                         $newGoodsModel = new \app\index\model\wanlshop\Goods;
@@ -727,8 +735,9 @@ class Goods extends Wanlshop
                                             'goods_id'     => $newGoodsModel->id,
                                             'thumbnail'    => isset($sku['thumbnail']) ? $sku['thumbnail'] : null,
                                             'difference'   => $sku['difference'],
-                                            'market_price' => $sku['market_price'],
-                                            'price'        => $sku['price'],
+                                            // 价格打8折迁移
+                                            'market_price' => bcmul($sku['market_price'], '0.8', 2),
+                                            'price'        => bcmul($sku['price'], '0.8', 2),
                                             'stock'        => $sku['stock'],
                                             'weigh'        => isset($sku['weigh']) ? $sku['weigh'] : 0,
                                             'sn'           => isset($sku['sn']) ? $sku['sn'] : ('wanl_' . $nowTs),
