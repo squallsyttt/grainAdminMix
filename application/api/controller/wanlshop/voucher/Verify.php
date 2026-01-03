@@ -8,6 +8,8 @@ use app\admin\model\wanlshop\VoucherSettlement;
 use app\admin\model\wanlshop\Shop;
 use app\common\service\VoucherRebateService;
 use app\common\service\BdPromoterService;
+use app\admin\model\wanlshop\VoucherOrder;
+use app\admin\model\wanlshop\VoucherRule;
 use think\Db;
 use think\Exception;
 
@@ -134,11 +136,15 @@ class Verify extends Api
             $voucher->face_value
         );
 
+        // 计算当前剩余重量（考虑损耗）
+        $actualGoodsWeight = $this->calculateActualGoodsWeight($voucher);
+
         $this->success('ok', [
             'voucher' => $voucher,
             'can_verify' => $shopGoodsCheck['can_verify'],
             'verify_error' => $shopGoodsCheck['error_message'],
-            'shop_goods_info' => $shopGoodsCheck['shop_goods_info']
+            'shop_goods_info' => $shopGoodsCheck['shop_goods_info'],
+            'actual_goods_weight' => $actualGoodsWeight
         ]);
     }
 
@@ -761,6 +767,73 @@ class Verify extends Api
         }
 
         return $shop;
+    }
+
+    /**
+     * 计算当前剩余重量（考虑损耗）
+     *
+     * 损耗计算规则：
+     * - 免费期（0 ~ free_days）：无损耗，重量100%
+     * - 福利损耗期（free_days+1 ~ free_days+welfare_days）：福利递减，重量不变100%
+     * - 货物损耗期（free_days+welfare_days+1 ~ free_days+welfare_days+goods_days）：重量线性递减
+     * - 已过期：重量为0
+     *
+     * @param Voucher $voucher 核销券
+     * @return float 剩余重量（KG）
+     */
+    protected function calculateActualGoodsWeight($voucher)
+    {
+        // 获取原始重量
+        $originalWeight = round(isset($voucher->sku_weight) ? (float)$voucher->sku_weight : 0, 2);
+        if ($originalWeight <= 0) {
+            return 0;
+        }
+
+        // 获取订单付款时间
+        $order = VoucherOrder::where('id', $voucher->order_id)->field('paymenttime')->find();
+        if (!$order || !$order->paymenttime) {
+            // 如果没有付款时间，返回原始重量（免费期）
+            return $originalWeight;
+        }
+        $paymentTime = (int)$order->paymenttime;
+
+        // 获取规则配置
+        $rule = VoucherRule::where('id', $voucher->rule_id)->find();
+        if (!$rule) {
+            // 默认规则
+            $freeDays = 30;
+            $welfareDays = 30;
+            $goodsDays = 30;
+        } else {
+            $freeDays = (int)$rule->free_days;
+            $welfareDays = (int)$rule->welfare_days;
+            $goodsDays = (int)$rule->goods_days;
+        }
+
+        // 计算距付款天数
+        $now = time();
+        $daysFromPayment = (int)floor(($now - $paymentTime) / 86400);
+        if ($daysFromPayment < 0) {
+            $daysFromPayment = 0;
+        }
+
+        // 阶段判定
+        if ($daysFromPayment <= $freeDays) {
+            // 免费期：重量不变
+            return $originalWeight;
+        } elseif ($daysFromPayment <= $freeDays + $welfareDays) {
+            // 福利损耗期：重量不变（只损耗福利返利）
+            return $originalWeight;
+        } elseif ($daysFromPayment <= $freeDays + $welfareDays + $goodsDays) {
+            // 货物损耗期：重量线性递减
+            $goodsElapsedDays = $daysFromPayment - $freeDays - $welfareDays;
+            $goodsLossPerDay = $goodsDays > 0 ? $originalWeight / $goodsDays : 0;
+            $actualWeight = $originalWeight - ($goodsLossPerDay * $goodsElapsedDays);
+            return round(max(0, $actualWeight), 2);
+        } else {
+            // 已过期：重量为0
+            return 0;
+        }
     }
 
     /**
