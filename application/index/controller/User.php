@@ -89,8 +89,109 @@ class User extends Frontend
         $this->view->assign('shop', $shop);
         $this->view->assign('shopStatus', $shopStatus);
         $this->view->assign('shopStatusText', $shopStatusText);
+
+        // 查询带有推荐价格的分类及其父分类，构建分类树
+        $categoryPriceTree = $this->getCategoryPriceTree();
+        $this->view->assign('categoryPriceTree', $categoryPriceTree);
+
         $this->view->assign('title', __('User center'));
         return $this->view->fetch();
+    }
+
+    /**
+     * 获取带有推荐价格的分类树
+     * 如果子分类有推荐价格但父分类没有，父分类也会被包含以保持完整树结构
+     */
+    protected function getCategoryPriceTree()
+    {
+        // 1. 获取所有商品分类
+        $allCategories = \think\Db::name('wanlshop_category')
+            ->where('type', 'goods')
+            ->where('status', 'normal')
+            ->field('id, pid, name, recommend_price')
+            ->order('weigh desc, id asc')
+            ->select();
+
+        if (empty($allCategories)) {
+            return [];
+        }
+
+        // 构建 id => category 映射
+        $categoryMap = [];
+        foreach ($allCategories as $cat) {
+            $categoryMap[$cat['id']] = $cat;
+        }
+
+        // 2. 找出所有有推荐价格的分类ID
+        $priceCategories = [];
+        foreach ($allCategories as $cat) {
+            if (!empty($cat['recommend_price'])) {
+                $priceCategories[$cat['id']] = true;
+            }
+        }
+
+        if (empty($priceCategories)) {
+            return [];
+        }
+
+        // 3. 向上追溯，收集需要展示的父分类ID
+        $neededIds = $priceCategories;
+        foreach ($priceCategories as $catId => $v) {
+            $currentId = $catId;
+            while (isset($categoryMap[$currentId]) && $categoryMap[$currentId]['pid'] > 0) {
+                $parentId = $categoryMap[$currentId]['pid'];
+                if (isset($categoryMap[$parentId])) {
+                    $neededIds[$parentId] = true;
+                }
+                $currentId = $parentId;
+            }
+        }
+
+        // 4. 筛选出需要展示的分类
+        $filteredCategories = [];
+        foreach ($allCategories as $cat) {
+            if (isset($neededIds[$cat['id']])) {
+                $filteredCategories[] = $cat;
+            }
+        }
+
+        // 5. 构建树形结构
+        $tree = [];
+        $childrenMap = [];
+
+        foreach ($filteredCategories as $cat) {
+            $childrenMap[$cat['pid']][] = $cat;
+        }
+
+        // 获取顶级分类（pid=0）
+        if (isset($childrenMap[0])) {
+            foreach ($childrenMap[0] as $topCat) {
+                $tree[] = $this->buildCategoryNode($topCat, $childrenMap);
+            }
+        }
+
+        return $tree;
+    }
+
+    /**
+     * 递归构建分类节点
+     */
+    protected function buildCategoryNode($category, $childrenMap)
+    {
+        $node = [
+            'id' => $category['id'],
+            'name' => $category['name'],
+            'recommend_price' => $category['recommend_price'],
+            'children' => []
+        ];
+
+        if (isset($childrenMap[$category['id']])) {
+            foreach ($childrenMap[$category['id']] as $child) {
+                $node['children'][] = $this->buildCategoryNode($child, $childrenMap);
+            }
+        }
+
+        return $node;
     }
 
     /**

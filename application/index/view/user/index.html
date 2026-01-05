@@ -207,6 +207,180 @@
         text-decoration: none;
     }
 
+    /* 分类推荐价格卡片 */
+    .category-price-card {
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+        padding: 24px;
+        margin-bottom: 24px;
+    }
+
+    .category-price-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+        padding-bottom: 16px;
+        border-bottom: 2px solid #f0f2f5;
+    }
+
+    .category-price-header i {
+        font-size: 24px;
+        color: #667eea;
+    }
+
+    .category-price-header h3 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+        color: #1a1a1a;
+    }
+
+    .category-price-header .subtitle {
+        font-size: 13px;
+        color: #888;
+        font-weight: normal;
+        margin-left: 8px;
+    }
+
+    /* 分类树容器 */
+    .category-tree {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    /* 顶级分类块 */
+    .category-block {
+        flex: 1;
+        min-width: 280px;
+        max-width: calc(50% - 8px);
+        background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
+        border-radius: 12px;
+        padding: 16px;
+        border: 1px solid #e8ecf8;
+    }
+
+    .category-block-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+        padding-bottom: 10px;
+        border-bottom: 1px dashed #d0d8e8;
+    }
+
+    .category-block-header .parent-icon {
+        width: 32px;
+        height: 32px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 14px;
+    }
+
+    .category-block-header .parent-name {
+        font-size: 16px;
+        font-weight: 600;
+        color: #333;
+    }
+
+    /* 子分类列表 */
+    .subcategory-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .subcategory-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 12px;
+        background: #fff;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+        border: 1px solid transparent;
+    }
+
+    .subcategory-item:hover {
+        border-color: #667eea;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+    }
+
+    .subcategory-name {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        color: #444;
+    }
+
+    .subcategory-name::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        background: #667eea;
+        border-radius: 50%;
+    }
+
+    .subcategory-price {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 12px;
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%);
+        color: #fff;
+        font-size: 13px;
+        font-weight: 600;
+        border-radius: 20px;
+        white-space: nowrap;
+    }
+
+    .subcategory-price::before {
+        content: '\a5';
+        font-size: 12px;
+    }
+
+    .subcategory-price.no-price {
+        background: #e0e0e0;
+        color: #888;
+    }
+
+    .subcategory-price.no-price::before {
+        content: none;
+    }
+
+    /* 单层分类（父分类直接有价格） */
+    .parent-price-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%);
+        color: #fff;
+        font-size: 12px;
+        font-weight: 600;
+        border-radius: 16px;
+        margin-left: auto;
+    }
+
+    .parent-price-badge::before {
+        content: '\a5';
+        font-size: 11px;
+    }
+
+    /* 响应式 */
+    @media (max-width: 768px) {
+        .category-block {
+            max-width: 100%;
+        }
+    }
+
     /* 基本信息样式 */
     .basicinfo {
         margin-top: 24px;
@@ -361,7 +535,44 @@
                         </a>
                         {/if}
                     </div>
-                    
+
+                    <!-- 分类推荐价格展示 -->
+                    {if !empty($categoryPriceTree)}
+                    <div class="category-price-card">
+                        <div class="category-price-header">
+                            <i class="fa fa-tags"></i>
+                            <h3>分类建议价格<span class="subtitle">（元/斤）</span></h3>
+                        </div>
+                        <div class="category-tree">
+                            {volist name="categoryPriceTree" id="parent"}
+                            <div class="category-block">
+                                <div class="category-block-header">
+                                    <span class="parent-icon"><i class="fa fa-folder"></i></span>
+                                    <span class="parent-name">{$parent.name}</span>
+                                    {if $parent.recommend_price}
+                                    <span class="parent-price-badge">{$parent.recommend_price}</span>
+                                    {/if}
+                                </div>
+                                {if !empty($parent.children)}
+                                <div class="subcategory-list">
+                                    {volist name="parent.children" id="child"}
+                                    <div class="subcategory-item">
+                                        <span class="subcategory-name">{$child.name}</span>
+                                        {if $child.recommend_price}
+                                        <span class="subcategory-price">{$child.recommend_price}</span>
+                                        {else}
+                                        <span class="subcategory-price no-price">--</span>
+                                        {/if}
+                                    </div>
+                                    {/volist}
+                                </div>
+                                {/if}
+                            </div>
+                            {/volist}
+                        </div>
+                    </div>
+                    {/if}
+
                     <div class="basicinfo">
                         <div class="info-item">
                             <span class="info-label">{:__('Score')}</span>
