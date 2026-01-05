@@ -13,7 +13,7 @@ use fast\Tree;
 class Category extends Api
 {
     // 无需登录即可访问的方法
-    protected $noNeedLogin = ['lists', 'tree', 'detail'];
+    protected $noNeedLogin = ['lists', 'tree', 'detail', 'recommendPriceTree'];
 
     // 无需权限验证
     protected $noNeedRight = ['*'];
@@ -249,6 +249,92 @@ class Category extends Api
         // 转换为树形结构
         $tree = Tree::instance();
         $tree->init($filtered, 'pid');
+        $treeArray = $tree->getTreeArray(0);
+
+        $this->success('获取成功', $treeArray);
+    }
+
+    /**
+     * 获取带推荐价格的分类树
+     *
+     * @ApiSummary  (获取带推荐价格的分类树 - 用于商品编辑时参考定价)
+     * @ApiMethod   (GET)
+     *
+     * @ApiReturn   ({
+     *   "code": 1,
+     *   "msg": "获取成功",
+     *   "data": [
+     *     {
+     *       "id": 106,
+     *       "pid": 0,
+     *       "name": "糯",
+     *       "recommend_price": null,
+     *       "childlist": [
+     *         {
+     *           "id": 108,
+     *           "pid": 106,
+     *           "name": "粳糯",
+     *           "recommend_price": "2.2~3.6",
+     *           "childlist": []
+     *         }
+     *       ]
+     *     }
+     *   ]
+     * })
+     */
+    public function recommendPriceTree()
+    {
+        // 查询所有 goods 类型的分类，包含 recommend_price 字段
+        $categoryModel = model('app\api\model\wanlshop\Category');
+        $list = $categoryModel
+            ->where(['status' => 'normal', 'type' => 'goods'])
+            ->field('id,pid,name,recommend_price,weigh')
+            ->order('weigh', 'asc')
+            ->order('id', 'asc')
+            ->select();
+
+        $categories = collection($list)->toArray();
+
+        // 找出所有有 recommend_price 的分类ID
+        $priceIds = [];
+        foreach ($categories as $category) {
+            if (!empty($category['recommend_price'])) {
+                $priceIds[] = $category['id'];
+            }
+        }
+
+        if (empty($priceIds)) {
+            $this->success('获取成功', []);
+            return;
+        }
+
+        // 构建 id => category 映射
+        $idToCategory = [];
+        foreach ($categories as $category) {
+            $idToCategory[$category['id']] = $category;
+        }
+
+        // 找出所有需要保留的ID（有价格的分类及其祖先）
+        $keepIds = [];
+        foreach ($priceIds as $id) {
+            $current = $id;
+            while ($current && isset($idToCategory[$current])) {
+                if (isset($keepIds[$current])) {
+                    break; // 已处理过
+                }
+                $keepIds[$current] = true;
+                $current = $idToCategory[$current]['pid'];
+            }
+        }
+
+        // 过滤只保留需要的分类
+        $filtered = array_filter($categories, function ($item) use ($keepIds) {
+            return isset($keepIds[$item['id']]);
+        });
+
+        // 构建树形结构
+        $tree = Tree::instance();
+        $tree->init(array_values($filtered), 'pid');
         $treeArray = $tree->getTreeArray(0);
 
         $this->success('获取成功', $treeArray);
