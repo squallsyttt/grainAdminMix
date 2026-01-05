@@ -109,6 +109,7 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
 						{field: 'name', title: __('Name'), align: 'left', formatter: Controller.api.formatter.escape2Html},
 						{field: 'type',title: __('Type'),custom: {article: 'info', goods: 'success'},formatter: Table.api.formatter.flag},
 		                {field: 'image', title: __('Image'), events: Table.api.events.image, formatter: Table.api.formatter.image},
+						{field: 'recommend_price', title: __('推荐价格(元/500g)'), operate: false},
 		                {field: 'status', title: __('Status'), searchList: {"normal":__('Normal'),"hidden":__('Hidden')}, formatter: Table.api.formatter.status},
 						{field: 'id',title: __('展开'),operate: false,formatter: Controller.api.formatter.subnode},
 						{field: 'isnav', title: __('Isnav'), searchList: {"1": __('Yes'), "0": __('No')}, formatter: Table.api.formatter.toggle},
