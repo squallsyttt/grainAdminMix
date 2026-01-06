@@ -91,6 +91,7 @@ class Category extends Api
      * @ApiMethod   (GET)
      *
      * @ApiParams   (name="type", type="string", required=false, description="类型: goods=商品, article=文章")
+     * @ApiParams   (name="all", type="integer", required=false, description="是否获取全部分类: 1=是（商品编辑用），0=否（首页展示用，默认）")
      *
      * @ApiReturn   ({
      *   "code": 1,
@@ -121,14 +122,16 @@ class Category extends Api
 
         // 获取参数
         $type = $this->request->get('type', 'goods');
+        $all = $this->request->get('all', 0);
 
         // 构建查询条件
         $where = [
             'status' => 'normal',
             'type' => $type
         ];
-        // 非商品类型维持原有逻辑
-        if ($type !== 'goods') {
+
+        // 如果请求全部分类（商品编辑用），或非商品类型，直接返回全部分类树
+        if ($all || $type !== 'goods') {
             $categoryModel = model('app\api\model\wanlshop\Category');
             $list = $categoryModel
                 ->where($where)
@@ -142,6 +145,7 @@ class Category extends Api
             $treeArray = $tree->getTreeArray(0);
 
             $this->success('获取成功', $treeArray);
+            return;
         }
 
         // 获取 shop_id=1 店铺所在城市
