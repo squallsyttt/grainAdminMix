@@ -99,6 +99,7 @@ class Shop extends Api
 	 * - search: 城市关键词（仅匹配 city）
 	 * - filter/op: 过滤与操作（JSON，参考商品列表用法）
 	 * - sort/order: 排序字段/方向
+	 * - include_all: 是否包含所有店铺（默认排除 id=1 的系统店铺）
 	 */
 	public function searchCity()
 	{
@@ -106,10 +107,21 @@ class Shop extends Api
 		$this->request->filter(['strip_tags']);
 		// 仅针对 city 字段做模糊搜索（LIKE %keyword%）
 		list($where, $sort, $order) = $this->buildparams('city', false);
-		// 查询数据，仅返回正常状态店铺
-		$list = $this->model
+
+		// 是否包含所有店铺（默认排除 id=1 的系统店铺）
+		$includeAll = $this->request->get('include_all', 0);
+
+		// 构建查询
+		$query = $this->model
 			->where($where)
-			->where('status', 'normal')
+			->where('status', 'normal');
+
+		// 默认排除 id=1 的系统店铺，除非明确要求包含
+		if (!$includeAll) {
+			$query->where('id', '<>', 1);
+		}
+
+		$list = $query
 			->field('id,user_id,shopname,avatar,city,location_latitude,location_longitude,location_address,service_ids,bio,status')
 			->order($sort, $order)
 			->paginate();
