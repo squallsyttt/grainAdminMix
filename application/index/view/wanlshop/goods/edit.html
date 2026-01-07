@@ -267,8 +267,8 @@
 																	<tr class="info text-info">
 																		<th v-for="item in spu"> {{item}} </th>
 																		<th width="40">图片</th>
-																		<th width="80">现价</th>
-																		<th width="80">市场价</th>
+																		<th width="80">供应平台价</th>
+																		<th width="80">市场零售价</th>
 																		<th width="80">库存</th>
 																		<th width="83">体积或重量</th>
 																		<th width="80">编码</th>
@@ -317,13 +317,13 @@
 													<!-- 仅平台店铺显示批量设置面板 -->
 													<div class="batch" v-show="batch == 1 && isPlatform">
 														<div class="input-group">
-															<div class="input-group-addon">现价 ￥</div>
-															<input type="number" class="form-control" id="batch-price" placeholder="一键设置现价">
+															<div class="input-group-addon">供应平台价 ￥</div>
+															<input type="number" class="form-control" id="batch-price" placeholder="一键设置供应平台价">
 															<div class="input-group-addon" onclick="batchSet('price')">批量设置</div>
 														</div>
 														<div class="input-group">
-															<div class="input-group-addon">市场价 ￥</div>
-															<input type="number" class="form-control" id="batch-market-price" placeholder="一键设置市场价">
+															<div class="input-group-addon">市场零售价 ￥</div>
+															<input type="number" class="form-control" id="batch-market-price" placeholder="一键设置市场零售价">
 															<div class="input-group-addon" onclick="batchSet('market-price')">批量设置</div>
 														</div>
 														<div class="input-group">
