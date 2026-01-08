@@ -241,6 +241,8 @@ class Goods extends Wanlshop
                 }
                 $this->model->content = $params['content'];
                 $this->model->price = min($params['price']);
+                // 处理商品排序权重（goods_weigh 映射到 weigh 字段）
+                $this->model->weigh = isset($params['goods_weigh']) ? intval($params['goods_weigh']) : 1;
                 if($this->model->save()){
                 	$result = true;
                 }
@@ -350,6 +352,10 @@ class Goods extends Wanlshop
 						$data['region_city_name'] = $this->shop->delivery_city_name ?: $this->shop->city;
 					}
 					$data['price'] = min($data['price']);
+					// 处理商品排序权重（goods_weigh 映射到 weigh 字段）
+					if (isset($params['goods_weigh'])) {
+						$data['weigh'] = intval($params['goods_weigh']);
+					}
                     $result = $row->allowField(true)->save($data);
 					// 删除原来数据,重新写入SPU
 					model('app\index\model\wanlshop\GoodsSpu')
