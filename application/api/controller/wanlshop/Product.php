@@ -60,7 +60,7 @@ class Product extends Api
 				if($shopId !== null && $shopId !== ''){
 					$query->where('goods.shop_id', intval($shopId));
 				}
-	    	$list = $query->order($sort, $order)->paginate();
+	    	$list = $query->order('goods.weigh', 'desc')->order($sort, $order)->paginate();
     	foreach ($list as $row) {
     	    $row->getRelation('shop')->visible(['city', 'shopname', 'state']);
     		$row->getRelation('category')->visible(['id','pid','name']);

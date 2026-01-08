@@ -6,7 +6,7 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
                 extend: {
                     index_url: 'wanlshop/goods/index' + location.search,
                     add_url: '',
-                    edit_url: '',
+                    edit_url: 'wanlshop/goods/edit',
                     del_url: 'wanlshop/goods/del',
                     multi_url: 'wanlshop/goods/multi',
                     table: 'wanlshop_goods',
@@ -42,7 +42,7 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
                         {field: 'specs', title: __('Specs'), searchList: {"single":__('Specs single'),"multi":__('Specs multi')}, formatter: Table.api.formatter.normal},
                         // {field: 'distribution', title: __('Distribution'), searchList: {"true":__('Distribution true'),"false":__('Distribution false')}, formatter: Table.api.formatter.normal},
                         // {field: 'activity', title: __('Activity'), searchList: {"true":__('Activity true'),"false":__('Activity false')}, formatter: Table.api.formatter.normal},
-                        {field: 'weigh', title: __('Weigh')},
+                        {field: 'weigh', title: __('Weigh'), sortable: true, editable: true},
                         {field: 'createtime', title: __('Createtime'), operate:'RANGE', addclass:'datetimerange', formatter: Table.api.formatter.datetime},
                         {field: 'updatetime', title: __('Updatetime'), operate:'RANGE', addclass:'datetimerange', formatter: Table.api.formatter.datetime},
                         {field: 'status', title: __('Status'), searchList: {"normal":__('Normal'),"hidden":__('Hidden')}, formatter: Table.api.formatter.status},
