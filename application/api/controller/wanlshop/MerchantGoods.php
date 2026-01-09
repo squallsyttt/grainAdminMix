@@ -338,7 +338,8 @@ class MerchantGoods extends Api
                                     // 强制价格为0.01，迫使商家必须修改价格
                                     'market_price' => '0.01',
                                     'price' => '0.01',
-                                    'stock' => $sku['stock'],
+                                    // 同步商品库存默认为0，需商家自行设置库存
+                                    'stock' => 0,
                                     'weigh' => isset($sku['weigh']) ? $sku['weigh'] : 0,
                                     'sn' => isset($sku['sn']) ? $sku['sn'] : ('wanl_' . $nowTs),
                                     'state' => '0', // enum 类型，需要字符串
