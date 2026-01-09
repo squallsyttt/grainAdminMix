@@ -89,12 +89,32 @@ class Common extends Api
      * 上传文件
      * @ApiMethod (POST)
      * @ApiParams (name="file", type="file", required=true, description="文件流")
+     * @ApiParams (name="imagemaxsize", type="string", required=false, description="图片大小限制，如4M、2mb，最大不超过10mb")
      */
     public function upload()
     {
         Config::set('default_return_type', 'json');
         //必须设定cdnurl为空,否则cdnurl函数计算错误
         Config::set('upload.cdnurl', '');
+
+        // 支持前端传递图片大小限制（最大不超过全局 maxsize）
+        $imagemaxsize = $this->request->post("imagemaxsize");
+        if ($imagemaxsize) {
+            // 解析传入的大小值
+            $imagemaxsize = strtolower(trim($imagemaxsize));
+            if (preg_match('/^(\d+(?:\.\d+)?)\s*(b|k|kb|m|mb|g|gb)?$/i', $imagemaxsize, $matches)) {
+                $size = floatval($matches[1]);
+                $unit = isset($matches[2]) ? strtolower($matches[2]) : 'b';
+                $unitMap = ['b' => 1, 'k' => 1024, 'kb' => 1024, 'm' => 1048576, 'mb' => 1048576, 'g' => 1073741824, 'gb' => 1073741824];
+                $bytes = $size * ($unitMap[$unit] ?? 1);
+                // 限制最大 10MB
+                $maxAllowed = 10 * 1048576;
+                if ($bytes > 0 && $bytes <= $maxAllowed) {
+                    Config::set('upload.imagemaxsize', $imagemaxsize);
+                }
+            }
+        }
+
         $chunkid = $this->request->post("chunkid");
         if ($chunkid) {
             if (!Config::get('upload.chunking')) {

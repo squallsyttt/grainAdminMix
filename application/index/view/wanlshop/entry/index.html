@@ -120,7 +120,7 @@
 						        <div class="input-group">
 						            <input id="c-image" data-rule="required" class="form-control" size="50" name="image" type="text" value="{$entry.image ?? ''}">
 						            <div class="input-group-addon no-border no-padding">
-						                <span><button type="button" id="plupload-image" class="btn btn-danger plupload" data-input-id="c-image" data-mimetype="image/gif,image/jpeg,image/png,image/jpg,image/bmp" data-multiple="false" data-preview-id="p-image" data-maxsize="4M"><i class="fa fa-upload"></i> {:__('Upload')}</button></span>
+						                <span><button type="button" id="plupload-image" class="btn btn-danger plupload" data-input-id="c-image" data-mimetype="image/gif,image/jpeg,image/png,image/jpg,image/bmp" data-multiple="false" data-preview-id="p-image" data-maxsize="4M" data-multipart='{"imagemaxsize":"4M"}'><i class="fa fa-upload"></i> {:__('Upload')}</button></span>
 						            </div>
 						            <span class="msg-box n-right" for="c-image"></span>
 						        </div>
