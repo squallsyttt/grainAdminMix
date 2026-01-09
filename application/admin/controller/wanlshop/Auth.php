@@ -121,8 +121,9 @@ class Auth extends Backend
 						$result = $config->save();
 
 						// 【店铺邀请升级】审核通过时触发邀请人升级
-						if ($shop->inviter_id) {
-						    $this->processShopInviterUpgrade($shop->inviter_id, $shop->id);
+						$inviterId = $shop->getData('inviter_id');
+						if ($inviterId) {
+						    $this->processShopInviterUpgrade($inviterId, $shop->id);
 						}
 
 						// 【新增】BD推广员店铺绑定处理
