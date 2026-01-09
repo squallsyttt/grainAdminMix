@@ -121,7 +121,8 @@ class Auth extends Backend
 						$result = $config->save();
 
 						// 【店铺邀请升级】审核通过时触发邀请人升级
-						$inviterId = $shop->getData('inviter_id');
+						// 注意：inviter_id 可能未设置（无邀请码或邀请码无效时），需安全获取
+						$inviterId = isset($shop->data['inviter_id']) ? $shop->data['inviter_id'] : null;
 						if ($inviterId) {
 						    $this->processShopInviterUpgrade($inviterId, $shop->id);
 						}
