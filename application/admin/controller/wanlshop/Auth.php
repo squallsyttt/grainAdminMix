@@ -91,6 +91,7 @@ class Auth extends Backend
 					$shop->verify = $row['verify'];
 
 					// 【新增】同步邀请人信息到店铺表
+					$inviterId = null;
 					if (!empty($row['invite_code'])) {
 					    $inviter = Db::name('user')
 					        ->where('invite_code', $row['invite_code'])
@@ -99,6 +100,7 @@ class Auth extends Backend
 					    if ($inviter && $inviter['id'] != $row['user_id']) {
 					        $shop->inviter_id = $inviter['id'];
 					        $shop->invite_bind_time = time();
+					        $inviterId = $inviter['id'];
 					    }
 					}
 
@@ -121,8 +123,6 @@ class Auth extends Backend
 						$result = $config->save();
 
 						// 【店铺邀请升级】审核通过时触发邀请人升级
-						// 注意：inviter_id 可能未设置（无邀请码或邀请码无效时），需安全获取
-						$inviterId = isset($shop->data['inviter_id']) ? $shop->data['inviter_id'] : null;
 						if ($inviterId) {
 						    $this->processShopInviterUpgrade($inviterId, $shop->id);
 						}
