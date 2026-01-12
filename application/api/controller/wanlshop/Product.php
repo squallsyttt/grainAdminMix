@@ -61,11 +61,105 @@ class Product extends Api
 					$query->where('goods.shop_id', intval($shopId));
 				}
 	    	$list = $query->order('goods.weigh', 'desc')->order($sort, $order)->paginate();
+
+			// 叠加店铺1对标价格（用于与商品详情页 price/shop1_price 与 sku.shop1_sku_price 逻辑保持一致）
+			// 说明：商品详情接口 /product/goods 会在 shop_id!=1 时计算 shop1_price 与 shop1_sku_price；
+			//      列表页同样需要该字段，否则前端 /500g 换算会与详情页不一致。
+			$shopOneGoodsMap = [];
+			$shopOneSkuPriceMaps = [];
+			if ($type === 'goods') {
+				$needPairs = [];
+				foreach ($list as $row) {
+					if ((int)$row['shop_id'] === 1) {
+						continue;
+					}
+					$categoryId = (int)$row['category_id'];
+					if (!$categoryId) {
+						continue;
+					}
+					$regionCode = isset($row['region_city_code']) && $row['region_city_code'] ? (string)$row['region_city_code'] : '';
+					$needPairs[$categoryId.'|'.$regionCode] = ['category_id' => $categoryId, 'region_city_code' => $regionCode];
+				}
+				if (!empty($needPairs)) {
+					$categoryIds = [];
+					$regionCodes = [];
+					foreach ($needPairs as $pair) {
+						$categoryIds[] = $pair['category_id'];
+						$regionCodes[] = $pair['region_city_code'];
+					}
+					$categoryIds = array_values(array_unique($categoryIds));
+					$regionCodes = array_values(array_unique($regionCodes));
+
+					$shopOneRows = $goodsModel
+						->where([
+							'shop_id' => 1,
+							'status' => 'normal'
+						])
+						->whereIn('category_id', $categoryIds)
+						->whereIn('region_city_code', $regionCodes)
+						->field('id,category_id,region_city_code,price')
+						->order('id', 'asc')
+						->select();
+					foreach ($shopOneRows as $shopOne) {
+						$key = (int)$shopOne['category_id'].'|'.($shopOne['region_city_code'] ? (string)$shopOne['region_city_code'] : '');
+						if (!isset($shopOneGoodsMap[$key])) {
+							$shopOneGoodsMap[$key] = [
+								'id' => (int)$shopOne['id'],
+								'price' => $shopOne['price']
+							];
+						}
+					}
+				}
+			}
+
     	foreach ($list as $row) {
     	    $row->getRelation('shop')->visible(['city', 'shopname', 'state']);
     		$row->getRelation('category')->visible(['id','pid','name']);
     		// 返回 SKU 数据，用于前端计算每斤价格
     		$row['sku'] = $row->sku;
+
+			// 对于非店铺1的商品，补齐对标价格字段（与 /product/goods 一致）
+			if ($type === 'goods' && (int)$row['shop_id'] !== 1) {
+				$categoryId = (int)$row['category_id'];
+				$regionCode = isset($row['region_city_code']) && $row['region_city_code'] ? (string)$row['region_city_code'] : '';
+				$key = $categoryId.'|'.$regionCode;
+				if (isset($shopOneGoodsMap[$key])) {
+					$shopOneGoods = $shopOneGoodsMap[$key];
+					$row['shop1_price'] = $this->calculateShop1Price($row['price'], $shopOneGoods['price']);
+
+					$shopOneGoodsId = (int)$shopOneGoods['id'];
+					if (!isset($shopOneSkuPriceMaps[$shopOneGoodsId])) {
+						$shopOneSkuList = model('app\api\model\wanlshop\GoodsSku')
+							->where(['goods_id' => $shopOneGoodsId, 'stock' => ['>', 0], 'state' => ['=', 0]])
+							->field('difference,price')
+							->select();
+						$map = [];
+						foreach ($shopOneSkuList as $shopOneSku) {
+							$differenceKey = implode(',', (array)$shopOneSku['difference']);
+							$map[$differenceKey] = $shopOneSku['price'];
+						}
+						$shopOneSkuPriceMaps[$shopOneGoodsId] = $map;
+					}
+
+					$skuList = $row['sku'];
+					if ($skuList instanceof \think\Collection) {
+						$skuList = $skuList->toArray();
+					} elseif (!is_array($skuList)) {
+						$skuList = [];
+					}
+
+					$shopOneSkuPriceMap = $shopOneSkuPriceMaps[$shopOneGoodsId];
+					foreach ($skuList as &$sku) {
+						$differenceKey = implode(',', (array)$sku['difference']);
+						if (array_key_exists($differenceKey, $shopOneSkuPriceMap)) {
+							$sku['shop1_sku_price'] = $this->calculateShop1Price($sku['price'], $shopOneSkuPriceMap[$differenceKey]);
+						}
+					}
+					unset($sku);
+
+					$row['sku'] = $skuList;
+				}
+			}
     	}
     	$this->success('返回成功', $list);
     }
