@@ -66,6 +66,7 @@ class Shop extends Model
 	/**
 	 * 获取店铺商品分类标签
 	 * 检查店铺商品所属分类名称是否包含"惠选"或"精选"关键字
+	 * - 仅统计“已上架（status=normal）”的商品；下架商品不参与判断
 	 * @param mixed $value
 	 * @param array $data
 	 * @return array 返回标签数组 ['huixuan' => bool, 'jingxuan' => bool]
@@ -84,6 +85,7 @@ class Shop extends Model
 		// 查询该店铺所有商品的分类ID
 		$categoryIds = \think\Db::name('wanlshop_goods')
 			->where('shop_id', $data['id'])
+			->where('status', 'normal')
 			->where('category_id', '>', 0)
 			->column('category_id');
 
