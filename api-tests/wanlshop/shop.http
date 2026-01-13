@@ -39,6 +39,8 @@ Content-Type: application/json
 GET {{baseUrl}}{{apiPrefix}}/searchCity?search=南通
 Content-Type: application/json
 
+### 说明：店铺列表默认不返回已软删除（deletetime 非空）的店铺
+
 ### ========================================
 ### 5.1 城市搜索（隐藏无已上架商品的店铺）
 ### 说明：已上架口径按 goods.status=normal（不要求库存>0）

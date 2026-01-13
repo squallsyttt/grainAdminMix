@@ -32,7 +32,10 @@ class Shop extends Api
 		//设置过滤方法
 		$this->request->filter(['strip_tags']);
 		// 获取店铺信息
-		$row = $this->model->get($id);
+		$row = $this->model
+			->where('id', $id)
+			->whereNull('deletetime')
+			->find();
 
 		if (!$row) {
 		    $this->error(__('未找到此商家'));
@@ -52,7 +55,10 @@ class Shop extends Api
 		//设置过滤方法
 		$this->request->filter(['strip_tags']);
 		// 根据当前登录用户查找店铺
-		$row = $this->model->get(['user_id' => $this->auth->id]);
+		$row = $this->model
+			->where(['user_id' => $this->auth->id])
+			->whereNull('deletetime')
+			->find();
 
 		if (!$row) {
 			$this->error(__('未找到此商家'));
@@ -82,6 +88,7 @@ class Shop extends Api
 			$list = $this->model
 				->where($where)
 				->where('status', 'normal')
+				->whereNull('deletetime')
 				->field('id,user_id,shopname,avatar,city,location_latitude,location_longitude,location_address,service_ids,bio,status')
 				->order($sort, $order)
 				->paginate();
@@ -117,7 +124,8 @@ class Shop extends Api
 		// 构建查询
 		$query = $this->model
 			->where($where)
-			->where('status', 'normal');
+			->where('status', 'normal')
+			->whereNull('deletetime');
 
 		// 默认排除 id=1 的系统店铺，除非明确要求包含
 		if (!$includeAll) {
