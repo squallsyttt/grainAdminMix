@@ -40,6 +40,13 @@ GET {{baseUrl}}{{apiPrefix}}/searchCity?search=南通
 Content-Type: application/json
 
 ### ========================================
+### 5.1 城市搜索（隐藏无已上架商品的店铺）
+### 说明：已上架口径按 goods.status=normal（不要求库存>0）
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/searchCity?search=南通&hide_empty_goods=1
+Content-Type: application/json
+
+### ========================================
 ### 6. 获取单个店铺详情（getShopInfo）
 ### ========================================
 GET {{baseUrl}}{{apiPrefix}}/getShopInfo?id=1

@@ -100,6 +100,7 @@ class Shop extends Api
 	 * - filter/op: 过滤与操作（JSON，参考商品列表用法）
 	 * - sort/order: 排序字段/方向
 	 * - include_all: 是否包含所有店铺（默认排除 id=1 的系统店铺）
+	 * - hide_empty_goods: 是否隐藏无已上架商品的店铺（1=隐藏，0=不隐藏；已上架口径=goods.status=normal）
 	 */
 	public function searchCity()
 	{
@@ -110,6 +111,8 @@ class Shop extends Api
 
 		// 是否包含所有店铺（默认排除 id=1 的系统店铺）
 		$includeAll = $this->request->get('include_all', 0);
+		// 是否隐藏无已上架商品的店铺（默认不隐藏，保持兼容）
+		$hideEmptyGoods = (int)$this->request->get('hide_empty_goods', 0);
 
 		// 构建查询
 		$query = $this->model
@@ -119,6 +122,17 @@ class Shop extends Api
 		// 默认排除 id=1 的系统店铺，除非明确要求包含
 		if (!$includeAll) {
 			$query->where('id', '<>', 1);
+		}
+
+		// 可选：隐藏无已上架商品的店铺（已上架口径：wanlshop_goods.status=normal 且未软删除）
+		if ($hideEmptyGoods === 1) {
+			$query->whereIn('id', function ($sub) {
+				$sub->name('wanlshop_goods')
+					->where('status', 'normal')
+					->whereNull('deletetime')
+					->group('shop_id')
+					->field('shop_id');
+			});
 		}
 
 		$list = $query
