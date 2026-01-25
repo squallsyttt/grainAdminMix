@@ -130,12 +130,16 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
                     var buttons = [];
                     var state = row.state;
                     var amount = row.shop_amount || row.supply_price || '';
+                    var voucherState = row.voucher && (row.voucher.state !== undefined) ? String(row.voucher.state) : '';
+                    var isRefundBlocked = (voucherState === '4' || voucherState === '5');
 
-                    if (state === '1' || state === 1 || state === '4' || state === 4) {
+                    if (!isRefundBlocked && (state === '1' || state === 1 || state === '4' || state === 4)) {
                         buttons.push('<a href="javascript:;" class="btn btn-xs btn-success btn-transfer" data-id="' + row.id + '" data-amount="' + amount + '"><i class="fa fa-paypal"></i> 结算打款</a>');
+                    } else if (isRefundBlocked) {
+                        buttons.push('<span class="text-muted" title="该券已退款/退款中，禁止结算">不可结算</span>');
                     }
 
-                    if (state === '4' || state === 4) {
+                    if (!isRefundBlocked && (state === '4' || state === 4)) {
                         buttons.push('<a href="javascript:;" class="btn btn-xs btn-warning btn-retry" data-id="' + row.id + '"><i class="fa fa-refresh"></i> 重试</a>');
                     }
 

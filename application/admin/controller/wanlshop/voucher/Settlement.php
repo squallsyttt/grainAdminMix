@@ -4,6 +4,7 @@ namespace app\admin\controller\wanlshop\voucher;
 
 use app\admin\service\SettlementTransferService;
 use app\common\controller\Backend;
+use think\Db;
 
 /**
  * 结算管理
@@ -58,7 +59,8 @@ class Settlement extends Backend
 
             foreach ($list as $row) {
                 $row->getRelation('user')->visible(['username', 'nickname']);
-                $row->getRelation('voucher')->visible(['voucher_no', 'goods_title']);
+                // 需要展示券状态，便于前端禁用“结算打款”（避免已退款仍可结算）
+                $row->getRelation('voucher')->visible(['voucher_no', 'goods_title', 'state', 'state_text']);
             }
 
             $list = collection($list)->toArray();
@@ -103,6 +105,8 @@ class Settlement extends Backend
             $this->error('无效的结算记录');
         }
 
+        $this->assertSettlementNotRefunded((int)$settlement->voucher_id);
+
         $service = new SettlementTransferService();
         $receivers = $service->getReceivers((int)$settlement->shop_id);
 
@@ -123,6 +127,8 @@ class Settlement extends Backend
         if (!in_array((string)$row->state, ['1', '4'], true)) {
             $this->error('当前状态不可打款');
         }
+
+        $this->assertSettlementNotRefunded((int)$row->voucher_id);
 
         $service = new SettlementTransferService();
 
@@ -196,6 +202,8 @@ class Settlement extends Backend
             foreach ($list as $item) {
                 // 只能结算待结算状态的记录
                 if ($item->state == 1) {
+                    // 已退款/退款中不允许标记已结算（避免逻辑漏洞）
+                    $this->assertSettlementNotRefunded((int)$item->voucher_id);
                     $item->state = 2;  // 已结算
                     $item->settlement_time = time();
                     $item->save();
@@ -210,5 +218,43 @@ class Settlement extends Backend
             }
         }
         $this->error(__('Parameter %s can not be empty', 'ids'));
+    }
+
+    /**
+     * 结算拦截：存在进行中/已成功退款则禁止结算
+     *
+     * @param int $voucherId
+     */
+    protected function assertSettlementNotRefunded(int $voucherId): void
+    {
+        $voucherId = (int)$voucherId;
+        if ($voucherId <= 0) {
+            return;
+        }
+
+        $refund = Db::name('wanlshop_voucher_refund')
+            ->where('voucher_id', $voucherId)
+            ->where('state', 'in', ['0', '1', '3'])
+            ->where('status', 'normal')
+            ->whereNull('deletetime')
+            ->field('refund_no,state')
+            ->order('id', 'desc')
+            ->find();
+
+        if (!$refund) {
+            return;
+        }
+
+        $state = isset($refund['state']) ? (string)$refund['state'] : '';
+        $stateTextMap = [
+            '0' => '申请中',
+            '1' => '已同意退款',
+            '3' => '退款成功',
+        ];
+        $stateText = $stateTextMap[$state] ?? '退款处理中';
+        $refundNo = isset($refund['refund_no']) ? (string)$refund['refund_no'] : '';
+        $suffix = $refundNo !== '' ? "（退款单号：{$refundNo}）" : '';
+
+        $this->error("该券存在{$stateText}退款记录{$suffix}，禁止结算");
     }
 }

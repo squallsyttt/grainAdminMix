@@ -15,6 +15,53 @@ use think\Log;
 class SettlementTransferService
 {
     /**
+     * 判断结算单是否存在“进行中/已成功”的退款，存在则禁止结算打款
+     *
+     * @param int $voucherId
+     * @return array|null
+     */
+    protected function getBlockingRefundByVoucherId(int $voucherId): ?array
+    {
+        $voucherId = (int)$voucherId;
+        if ($voucherId <= 0) {
+            return null;
+        }
+
+        // state: 0=申请中,1=同意退款,2=拒绝退款,3=退款成功
+        // 结算侧必须拦截：申请中/已同意/退款成功
+        $refund = Db::name('wanlshop_voucher_refund')
+            ->where('voucher_id', $voucherId)
+            ->where('state', 'in', ['0', '1', '3'])
+            ->where('status', 'normal')
+            ->whereNull('deletetime')
+            ->field('id,refund_no,state,refund_source,merchant_audit_state,updatetime,createtime')
+            ->order('id', 'desc')
+            ->find();
+
+        return $refund ? (array)$refund : null;
+    }
+
+    /**
+     * 退款拦截提示文案
+     *
+     * @param array $refund
+     * @return string
+     */
+    protected function buildRefundBlockMessage(array $refund): string
+    {
+        $state = isset($refund['state']) ? (string)$refund['state'] : '';
+        $stateTextMap = [
+            '0' => '申请中',
+            '1' => '已同意退款',
+            '3' => '退款成功',
+        ];
+        $stateText = $stateTextMap[$state] ?? '退款处理中';
+        $refundNo = isset($refund['refund_no']) ? (string)$refund['refund_no'] : '';
+        $suffix = $refundNo !== '' ? "（退款单号：{$refundNo}）" : '';
+        return "该券存在{$stateText}退款记录{$suffix}，禁止结算打款";
+    }
+
+    /**
      * 查询绑定指定店铺的小程序收款人列表
      *
      * @param int $shopId 店铺ID
@@ -73,6 +120,12 @@ class SettlementTransferService
             }
             if (!in_array($settlement->state, ['1', '4'])) {
                 throw new Exception('当前状态不可打款');
+            }
+
+            // 防止已退款/退款中的券继续给商家结算（严重资金漏洞）
+            $blockingRefund = $this->getBlockingRefundByVoucherId((int)$settlement->voucher_id);
+            if ($blockingRefund) {
+                throw new Exception($this->buildRefundBlockMessage($blockingRefund));
             }
 
             $receiver = Db::name('user')

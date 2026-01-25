@@ -95,7 +95,7 @@ class Voucher extends Backend
         }
 
         // 如果已退款，显示退款信息
-        if ($row->state == 4) {
+        if ($row->state == 4 || $row->state == 5) {
             $row->voucherRefund;
         }
 

@@ -40,7 +40,7 @@ class Voucher extends Model
 
     /**
      * 状态枚举
-     * 1=未使用, 2=已核销, 3=已过期, 4=已退款
+     * 1=未使用, 2=已核销, 3=已过期, 4=已退款, 5=退款中
      * @return array
      */
     public function getStateList()
@@ -50,6 +50,7 @@ class Voucher extends Model
             '2' => '已核销',
             '3' => '已过期',
             '4' => '已退款',
+            '5' => '退款中',
         ];
     }
 
@@ -259,7 +260,7 @@ class Voucher extends Model
 
     /**
      * 计算属性：前端状态值
-     * 将 state 映射为：1→UNUSED, 2→USED, 3→EXPIRED, 4→REFUNDED
+     * 将 state 映射为：1→UNUSED, 2→USED, 3→EXPIRED, 4→REFUNDED, 5→REFUNDING
      * @param mixed $value
      * @param array $data
      * @return string
@@ -272,6 +273,7 @@ class Voucher extends Model
             '2' => 'USED',
             '3' => 'EXPIRED',
             '4' => 'REFUNDED',
+            '5' => 'REFUNDING',
         ];
         return isset($map[$state]) ? $map[$state] : '';
     }
