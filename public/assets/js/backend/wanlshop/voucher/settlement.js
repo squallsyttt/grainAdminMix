@@ -116,6 +116,10 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
             formatter: {
                 // 状态展示
                 state: function (value, row, index) {
+                    if (row.state_display_text) {
+                        var cls = row.state_display_class ? row.state_display_class : 'label-default';
+                        return '<span class="label ' + cls + '">' + row.state_display_text + '</span>';
+                    }
                     var stateMap = {
                         '1': {text: '待结算', className: 'label-warning'},
                         '2': {text: '已结算', className: 'label-success'},

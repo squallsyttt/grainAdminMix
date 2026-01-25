@@ -57,10 +57,64 @@ class Settlement extends Backend
                 ->limit($offset, $limit)
                 ->select();
 
+            // 批量查询退款拦截信息（用于展示“不可结算/退款中/已退款”等状态）
+            $voucherIds = [];
+            foreach ($list as $row) {
+                if (!empty($row->voucher_id)) {
+                    $voucherIds[] = (int)$row->voucher_id;
+                }
+            }
+            $voucherIds = array_values(array_unique(array_filter($voucherIds)));
+            $refundMap = [];
+            if (!empty($voucherIds)) {
+                $refundRows = Db::name('wanlshop_voucher_refund')
+                    ->where('voucher_id', 'in', $voucherIds)
+                    ->where('state', 'in', ['0', '1', '3'])
+                    ->where('status', 'normal')
+                    ->whereNull('deletetime')
+                    ->field('voucher_id,refund_no,state')
+                    ->order('id', 'desc')
+                    ->select();
+                foreach ($refundRows as $r) {
+                    $vid = (int)($r['voucher_id'] ?? 0);
+                    if ($vid > 0 && !isset($refundMap[$vid])) {
+                        $refundMap[$vid] = $r;
+                    }
+                }
+            }
+
             foreach ($list as $row) {
                 $row->getRelation('user')->visible(['username', 'nickname']);
                 // 需要展示券状态，便于前端禁用“结算打款”（避免已退款仍可结算）
                 $row->getRelation('voucher')->visible(['voucher_no', 'goods_title', 'state', 'state_text']);
+
+                // 结算状态展示：当存在退款记录/券状态为退款相关时，显示更细颗粒度的状态文本
+                $displayText = '';
+                $displayClass = '';
+                $voucherState = $row->voucher ? (string)$row->voucher->state : '';
+                $refund = $refundMap[(int)$row->voucher_id] ?? null;
+                $refundState = $refund ? (string)($refund['state'] ?? '') : '';
+
+                if ($refundState === '3' || $voucherState === '4') {
+                    $displayText = '已退款';
+                    $displayClass = 'label-default';
+                } elseif ($refundState === '0' || $refundState === '1' || $voucherState === '5') {
+                    $displayText = '退款中';
+                    $displayClass = 'label-info';
+                }
+
+                if ($displayText !== '') {
+                    if ((string)$row->state === '2') {
+                        $row['state_display_text'] = '已结算 / ' . $displayText;
+                        $row['state_display_class'] = 'label-warning';
+                    } else {
+                        $row['state_display_text'] = $displayText;
+                        $row['state_display_class'] = $displayClass;
+                    }
+                } else {
+                    $row['state_display_text'] = '';
+                    $row['state_display_class'] = '';
+                }
             }
 
             $list = collection($list)->toArray();
