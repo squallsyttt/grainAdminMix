@@ -1,0 +1,34 @@
+### WanlShop 商品品牌/等级类目接口 API 测试
+### 对应控制器: application/api/controller/wanlshop/GoodsMetaCategory.php
+### 对应后台页面: 品牌类目/等级类目（wanlshop/goods_meta_category/brand | grade）
+
+### ========================================
+### 环境变量
+### ========================================
+@baseUrl = http://grain.local.com
+@apiPrefix = /api/wanlshop/goods_meta_category
+
+### ========================================
+### 1. 获取品牌类目树
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/tree?type=brand
+Content-Type: application/json
+
+### ========================================
+### 2. 获取等级类目树
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/tree?type=grade
+Content-Type: application/json
+
+### ========================================
+### 3. 测试异常情况 - 缺少 type
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/tree
+Content-Type: application/json
+
+### ========================================
+### 4. 测试异常情况 - type 非法
+### ========================================
+GET {{baseUrl}}{{apiPrefix}}/tree?type=xxx
+Content-Type: application/json
+

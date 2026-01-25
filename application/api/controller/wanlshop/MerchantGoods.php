@@ -488,6 +488,40 @@ class MerchantGoods extends Api
         // 查询类目
         $category = $goods->category;
 
+        // 查询品牌类目/等级类目（可选）
+        $brandCategory = $goods->brandCategory;
+        $gradeCategory = $goods->gradeCategory;
+
+        $metaCategoryModel = model('app\\api\\model\\wanlshop\\GoodsMetaCategory');
+        $buildMetaChain = function ($metaId) use ($metaCategoryModel) {
+            $metaId = (int)$metaId;
+            if (!$metaId) {
+                return [];
+            }
+            $chain = [];
+            $current = $metaCategoryModel
+                ->where('id', $metaId)
+                ->field('id,pid,name')
+                ->find();
+            $guard = 0;
+            while ($current && $guard < 10) {
+                $chain[] = [
+                    'id' => $current['id'],
+                    'pid' => $current['pid'],
+                    'name' => $current['name'],
+                ];
+                if (!$current['pid']) {
+                    break;
+                }
+                $current = $metaCategoryModel
+                    ->where('id', $current['pid'])
+                    ->field('id,pid,name')
+                    ->find();
+                $guard++;
+            }
+            return array_reverse($chain);
+        };
+
         // 计算商品总库存（所有有效 SKU 库存之和）
         $totalStock = model('app\\api\\model\\wanlshop\\GoodsSku')
             ->where('goods_id', $id)
@@ -507,6 +541,12 @@ class MerchantGoods extends Api
                 'status' => $goods['status'],
                 'category_id' => $goods['category_id'],
                 'category_name' => $category ? $category['name'] : '',
+                'brand_category_id' => $goods['brand_category_id'],
+                'brand_category_name' => $brandCategory ? $brandCategory['name'] : '',
+                'brand_category_chain' => $buildMetaChain($goods['brand_category_id']),
+                'grade_category_id' => $goods['grade_category_id'],
+                'grade_category_name' => $gradeCategory ? $gradeCategory['name'] : '',
+                'grade_category_chain' => $buildMetaChain($goods['grade_category_id']),
                 'createtime' => $goods['createtime'],
                 'updatetime' => $goods['updatetime']
             ],
@@ -546,11 +586,22 @@ class MerchantGoods extends Api
         }
 
         // 允许修改的字段
-        $allowFields = ['title', 'category_id', 'price', 'stock', 'status', 'image', 'images'];
+        $allowFields = ['title', 'category_id', 'brand_category_id', 'grade_category_id', 'price', 'stock', 'status', 'image', 'images'];
         $data = [];
 
         foreach ($allowFields as $field) {
             $value = $this->request->post($field);
+
+            // 品牌/等级类目支持清空（传空/0 即置空）
+            if (in_array($field, ['brand_category_id', 'grade_category_id'], true)) {
+                if ($value === null) {
+                    continue;
+                }
+                $intVal = (int)$value;
+                $data[$field] = $intVal > 0 ? $intVal : null;
+                continue;
+            }
+
             if ($value !== null && $value !== '') {
                 if ($field === 'status' && !in_array($value, ['normal', 'hidden'])) {
                     $this->error('状态值无效');

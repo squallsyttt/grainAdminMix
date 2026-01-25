@@ -46,8 +46,13 @@ class Product extends Api
 			// 可选：按店铺筛选（便捷参数）
 			$shopId = $this->request->get('shop_id');
 			// 查询数据
+	    	$withRelations = ['shop', 'category'];
+			if ($type === 'goods') {
+				$withRelations[] = 'brandCategory';
+				$withRelations[] = 'gradeCategory';
+			}
 	    	$query = $goodsModel
-	    		->with(['shop','category'])
+	    		->with($withRelations)
 	    	    ->where($where)
 				->where('goods.status', 'normal');
 				if($type === 'goods' && $regionCityCode !== ''){
@@ -115,6 +120,20 @@ class Product extends Api
     	foreach ($list as $row) {
     	    $row->getRelation('shop')->visible(['city', 'shopname', 'state']);
     		$row->getRelation('category')->visible(['id','pid','name']);
+			if ($type === 'goods') {
+				if ($row->brandCategory) {
+					$row->brandCategory->visible(['id', 'pid', 'name']);
+					$row['brand_category_name'] = $row->brandCategory['name'];
+				} else {
+					$row['brand_category_name'] = '';
+				}
+				if ($row->gradeCategory) {
+					$row->gradeCategory->visible(['id', 'pid', 'name']);
+					$row['grade_category_name'] = $row->gradeCategory['name'];
+				} else {
+					$row['grade_category_name'] = '';
+				}
+			}
     		// 返回 SKU 数据，用于前端计算每斤价格
     		$row['sku'] = $row->sku;
 
@@ -336,7 +355,7 @@ class Product extends Api
 			// 查询商品
 			$goods = $goodsModel
 				->where(['id' => $id])
-				->field('id,category_id,shop_category_id,brand_id,freight_id,shop_id,region_city_code,title,image,images,flag,content,category_attribute,activity_type,price,sales,payment,comment,praise,moderate,negative,like,views,status')
+				->field('id,category_id,brand_category_id,grade_category_id,shop_category_id,brand_id,freight_id,shop_id,region_city_code,title,image,images,flag,content,category_attribute,activity_type,price,sales,payment,comment,praise,moderate,negative,like,views,status')
 				->find();
             // 浏览+1 & 报错
         if($goods && $goods['status'] == 'normal'){
@@ -371,6 +390,44 @@ class Product extends Api
 			$goods['follow'] = $this->isfollow($id);
             // 查询品牌
             $goods->brand && $goods->brand->visible(['name']);
+			// 查询品牌类目/等级类目（可选）
+			$goods->brandCategory && $goods->brandCategory->visible(['id', 'pid', 'name']);
+			$goods->gradeCategory && $goods->gradeCategory->visible(['id', 'pid', 'name']);
+			$goods['brand_category_name'] = $goods->brandCategory ? $goods->brandCategory['name'] : '';
+			$goods['grade_category_name'] = $goods->gradeCategory ? $goods->gradeCategory['name'] : '';
+
+			// 品牌/等级类目全链路（用于前端展示）
+			$metaCategoryModel = model('app\api\model\wanlshop\GoodsMetaCategory');
+			$buildMetaChain = function ($metaId) use ($metaCategoryModel) {
+				$metaId = (int)$metaId;
+				if (!$metaId) {
+					return [];
+				}
+				$chain = [];
+				$current = $metaCategoryModel
+					->where('id', $metaId)
+					->field('id,pid,name')
+					->find();
+				$guard = 0;
+				while ($current && $guard < 10) {
+					$chain[] = [
+						'id' => $current['id'],
+						'pid' => $current['pid'],
+						'name' => $current['name'],
+					];
+					if (!$current['pid']) {
+						break;
+					}
+					$current = $metaCategoryModel
+						->where('id', $current['pid'])
+						->field('id,pid,name')
+						->find();
+					$guard++;
+				}
+				return array_reverse($chain);
+			};
+			$goods['brand_category_chain'] = $buildMetaChain($goods['brand_category_id']);
+			$goods['grade_category_chain'] = $buildMetaChain($goods['grade_category_id']);
 			// 查询SKU
 			$goods['sku'] = $goods->sku;
 			// 查询SPU

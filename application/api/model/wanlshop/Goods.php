@@ -101,6 +101,18 @@ class Goods extends Model
 	{
 	    return $this->belongsTo('app\api\model\wanlshop\Category', 'category_id', 'id', [], 'LEFT')->setEagerlyType(0);
 	}
+
+	// 品牌类目（多级）
+	public function brandCategory()
+	{
+	    return $this->belongsTo('app\api\model\wanlshop\GoodsMetaCategory', 'brand_category_id', 'id', [], 'LEFT')->setEagerlyType(0);
+	}
+
+	// 等级类目（多级）
+	public function gradeCategory()
+	{
+	    return $this->belongsTo('app\api\model\wanlshop\GoodsMetaCategory', 'grade_category_id', 'id', [], 'LEFT')->setEagerlyType(0);
+	}
 	
 	// 店铺类目
 	public function shopsort()
