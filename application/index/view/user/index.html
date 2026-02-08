@@ -207,6 +207,118 @@
         text-decoration: none;
     }
 
+    /* 会员中心活动宣传卡（绿色稻米风） */
+    .merchant-campaign-panel {
+        margin-bottom: 24px;
+        border-radius: 16px;
+        border: 1px solid #d6eadf;
+        background: linear-gradient(135deg, #f5fbf6 0%, #eef9f1 55%, #fdfaf1 100%);
+        box-shadow: 0 8px 24px rgba(46, 125, 50, 0.14);
+        padding: 24px;
+        display: flex;
+        gap: 22px;
+        align-items: stretch;
+    }
+
+    .merchant-campaign-content {
+        flex: 1;
+    }
+
+    .merchant-campaign-badge {
+        display: inline-block;
+        font-size: 12px;
+        color: #2e7d32;
+        font-weight: 600;
+        border-radius: 999px;
+        border: 1px solid rgba(76, 175, 80, 0.4);
+        background: rgba(129, 199, 132, 0.22);
+        padding: 4px 12px;
+        margin-bottom: 10px;
+    }
+
+    .merchant-campaign-content h3 {
+        margin: 0 0 8px;
+        color: #1f4d2b;
+        font-size: 28px;
+        line-height: 1.3;
+        font-weight: 700;
+    }
+
+    .merchant-campaign-content .intro {
+        margin: 0 0 12px;
+        color: #3b5a41;
+        line-height: 1.75;
+        font-size: 15px;
+    }
+
+    .merchant-campaign-list {
+        margin: 0;
+        padding-left: 20px;
+    }
+
+    .merchant-campaign-list li {
+        color: #34533e;
+        font-size: 14px;
+        line-height: 1.85;
+    }
+
+    .merchant-campaign-reward {
+        margin-top: 12px;
+        padding: 10px 14px;
+        border-radius: 12px;
+        border: 1px dashed rgba(76, 175, 80, 0.5);
+        background: rgba(255, 255, 255, 0.75);
+        color: #2d5a3a;
+        font-size: 13px;
+        line-height: 1.75;
+    }
+
+    .merchant-campaign-qrcode {
+        width: 212px;
+        flex: 0 0 212px;
+        border: 1px solid rgba(148, 198, 151, 0.45);
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 14px;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .merchant-campaign-qrcode h4 {
+        margin: 0 0 8px;
+        font-size: 14px;
+        color: #2e7d32;
+        font-weight: 700;
+    }
+
+    .merchant-campaign-qrcode-box {
+        width: 156px;
+        height: 156px;
+        border: 2px solid #d5ebd8;
+        border-radius: 12px;
+        background: #fff;
+        padding: 8px;
+        box-shadow: 0 6px 16px rgba(46, 125, 50, 0.12);
+    }
+
+    .merchant-campaign-qrcode-box img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 8px;
+        display: block;
+    }
+
+    .merchant-campaign-qrcode p {
+        margin: 8px 0 0;
+        font-size: 12px;
+        color: #4e6a56;
+        text-align: center;
+        line-height: 1.7;
+    }
+
     /* 分类推荐价格卡片 */
     .category-price-card {
         background: #fff;
@@ -469,6 +581,21 @@
             width: 100%;
             justify-content: center;
         }
+
+        .merchant-campaign-panel {
+            flex-direction: column;
+            padding: 20px;
+            gap: 16px;
+        }
+
+        .merchant-campaign-content h3 {
+            font-size: 24px;
+        }
+
+        .merchant-campaign-qrcode {
+            width: 100%;
+            flex: none;
+        }
     }
 </style>
 <div id="content-container" class="container">
@@ -498,6 +625,29 @@
                         <p class="text-muted">
                             {$user.bio|default=__("This guy hasn't written anything yet")|htmlentities}
                         </p>
+                    </div>
+
+                    <div class="merchant-campaign-panel" aria-label="商家专属福利活动">
+                        <div class="merchant-campaign-content">
+                            <span class="merchant-campaign-badge">商家专属福利</span>
+                            <h3>入驻上架即领红包，最高188元！</h3>
+                            <p class="intro">各位商家朋友看过来，轻松 3 步，现金红包抱回家：</p>
+                            <ol class="merchant-campaign-list">
+                                <li>完成平台商家注册，成功入驻并绑定小程序</li>
+                                <li>上架店铺商品，完成基础商品配置</li>
+                                <li>添加官方企业微信，发送商品上架成功截图</li>
+                            </ol>
+                            <div class="merchant-campaign-reward">
+                                审核无误后即刻发放随机现金红包，红包面额随机，最高 188 元整。多店多享，操作简单，奖励丰厚！
+                            </div>
+                        </div>
+                        <div class="merchant-campaign-qrcode">
+                            <h4>扫码添加官方企业微信</h4>
+                            <div class="merchant-campaign-qrcode-box">
+                                <img src="__CDN__/assets/img/qrcode.png" alt="官方企业微信二维码">
+                            </div>
+                            <p>添加后发送「商品上架成功截图」即可参与审核领红包</p>
+                        </div>
                     </div>
 
                     <!-- 店铺状态引导 -->
