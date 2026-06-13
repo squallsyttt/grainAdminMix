@@ -52,7 +52,10 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'vue'], function ($, 
 			var $lng = $("#c-location_longitude");
 			var $address = $("#c-location_address");
 			var qqMapKey = Config.qqmapKey || '';
-			var pickerOpened = false;
+			var pickerLayerIndex = null;
+			var encodeAttr = function (value) {
+				return String(value).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+			};
 			// 地图选点
 			var openMapPicker = function () {
 				if (!qqMapKey) {
@@ -61,11 +64,28 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'vue'], function ($, 
 				}
 				var coord = '';
 				if ($lat.val() && $lng.val()) {
-					coord = '&coord=' + $.trim($lat.val()) + ',' + $.trim($lng.val());
+					coord = '&coord=' + encodeURIComponent($.trim($lat.val()) + ',' + $.trim($lng.val()));
 				}
-				var url = 'https://apis.map.qq.com/tools/locpicker?search=1&type=1&policy=1&key=' + qqMapKey + '&referer=wanlshop' + coord;
-				Fast.api.open(url, '选择店铺位置', {area:['90%','90%']});
-				pickerOpened = true;
+				var url = 'https://apis.map.qq.com/tools/locpicker?search=1&type=1&policy=1&key=' + encodeURIComponent(qqMapKey) + '&referer=wanlshop' + coord;
+				pickerLayerIndex = Layer.open({
+					type: 1,
+					title: '选择店铺位置',
+					shadeClose: true,
+					shade: false,
+					maxmin: true,
+					moveOut: true,
+					area: ['90%', '90%'],
+					content: '<div style="width:100%;height:100%;overflow:hidden;">'
+						+ '<iframe src="' + encodeAttr(url) + '" allow="geolocation *" allowfullscreen="true" frameborder="0" scrolling="auto" style="width:100%;height:100%;border:0;display:block;"></iframe>'
+						+ '</div>',
+					zIndex: Layer.zIndex,
+					success: function (layero) {
+						Layer.setTop(layero);
+					},
+					end: function () {
+						pickerLayerIndex = null;
+					}
+				});
 			};
 			$(document).on("click", ".btn-open-map", function () {
 				openMapPicker();
@@ -89,9 +109,9 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form', 'vue'], function ($, 
 				if (fullAddress) {
 					$address.val(fullAddress);
 				}
-				if (pickerOpened) {
-					Layer.closeAll('iframe');
-					pickerOpened = false;
+				if (pickerLayerIndex) {
+					Layer.close(pickerLayerIndex);
+					pickerLayerIndex = null;
 				}
 			}, false);
 		    Controller.api.bindevent();
